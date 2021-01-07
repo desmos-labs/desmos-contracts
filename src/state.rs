@@ -4,16 +4,19 @@ use serde::{Deserialize, Serialize};
 use cosmwasm_std::{CanonicalAddr, Storage};
 use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
 
-pub static _KEY: &[u8] = b"";
+pub static REPORTS_LIMIT_KEY: &[u8] = b"reports_limit";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct State {
+    pub default_reports_limit: u16
 }
 
-pub fn config(storage: &mut dyn Storage) -> Singleton<S, State> {
-    singleton(storage, _KEY)
+/// Get a writable state singleton
+pub fn state_store(storage: &mut dyn Storage) -> Singleton<State> {
+    singleton(storage, REPORTS_LIMIT_KEY)
 }
 
-pub fn config_read(storage: &dyn Storage) -> ReadonlySingleton<S, State> {
-    singleton_read(storage, _KEY)
+/// Get a read-only state singleton
+pub fn state_read(storage: &dyn Storage) -> ReadonlySingleton<State> {
+    singleton_read(storage, REPORTS_LIMIT_KEY)
 }
