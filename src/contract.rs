@@ -2,7 +2,9 @@ use cosmwasm_std::{to_binary, Binary, Env, HandleResponse, InitResponse, Message
 
 use crate::error::ContractError;
 use crate::msg::{FilteredPostsResponse, HandleMsg, InitMsg, QueryMsg};
-use crate::state::{state_store, state_read, State};
+use crate::state::{state_store, state_read, State, posts_store};
+use crate::query::query_posts;
+use crate::types::Post;
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors
@@ -13,8 +15,11 @@ pub fn init(
     msg: InitMsg,
 ) -> StdResult<InitResponse> {
     let state = State{ default_reports_limit: msg.reports_limit };
-    /// TODO query the posts from desmos here and save it in the store for later usage
     state_store(deps.storage).save(&state)?;
+    /// save the posts inside the store to have better performance later while filtering
+    let posts: Vec<Post> = query_posts(&deps.querier)?;
+    posts_store(deps.storage).save(posts)?;
+
     Ok(InitResponse::default())
 }
 
