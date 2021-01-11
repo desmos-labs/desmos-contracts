@@ -1,10 +1,10 @@
 use cosmwasm_std::{to_binary, Binary, Env, HandleResponse, InitResponse, MessageInfo, StdResult, Deps, DepsMut};
 
 use crate::error::ContractError;
-use crate::msg::{FilteredPostsResponse, HandleMsg, InitMsg, QueryMsg};
-use crate::state::{state_store, state_read, State, posts_store};
-use crate::query::query_posts;
-use crate::types::Post;
+use crate::msg::{HandleMsg, InitMsg, QueryMsg};
+use crate::state::{state_store, State};
+use crate::query::{query_posts, PostsQueryResponse, query_post_reports};
+use crate::types::{Post};
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors
@@ -16,10 +16,6 @@ pub fn init(
 ) -> StdResult<InitResponse> {
     let state = State{ default_reports_limit: msg.reports_limit };
     state_store(deps.storage).save(&state)?;
-    /// save the posts inside the store to have better performance later while filtering
-    let posts: Vec<Post> = query_posts(&deps.querier)?;
-    posts_store(deps.storage).save(posts)?;
-
     Ok(InitResponse::default())
 }
 
@@ -30,9 +26,7 @@ pub fn handle(
     info: MessageInfo,
     msg: HandleMsg,
 ) -> Result<HandleResponse, ContractError> {
-    match msg {
-
-    }
+    match msg {}
 }
 
 pub fn query(
@@ -46,7 +40,20 @@ pub fn query(
     }
 }
 
-pub fn query_filtered_posts(deps: Deps, reports_limit: u16) -> StdResult<Binary>{
-    /// TODO Query the stored posts and filter them
-    /// use separate function to filter posts
+/// is_under_report_limit checks if the post is has a number of reports that is less than reports_limit
+fn is_under_reports_limit(deps: Deps, post: &Post, reports_limit: u16) -> bool {
+    let reports_len = query_post_reports(&deps.querier, post.post_id.clone())
+        .unwrap()
+        .len() as u16;
+    reports_len < reports_limit
+}
+
+/// query_filtered_posts returns a list of filtered posts that has less reports than the reports_limit
+pub fn query_filtered_posts(deps: Deps, reports_limit: u16) -> StdResult<PostsQueryResponse>{
+    let posts= query_posts(&deps.querier)?;
+    let filtered_posts = posts
+        .into_iter()
+        .filter( | post | is_under_reports_limit(deps, post, reports_limit))
+        .collect::<Vec<Post>>();
+    Ok(PostsQueryResponse{posts: filtered_posts})
 }

@@ -17,9 +17,3 @@ pub enum QueryMsg {
     /// GetFilteredPosts returns a list of filtered posts where each post has been reported at most (reports_limit - 1) time
     GetFilteredPosts { reports_limit: u16 },
 }
-
-// Custom struct for query response
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct FilteredPostsResponse {
-    pub posts: Vec<Posts>,
-}
