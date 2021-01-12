@@ -1,12 +1,12 @@
-use cosmwasm_std::{
-    to_binary, Binary, Deps, DepsMut, Env, HandleResponse, InitResponse, MessageInfo, StdResult,
-};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, HandleResponse, InitResponse, MessageInfo, StdResult, attr};
 
 use crate::error::ContractError;
 use crate::msg::{HandleMsg, InitMsg, QueryMsg};
 use crate::query::{query_post_reports, query_posts, PostsQueryResponse};
 use crate::state::{state_store, State};
 use crate::types::Post;
+
+/// https://discord.com/channels/737637324434833438/737640672680607764/788083364237410344
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors
@@ -15,7 +15,10 @@ pub fn init(deps: DepsMut, _env: Env, info: MessageInfo, msg: InitMsg) -> StdRes
         default_reports_limit: msg.reports_limit,
     };
     state_store(deps.storage).save(&state)?;
-    Ok(InitResponse::default())
+
+    let mut res = InitResponse::default();
+    res.attributes = vec![attr("action", "set_default_reports_limit")];
+    Ok(res)
 }
 
 // And declare a custom Error variant for the ones where you will want to make use of it
