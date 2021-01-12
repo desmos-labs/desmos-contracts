@@ -12,7 +12,7 @@ pub struct OptionalData {
 pub struct Attachment {
     pub uri: String,
     pub mime_type: String,
-    pub tags: Vec<String>
+    pub tags: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -21,7 +21,7 @@ pub struct PollData {
     pub provided_answers: Vec<PollAnswer>,
     pub end_date: String,
     pub allows_multiple_answers: bool,
-    pub allows_answer_edits: bool
+    pub allows_answer_edits: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -42,7 +42,7 @@ pub struct Post {
     pub optional_data: Vec<OptionalData>,
     pub attachments: Vec<Attachment>,
     pub poll_data: Vec<PollData>,
-    pub creator: String
+    pub creator: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

@@ -1,14 +1,14 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Storage};
+use cosmwasm_std::Storage;
 use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
 
 pub static REPORTS_LIMIT_KEY: &[u8] = b"reports_limit";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct State {
-    pub default_reports_limit: u16
+    pub default_reports_limit: u16,
 }
 
 /// Get a writable state singleton

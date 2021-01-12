@@ -4,9 +4,9 @@ use std::fs::create_dir_all;
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
 use desmos_contracts::msg::{HandleMsg, InitMsg, QueryMsg};
+use desmos_contracts::query::{PostsQueryResponse, ReportsQueryResponse};
 use desmos_contracts::state::State;
-use desmos_contracts::types::{Post, Report, OptionalData, Attachment, PollData, PollAnswer};
-use desmos_contracts::query::{ReportsQueryResponse, PostsQueryResponse};
+use desmos_contracts::types::{Attachment, OptionalData, PollAnswer, PollData, Post, Report};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
