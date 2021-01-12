@@ -1,7 +1,8 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::{CustomQuery, StdResult, QuerierWrapper};
+use cosmwasm_std::{CustomQuery, StdResult, QuerierWrapper, QueryRequest};
 use crate::types::{Post, Report};
+
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -10,6 +11,9 @@ pub enum PostsQuery {
     Posts{}
 }
 
+/// trait that need to be implemented to avoid conflicts with cosmwasm_std custom queries
+impl CustomQuery for PostsQuery {}
+
 /// PostsQueryResponse contains a list of posts
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -17,13 +21,11 @@ pub struct PostsQueryResponse {
     pub posts: Vec<Post>
 }
 
-impl CustomQuery for PostsQuery {}
-
 pub fn query_posts(querier: &QuerierWrapper) -> StdResult<Vec<Post>> {
-    let request = PostsQuery::Posts {}
+    let request: QueryRequest<PostsQuery> = PostsQuery::Posts {}
         .into();
 
-    let res: PostsQueryResponse = querier.query(&request)?;
+    let res: PostsQueryResponse = querier.custom_query(&request)?;
     Ok(res.posts)
 }
 
@@ -43,10 +45,10 @@ pub struct ReportsQueryResponse {
 impl CustomQuery for ReportsQuery {}
 
 pub fn query_post_reports(querier: &QuerierWrapper, post_id: String) -> StdResult<Vec<Report>> {
-    let request = ReportsQuery::Reports { post_id }
+    let request: QueryRequest<ReportsQuery> = ReportsQuery::Reports { post_id }
         .into();
 
-    let res: ReportsQueryResponse = querier.query(&request)?;
+    let res: ReportsQueryResponse = querier.custom_query(&request)?;
     Ok(res.reports)
 }
 

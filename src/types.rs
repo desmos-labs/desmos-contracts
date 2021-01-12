@@ -1,4 +1,3 @@
-use chrono::{DateTime, Utc};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 /// This file contains all the desmos related types used inside the contract
@@ -20,7 +19,7 @@ pub struct Attachment {
 pub struct PollData {
     pub question: String,
     pub provided_answers: Vec<PollAnswer>,
-    pub end_date: DateTime<Utc>,
+    pub end_date: String,
     pub allows_multiple_answers: bool,
     pub allows_answer_edits: bool
 }
@@ -36,8 +35,8 @@ pub struct Post {
     pub post_id: String,
     pub parent_id: String,
     pub message: String,
-    pub created: DateTime<Utc>,
-    pub last_edited: DateTime<Utc>,
+    pub created: String,
+    pub last_edited: String,
     pub allows_comments: bool,
     pub subspace: String,
     pub optional_data: Vec<OptionalData>,
