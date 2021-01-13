@@ -6,8 +6,6 @@ use crate::query::{query_post_reports, query_posts, PostsQueryResponse};
 use crate::state::{state_store, State};
 use crate::types::Post;
 
-/// https://discord.com/channels/737637324434833438/737640672680607764/788083364237410344
-
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors
 pub fn init(deps: DepsMut, _env: Env, info: MessageInfo, msg: InitMsg) -> StdResult<InitResponse> {
