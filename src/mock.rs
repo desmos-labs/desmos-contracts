@@ -1,73 +1,111 @@
+use cosmwasm_std::{Coin, OwnedDeps, HumanAddr, SystemResult, ContractResult, Binary, to_binary};
+use crate::query::{DesmosQuery, PostsQueryResponse, ReportsQueryResponse};
+use cosmwasm_std::testing::{MockStorage, MockApi, MOCK_CONTRACT_ADDR, MockQuerier};
 use crate::types::{Post, Report};
-use cosmwasm_std::testing::MockQuerierCustomHandlerResult;
-use crate::query::{PostsQuery, ReportsQuery, PostsQueryResponse, ReportsQueryResponse};
-use cosmwasm_std::{QuerierResult, to_binary};
-use std::collections::HashMap;
 
-#[derive(Clone, Default)]
-pub struct PostsQuerier {
-    posts: Vec<Post>,
+/// Replacement for cosmwasm_std::testing::mock_dependencies
+/// this use our CustomQuerier
+pub fn mock_dependencies_with_custom_querier(
+    contract_balance: &[Coin],
+) -> OwnedDeps<MockStorage, MockApi, MockQuerier<DesmosQuery>> {
+    let contract_addr = HumanAddr::from(MOCK_CONTRACT_ADDR);
+    let custom_querier: MockQuerier<DesmosQuery> =
+        MockQuerier::new(&[(&contract_addr, contract_balance)])
+            .with_custom_handler(|query| SystemResult::Ok(custom_query_execute(&query)));
+    OwnedDeps{
+        storage: MockStorage::default(),
+        api: MockApi::default(),
+        querier: custom_querier
+    }
 }
 
-impl PostsQuerier {
-    pub fn new(posts: &[Post]) -> Self {
-        PostsQuerier {
-            posts: posts.to_vec()
+/// custom_query_execute returns mock responses to custom queries
+pub fn custom_query_execute(query: &DesmosQuery) -> ContractResult<Binary> {
+    let response = match query {
+        DesmosQuery::Posts {} => {
+            let post = Post {
+                post_id: "id123".to_string(),
+                parent_id: String::from("id345"),
+                message: String::from("message"),
+                created: String::from("date-time"),
+                last_edited: String::from("date-time"),
+                allows_comments: false,
+                subspace: String::from("subspace"),
+                optional_data: vec![],
+                attachments: vec![],
+                poll_data: vec![],
+                creator: String::from("default_creator"),
+            };
+            to_binary(&PostsQueryResponse{ posts: vec![post] })
         }
-    }
+        DesmosQuery::Reports {post_id} => {
+            let report = Report {
+                post_id: post_id.to_string(),
+                _type: String::from("test"),
+                message: String::from("test"),
+                user: String::from("default_creator")
+            };
+            to_binary(&ReportsQueryResponse{reports: vec![report]})
+        }
+    };
+    response.into()
+}
 
-    pub fn query(&self, request: &PostsQuery) -> QuerierResult {
-        let query_result: MockQuerierCustomHandlerResult = match request {
-            PostsQuery::Posts {} => {
-                let res = PostsQueryResponse {
-                    posts: self.posts.clone()
-                };
-                to_binary(&res).into()
-            }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::{from_binary, QuerierWrapper, QueryRequest};
+
+    #[test]
+    fn custom_query_execute_posts() {
+        let post = Post {
+            post_id: String::from("id123"),
+            parent_id: String::from("id345"),
+            message: String::from("message"),
+            created: String::from("date-time"),
+            last_edited: String::from("date-time"),
+            allows_comments: false,
+            subspace: String::from("subspace"),
+            optional_data: vec![],
+            attachments: vec![],
+            poll_data: vec![],
+            creator: String::from("default_creator")
         };
-        query_result
-    }
-}
-
-#[derive(Clone, Default)]
-pub struct ReportsQuerier {
-    reports: HashMap<String, Vec<Report>>,
-}
-
-impl ReportsQuerier {
-    pub fn new(reports: &[(&String, &[Report])]) -> Self {
-        let mut map = HashMap::new();
-        for (post_id, reports) in reports.iter() {
-            map.insert(post_id.to_string(), reports.to_vec())
-        }
-        ReportsQuerier {
-            reports: map
-        }
+        let expected = PostsQueryResponse{ posts: vec![post] };
+        let bz = custom_query_execute(&DesmosQuery::Posts {}).unwrap();
+        let response: PostsQueryResponse = from_binary(&bz).unwrap();
+        assert_eq!(response, expected)
     }
 
-    pub fn query(&self, request: &ReportsQuery) -> QuerierResult {
-        let query_result: MockQuerierCustomHandlerResult = match request {
-            ReportsQuery::Reports { post_id} => {
-                let reports = self
-                    .reports
-                    .get(post_id)
-                    .unwrap();
-                let res = ReportsQueryResponse {
-                    reports: reports.clone()
-                };
-                to_binary(&res).into()
-            }
+    #[test]
+    fn custom_query_execute_reports() {
+        let report = Report {
+            post_id: String::from("id123"),
+            _type: String::from("test"),
+            message: String::from("test"),
+            user: String::from("default_creator")
         };
-        query_result
+        let expected = ReportsQueryResponse{reports: vec![report]};
+        let bz = custom_query_execute(&DesmosQuery::Reports {post_id: "id123".to_string()}).unwrap();
+        let response: ReportsQueryResponse = from_binary(&bz).unwrap();
+        assert_eq!(response, expected)
     }
-}
 
+    #[test]
+    fn custom_querier() {
+        let deps = mock_dependencies_with_custom_querier(&[]);
+        let req: QueryRequest<_> = DesmosQuery::Reports {
+            post_id: "id123".to_string(),
+        }.into();
+        let wrapper = QuerierWrapper::new(&deps.querier);
+        let response: ReportsQueryResponse = wrapper.custom_query(&req).unwrap();
+        let expected = vec![Report {
+            post_id: String::from("id123"),
+            _type: String::from("test"),
+            message: String::from("test"),
+            user: String::from("default_creator")
+        }];
+        assert_eq!(response.reports, expected);
+    }
 
-
-pub fn update_posts(posts: &[Post]) {
-    PostsQuerier::new(posts);
-}
-
-pub fn update_reports(post_id: String, reports: &[Report]) {
-    ReportsQuerier::new(&[(&post_id, &reports)]);
 }
