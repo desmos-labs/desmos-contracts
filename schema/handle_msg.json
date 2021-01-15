@@ -5,29 +5,19 @@
     {
       "type": "object",
       "required": [
-        "increment"
+        "edit_report_limit"
       ],
       "properties": {
-        "increment": {
-          "type": "object"
-        }
-      }
-    },
-    {
-      "type": "object",
-      "required": [
-        "reset"
-      ],
-      "properties": {
-        "reset": {
+        "edit_report_limit": {
           "type": "object",
           "required": [
-            "count"
+            "report_limit"
           ],
           "properties": {
-            "count": {
+            "report_limit": {
               "type": "integer",
-              "format": "int32"
+              "format": "uint16",
+              "minimum": 0.0
             }
           }
         }

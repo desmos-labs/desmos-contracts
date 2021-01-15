@@ -1,11 +1,11 @@
 pub mod contract;
+mod contract_test;
+pub mod custom_query;
 pub mod error;
+mod mock;
 pub mod msg;
-pub mod query;
 pub mod state;
 pub mod types;
-mod contract_test;
-mod mock;
 
 #[cfg(target_arch = "wasm32")]
 cosmwasm_std::create_entry_points!(contract);

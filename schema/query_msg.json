@@ -3,13 +3,24 @@
   "title": "QueryMsg",
   "anyOf": [
     {
+      "description": "GetFilteredPosts returns a list of filtered posts where each post has been reported at most (reports_limit - 1) time",
       "type": "object",
       "required": [
-        "get_count"
+        "get_filtered_posts"
       ],
       "properties": {
-        "get_count": {
-          "type": "object"
+        "get_filtered_posts": {
+          "type": "object",
+          "required": [
+            "reports_limit"
+          ],
+          "properties": {
+            "reports_limit": {
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 0.0
+            }
+          }
         }
       }
     }

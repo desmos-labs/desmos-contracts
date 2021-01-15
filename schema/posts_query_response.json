@@ -1,0 +1,162 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PostsQueryResponse",
+  "description": "PostsQueryResponse contains a list of posts",
+  "type": "object",
+  "required": [
+    "posts"
+  ],
+  "properties": {
+    "posts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Post"
+      }
+    }
+  },
+  "definitions": {
+    "Attachment": {
+      "type": "object",
+      "required": [
+        "mime_type",
+        "tags",
+        "uri"
+      ],
+      "properties": {
+        "mime_type": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "uri": {
+          "type": "string"
+        }
+      }
+    },
+    "OptionalData": {
+      "description": "This file contains all the desmos related types used inside the contract",
+      "type": "object",
+      "required": [
+        "key",
+        "value"
+      ],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "PollAnswer": {
+      "type": "object",
+      "required": [
+        "id",
+        "text"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    "PollData": {
+      "type": "object",
+      "required": [
+        "allows_answer_edits",
+        "allows_multiple_answers",
+        "end_date",
+        "provided_answers",
+        "question"
+      ],
+      "properties": {
+        "allows_answer_edits": {
+          "type": "boolean"
+        },
+        "allows_multiple_answers": {
+          "type": "boolean"
+        },
+        "end_date": {
+          "type": "string"
+        },
+        "provided_answers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PollAnswer"
+          }
+        },
+        "question": {
+          "type": "string"
+        }
+      }
+    },
+    "Post": {
+      "type": "object",
+      "required": [
+        "allows_comments",
+        "attachments",
+        "created",
+        "creator",
+        "last_edited",
+        "message",
+        "optional_data",
+        "parent_id",
+        "poll_data",
+        "post_id",
+        "subspace"
+      ],
+      "properties": {
+        "allows_comments": {
+          "type": "boolean"
+        },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Attachment"
+          }
+        },
+        "created": {
+          "type": "string"
+        },
+        "creator": {
+          "type": "string"
+        },
+        "last_edited": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "optional_data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OptionalData"
+          }
+        },
+        "parent_id": {
+          "type": "string"
+        },
+        "poll_data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PollData"
+          }
+        },
+        "post_id": {
+          "type": "string"
+        },
+        "subspace": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -1,14 +1,17 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "CountResponse",
+  "title": "PollAnswer",
   "type": "object",
   "required": [
-    "count"
+    "id",
+    "text"
   ],
   "properties": {
-    "count": {
-      "type": "integer",
-      "format": "int32"
+    "id": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
     }
   }
 }

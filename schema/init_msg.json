@@ -3,12 +3,14 @@
   "title": "InitMsg",
   "type": "object",
   "required": [
-    "count"
+    "reports_limit"
   ],
   "properties": {
-    "count": {
+    "reports_limit": {
+      "description": "report_limit is the default max number of report a post can have before getting filtered out",
       "type": "integer",
-      "format": "int32"
+      "format": "uint16",
+      "minimum": 0.0
     }
   }
 }

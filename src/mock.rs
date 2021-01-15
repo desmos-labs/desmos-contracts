@@ -1,7 +1,7 @@
-use cosmwasm_std::{Coin, OwnedDeps, HumanAddr, SystemResult, ContractResult, Binary, to_binary};
-use crate::query::{DesmosQuery, PostsQueryResponse, ReportsQueryResponse};
-use cosmwasm_std::testing::{MockStorage, MockApi, MOCK_CONTRACT_ADDR, MockQuerier};
+use crate::custom_query::{DesmosQuery, PostsQueryResponse, ReportsQueryResponse};
 use crate::types::{Post, Report};
+use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
+use cosmwasm_std::{to_binary, Binary, Coin, ContractResult, HumanAddr, OwnedDeps, SystemResult};
 
 /// Replacement for cosmwasm_std::testing::mock_dependencies
 /// this use our CustomQuerier
@@ -12,10 +12,10 @@ pub fn mock_dependencies_with_custom_querier(
     let custom_querier: MockQuerier<DesmosQuery> =
         MockQuerier::new(&[(&contract_addr, contract_balance)])
             .with_custom_handler(|query| SystemResult::Ok(custom_query_execute(&query)));
-    OwnedDeps{
+    OwnedDeps {
         storage: MockStorage::default(),
         api: MockApi::default(),
-        querier: custom_querier
+        querier: custom_querier,
     }
 }
 
@@ -36,16 +36,18 @@ pub fn custom_query_execute(query: &DesmosQuery) -> ContractResult<Binary> {
                 poll_data: vec![],
                 creator: String::from("default_creator"),
             };
-            to_binary(&PostsQueryResponse{ posts: vec![post] })
+            to_binary(&PostsQueryResponse { posts: vec![post] })
         }
-        DesmosQuery::Reports {post_id} => {
+        DesmosQuery::Reports { post_id } => {
             let report = Report {
                 post_id: post_id.to_string(),
                 _type: String::from("test"),
                 message: String::from("test"),
-                user: String::from("default_creator")
+                user: String::from("default_creator"),
             };
-            to_binary(&ReportsQueryResponse{reports: vec![report]})
+            to_binary(&ReportsQueryResponse {
+                reports: vec![report],
+            })
         }
     };
     response.into()
@@ -69,9 +71,9 @@ mod tests {
             optional_data: vec![],
             attachments: vec![],
             poll_data: vec![],
-            creator: String::from("default_creator")
+            creator: String::from("default_creator"),
         };
-        let expected = PostsQueryResponse{ posts: vec![post] };
+        let expected = PostsQueryResponse { posts: vec![post] };
         let bz = custom_query_execute(&DesmosQuery::Posts {}).unwrap();
         let response: PostsQueryResponse = from_binary(&bz).unwrap();
         assert_eq!(response, expected)
@@ -83,10 +85,15 @@ mod tests {
             post_id: String::from("id123"),
             _type: String::from("test"),
             message: String::from("test"),
-            user: String::from("default_creator")
+            user: String::from("default_creator"),
         };
-        let expected = ReportsQueryResponse{reports: vec![report]};
-        let bz = custom_query_execute(&DesmosQuery::Reports {post_id: "id123".to_string()}).unwrap();
+        let expected = ReportsQueryResponse {
+            reports: vec![report],
+        };
+        let bz = custom_query_execute(&DesmosQuery::Reports {
+            post_id: "id123".to_string(),
+        })
+        .unwrap();
         let response: ReportsQueryResponse = from_binary(&bz).unwrap();
         assert_eq!(response, expected)
     }
@@ -96,16 +103,16 @@ mod tests {
         let deps = mock_dependencies_with_custom_querier(&[]);
         let req: QueryRequest<_> = DesmosQuery::Reports {
             post_id: "id123".to_string(),
-        }.into();
+        }
+        .into();
         let wrapper = QuerierWrapper::new(&deps.querier);
         let response: ReportsQueryResponse = wrapper.custom_query(&req).unwrap();
         let expected = vec![Report {
             post_id: String::from("id123"),
             _type: String::from("test"),
             message: String::from("test"),
-            user: String::from("default_creator")
+            user: String::from("default_creator"),
         }];
         assert_eq!(response.reports, expected);
     }
-
 }
