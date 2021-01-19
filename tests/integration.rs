@@ -16,8 +16,7 @@
 //!      });
 //! 4. Anywhere you see query(&deps, ...) you must replace it with query(&mut deps, ...)
 
-use cosmwasm_std::testing::MockStorage;
-use cosmwasm_vm::testing::{MockApi, MockQuerier, init, MOCK_CONTRACT_ADDR, mock_info, mock_env, mock_instance_options};
+use cosmwasm_vm::testing::{MockApi, MockQuerier, init, MOCK_CONTRACT_ADDR, mock_info, mock_env, mock_instance_options, MockStorage};
 use cosmwasm_vm::{Instance, Backend};
 use cosmwasm_std::{Coin, SystemResult, HumanAddr, attr};
 use desmos_contracts::msg::InitMsg;
@@ -69,13 +68,13 @@ fn test_init() {
 
     let init_msg = InitMsg { reports_limit: 5 };
 
-    let res = init(deps.as_mut(), mock_env(), info, init_msg).unwrap();
+    let res = init(&mut deps, mock_env(), info, init_msg).unwrap();
     assert_eq!(0, res.messages.len());
 
     let exp_log = vec![attr("action", "set_default_reports_limit")];
     assert_eq!(res.attributes, exp_log);
 
     // make sure that the state is set
-    let state = state_read(&deps.storage).load().unwrap();
+    let state = state_read(&deps).load().unwrap();
     assert_eq!(5, state.default_reports_limit)
 }
