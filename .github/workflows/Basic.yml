@@ -4,9 +4,6 @@ on:
   push:
   pull_request:
 
-env:
-  RUST_BACKTRACE: 1
-
 jobs:
   test:
     name: Test Suite
@@ -25,11 +22,26 @@ jobs:
           profile: minimal
           override: true
       - name: Compile WASM contract
-        uses: cargo wasm --locked
+        uses: actions-rs/cargo@v1
+        with:
+          command: wasm
+          args: --locked
+        env:
+          RUSTFLAGS: "-C link-arg=-s"
       - name: Unit tests
-        uses: cargo unit-test --locked
+        uses: actions-rs/cargo@v1
+        with:
+          command: unit-test
+          args: --locked
+        env:
+          RUST_BACKTRACE: 1
       - name: Integration tests
-        uses: cargo integration-test --locked
+        uses: actions-rs/cargo@v1
+        with:
+          command: integration-test
+          args: --locked
+        env:
+          RUST_BACKTRACE: 1
   lints:
     name: Lints
     runs-on: ubuntu-latest
