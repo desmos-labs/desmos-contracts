@@ -16,18 +16,18 @@ pub struct Attachment {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct PollAnswer {
+    pub id: String,
+    pub text: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct PollData {
     pub question: String,
     pub provided_answers: Vec<PollAnswer>,
     pub end_date: String,
     pub allows_multiple_answers: bool,
     pub allows_answer_edits: bool,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct PollAnswer {
-    pub id: String,
-    pub text: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

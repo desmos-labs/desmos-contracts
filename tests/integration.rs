@@ -111,7 +111,7 @@ fn test_handle() {
         data: None,
     };
 
-    let msg = HandleMsg::EditReportLimit { report_limit: 5 };
+    let msg = HandleMsg::EditReportsLimit { reports_limit: 5 };
     let res: ContractResult<HandleResponse> =
         handle(&mut deps, mock_env(), info.clone(), msg.clone());
 

@@ -30,9 +30,9 @@ pub fn handle(
     msg: HandleMsg,
 ) -> Result<HandleResponse, ContractError> {
     match msg {
-        HandleMsg::EditReportLimit { report_limit } => {
-            handle_report_limit_edit(deps, info, report_limit)
-        }
+        HandleMsg::EditReportsLimit {
+            reports_limit: report_limit,
+        } => handle_report_limit_edit(deps, info, report_limit),
     }
 }
 

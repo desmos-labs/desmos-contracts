@@ -52,7 +52,7 @@ fn test_handle() {
         data: None,
     };
 
-    let msg = HandleMsg::EditReportLimit { report_limit: 5 };
+    let msg = HandleMsg::EditReportsLimit { reports_limit: 5 };
     let res = handle(deps.as_mut(), mock_env(), info.clone(), msg.clone());
 
     // assert it not fails

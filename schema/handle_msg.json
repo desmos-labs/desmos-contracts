@@ -5,16 +5,16 @@
     {
       "type": "object",
       "required": [
-        "edit_report_limit"
+        "edit_reports_limit"
       ],
       "properties": {
-        "edit_report_limit": {
+        "edit_reports_limit": {
           "type": "object",
           "required": [
-            "report_limit"
+            "reports_limit"
           ],
           "properties": {
-            "report_limit": {
+            "reports_limit": {
               "type": "integer",
               "format": "uint16",
               "minimum": 0.0
