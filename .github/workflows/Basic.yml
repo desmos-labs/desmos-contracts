@@ -50,6 +50,7 @@ jobs:
       - uses: codecov/codecov-action@v1
         with:
           verbose: true
+          files: ./coverage1.xml
   lints:
     name: Lints
     runs-on: ubuntu-latest
