@@ -16,6 +16,8 @@
 //!      });
 //! 4. Anywhere you see query(&deps, ...) you must replace it with query(&mut deps, ...)
 
+#[cfg(not(tarpaulin_include))]
+
 use cosmwasm_std::{
     attr, from_binary, Coin, ContractResult, Env, HandleResponse, HumanAddr, InitResponse,
     MessageInfo, SystemResult,
