@@ -13,9 +13,7 @@ coverage:
     project:
       default:
         threshold: 1% # allow this much decrease on project
-      src:
-        target: 70%
-        flags: src
+        target: 50%
     changes: false
 
 comment:
