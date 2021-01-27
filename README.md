@@ -2,6 +2,8 @@
 
 Desmos contracts is a collection of smart contracts built in [CosmWasm](https://www.cosmwasm.com/) for the desmos blockchain.
 
+![GitHub Workflow Status](https://github.com/desmos-labs/desmos-contracts/workflows/.github/workflows/Basic.yml/badge.svg)
+![GitHub](https://img.shields.io/github/license/desmos-labs/desmos-contracts.svg)
 # Contract List
 Here a list of all the available contracts:
 - Filter posts contract
