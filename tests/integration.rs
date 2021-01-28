@@ -32,6 +32,7 @@ use desmos_contracts::msg::{HandleMsg, InitMsg, QueryMsg};
 use desmos_contracts::state::REPORTS_LIMIT_KEY;
 use desmos_contracts::types::Post;
 
+#[cfg(not(tarpaulin_include))]
 const WASM: &[u8] =
     include_bytes!("../target/wasm32-unknown-unknown/release/desmos_contracts.wasm");
 
