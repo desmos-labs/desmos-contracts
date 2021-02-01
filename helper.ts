@@ -23,9 +23,9 @@ interface Options {
 }
 
 const defaultOptions: Options = {
-  httpUrl: 'https://lcd.desmos.com',
-  networkId: 'morpheus',
-  feeToken: 'udaric',
+  httpUrl: 'https://localhost:1317',
+  networkId: 'testchain',
+  feeToken: 'stake',
   gasPrice: 0.01,
   bech32prefix: 'desmos',
 }
@@ -172,7 +172,7 @@ interface Contract {
   use: (contractAddress: string) => PostsFilterContractInstance
 }
 
-const filterPostsContract = (client: SigningCosmWasmClient, metaSource: string, builderSource: string, contractSource: string): Contract => {
+const filterPostsContract = (client: SigningCosmWasmClient, sourcePath: string, optimizerSource: string, contractSource: string): Contract => {
   const use = (contractAddress: string): PostsFilterContractInstance => {
     const getFilteredPosts = async (reports_limit: number): Promise<PostQueryResponse> => {
       return await client.queryContractSmart(contractAddress, {get_filtered_posts: {reports_limit}});
@@ -200,8 +200,8 @@ const filterPostsContract = (client: SigningCosmWasmClient, metaSource: string, 
 
   const upload = async (): Promise<number> => {
     const meta = {
-      source: metaSource,
-      builder: builderSource
+      source: sourcePath,
+      builder: optimizerSource
     };
     const wasm = await downloadWasm(contractSource);
     const result = await client.upload(wasm, meta);
@@ -217,15 +217,15 @@ const filterPostsContract = (client: SigningCosmWasmClient, metaSource: string, 
 }
 
 // Example:
-// const mnemonic = "<mnemonic phrase>"
+// const mnemonic = "battle call once stool three mammal hybrid list sign field athlete amateur cinnamon eagle shell erupt voyage hero assist maple matrix maximum able barrel"
 // const result = connect(mnemonic, defaultOptions)
-// const metaSourcePath = "https://github.com/bragaz/wasm-test-contract/tree/v0.2.2"
+// const sourcePath = ""
 // const optimizerPath = "cosmwasm/rust-optimizer:0.10.7"
-// const sourceUrl = "https://github.com/bragaz/wasm-test-contract/releases/download/v0.2.2/my_first_contract.wasm"
+// const contractBin = "https://github.com/bragaz/wasm-test-contract/releases/download/v0.2.2/my_first_contract.wasm"
 // const resolvedResult = await result
 // const faucetUrl = "https://desmos.faucet.com
 // hitFaucet(defaultFaucetUrl, resolvedResult.address, defaultOptions.feeToken)
-// const factory = filterPostsContract(resolvedResult.client, metaSourcePath, optimizerPath, sourceUrl)
+// const factory = filterPostsContract(resolvedResult.client, sourcePath, optimizerPath, contractBin)
 // const codeId = await factory.upload();
 // const contract = await factory.instantiate(codeId, reports_limit: 5)
 // contract.contractAddress -> 'desmos1w8efgymkdqafech2c0y40hgvxa23tmmgsmuz66'
