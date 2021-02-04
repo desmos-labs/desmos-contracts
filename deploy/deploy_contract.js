@@ -22,26 +22,26 @@ async function main() {
   const wallet = await DirectSecp256k1HdWallet.fromMnemonic(deployer.mnemonic, undefined, prefix);
   const client = await SigningCosmWasmClient.connectWithSigner(endpoint, wallet);
 
-  const wasm = fs.readFileSync(".wasm");
-  const uploadReceipt = await client.upload(deployer.address0, wasm, codeMeta, "Upload CW1 subkeys contract");
+  const wasm = fs.readFileSync("desmos_contract.wasm");
+  const uploadReceipt = await client.upload(deployer.address0, wasm, codeMeta, "Upload desmos posts filter contract");
   console.info(`Upload succeeded. Receipt: ${JSON.stringify(uploadReceipt)}`);
 
   const initMsg = {
-    admins: [alice.address0],
+    admins: [deployer.address0],
     mutable: true,
   };
   const label = "Subkey test";
   const { contractAddress } = await client.instantiate(deployer.address0, uploadReceipt.codeId, initMsg, label, {
-    memo: `Create a CW1 instance for ${deployer.address0}`,
-    admin: alice.address0,
+    memo: `Create a posts filter contract instance for ${deployer.address0}`,
+    admin: deployer.address0,
   });
   await client.sendTokens(deployer.address0, contractAddress, [
     {
       amount: "1000",
-      denom: "ucosm",
+      denom: "stake",
     },
   ]);
-  console.info(`Contract instantiated for ${deployer.address0} subkey at ${contractAddress}`);
+  console.info(`Contract instantiated for ${deployer.address0} at ${contractAddress}`);
 }
 
 main().then(

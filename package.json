@@ -1,13 +1,13 @@
 {
   "name": "desmos-contracts",
   "version": "1.0.0",
-  "dependencies": {},
-  "devDependencies": {
+  "dependencies": {
     "@cosmjs/cosmwasm-stargate": "^0.24.0-alpha.22",
-    "@cosmjs/crypto": "^0.23.2",
-    "@cosmjs/encoding": "^0.23.2",
-    "@cosmjs/launchpad": "^0.23.2",
+    "@cosmjs/crypto": "^0.24.0-alpha.22",
+    "@cosmjs/encoding": "^0.24.0-alpha.22",
+    "@cosmjs/launchpad": "^0.24.0-alpha.22",
     "@cosmjs/proto-signing": "^0.24.0-alpha.22",
     "@cosmjs/stargate": "^0.24.0-alpha.22"
-  }
+  },
+  "devDependencies": {}
 }
