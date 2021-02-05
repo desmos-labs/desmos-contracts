@@ -15,7 +15,7 @@ This contract will filter the posts returning only the posts that has less than 
 `n` will be the number of reports that the contract need to exclude a post from the resulting list.
 The parameter can be chosen by the system, or the user that performs the query.
 
-![filter-posts-contract-flow](docs/cw1-filter-flow.png)
+![filter-posts-contract-flow](contracts/filter_posts/docs/cw1-filter-flow.png)
 
 ## Install Rust (Linux and Mac)
 Firstly install [rustup](https://rustup.rs/)

@@ -34,7 +34,7 @@ use desmos_contracts::types::Post;
 
 #[cfg(not(tarpaulin))]
 const WASM: &[u8] =
-    include_bytes!("../target/wasm32-unknown-unknown/release/desmos_contracts.wasm");
+    include_bytes!("../../../target/wasm32-unknown-unknown/release/desmos_contracts.wasm");
 
 #[cfg(not(tarpaulin))]
 fn setup_test(
