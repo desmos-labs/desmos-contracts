@@ -2,9 +2,7 @@
 
 /* eslint-disable @typescript-eslint/naming-convention */
 const {GasPrice} = require("@cosmjs/launchpad");
-const { Random } = require("@cosmjs/crypto");
 const { stringToPath } = require("@cosmjs/crypto")
-const { Bech32 } = require("@cosmjs/encoding");
 const { coins } = require("@cosmjs/launchpad");
 const { DirectSecp256k1HdWallet } = require("@cosmjs/proto-signing");
 const { assertIsBroadcastTxSuccess, SigningStargateClient } = require("@cosmjs/stargate");
@@ -13,21 +11,26 @@ const rpcUrl = "http://localhost:26657"
 const prefix = "desmos"
 const tokenDenom = "stake"
 const hdPath = stringToPath("m/44'/852'/0'/0/0")
+
+// Genesis address
 const faucet = {
   mnemonic: "jaguar harbor escape nasty charge intact common grow minute riot patient office quarter suffer solid light post brush snack decorate option arrange deer dinosaur",
   address: "desmos1r96w2wtk53e4k6mfldpjya6cgdl2ey026eqnvg"
 }
 
+// Your address
+const deployer = {
+  mnemonic: "moment lady correct fortune ask churn car organ faculty escape salt team vendor solar beach vicious suffer reopen curve utility grief spoil pave plastic",
+  address: "desmos1p9k9h8z5hs2mhgkvfqykhg6654d7dcxr736v6f"
+}
+
 async function main() {
   const wallet = await DirectSecp256k1HdWallet.fromMnemonic(faucet.mnemonic, hdPath, prefix);
   const gas = GasPrice.fromString("2000stake")
-  const client = await SigningStargateClient.connectWithSigner(rpcUrl, wallet, {
-    gasPrice: gas
-  });
-  const recipient = Bech32.encode(prefix, Random.getBytes(20));
-  const amount = coins(226644, tokenDenom);
-  const memo = "Ensure chain has my pubkey";
-  const sendResult = await client.sendTokens(faucet.address, recipient, amount, memo);
+  const client = await SigningStargateClient.connectWithSigner(rpcUrl, wallet, {gasPrice: gas});
+  const amount = coins(1400000000, tokenDenom);
+  const memo = "Sending tokens from faucet";
+  const sendResult = await client.sendTokens(faucet.address, deployer.address, amount, memo);
   assertIsBroadcastTxSuccess(sendResult);
 }
 
