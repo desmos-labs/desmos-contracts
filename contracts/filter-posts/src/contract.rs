@@ -3,11 +3,11 @@ use cosmwasm_std::{
     StdResult,
 };
 
-use crate::custom_query::{query_post_reports, query_posts, PostsQueryResponse};
+use desmos::custom_query::{query_post_reports, query_posts, PostsQueryResponse};
 use crate::error::ContractError;
 use crate::msg::{HandleMsg, InitMsg, QueryMsg};
 use crate::state::{state_read, state_store, State};
-use crate::types::Post;
+use desmos::types::Post;
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors

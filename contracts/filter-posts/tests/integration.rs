@@ -31,6 +31,11 @@ use desmos_contracts::mock::custom_query_execute;
 use desmos_contracts::msg::{HandleMsg, InitMsg, QueryMsg};
 use desmos_contracts::state::REPORTS_LIMIT_KEY;
 use desmos_contracts::types::Post;
+use desmos::custom_query::{DesmosQuery, PostsQueryResponse};
+use filter_posts::msg::{InitMsg, HandleMsg, QueryMsg};
+use filter_posts::mock::custom_query_execute;
+use filter_posts::state::REPORTS_LIMIT_KEY;
+use desmos::types::Post;
 
 #[cfg(not(tarpaulin))]
 const WASM: &[u8] =

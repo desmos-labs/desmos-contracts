@@ -1,5 +1,5 @@
 use crate::contract::{handle, init, is_under_reports_limit, query_filtered_posts};
-use crate::custom_query::PostsQueryResponse;
+use desmos::custom_query::PostsQueryResponse;
 use crate::error::ContractError;
 use crate::mock::mock_dependencies_with_custom_querier;
 use crate::msg::{HandleMsg, InitMsg};
@@ -7,6 +7,7 @@ use crate::state::state_read;
 use crate::types::Post;
 use cosmwasm_std::testing::{mock_env, mock_info};
 use cosmwasm_std::{attr, DepsMut, Env, HandleResponse, HumanAddr, MessageInfo};
+use desmos::types::Post;
 
 fn setup_test(deps: DepsMut, env: Env, info: MessageInfo, default_reports_limit: u16) {
     let init_msg = InitMsg {
