@@ -3,12 +3,12 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
-use desmos_contracts::msg::{HandleMsg, InitMsg, QueryMsg};
-use desmos_contracts::state::State;
+use filter_posts::msg::{HandleMsg, InitMsg, QueryMsg};
+use filter_posts::state::State;
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
-    out_dir.push("schema");
+    out_dir.push("contracts/filter-posts/schema");
     create_dir_all(&out_dir).unwrap();
     remove_schemas(&out_dir).unwrap();
 

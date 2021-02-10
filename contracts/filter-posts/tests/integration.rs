@@ -26,16 +26,11 @@ use cosmwasm_vm::testing::{
     MockStorage, MOCK_CONTRACT_ADDR,
 };
 use cosmwasm_vm::{Backend, Instance, Storage};
-use desmos_contracts::custom_query::{DesmosQuery, PostsQueryResponse};
-use desmos_contracts::mock::custom_query_execute;
-use desmos_contracts::msg::{HandleMsg, InitMsg, QueryMsg};
-use desmos_contracts::state::REPORTS_LIMIT_KEY;
-use desmos_contracts::types::Post;
 use desmos::custom_query::{DesmosQuery, PostsQueryResponse};
-use filter_posts::msg::{InitMsg, HandleMsg, QueryMsg};
-use filter_posts::mock::custom_query_execute;
-use filter_posts::state::REPORTS_LIMIT_KEY;
 use desmos::types::Post;
+use filter_posts::mock::custom_query_execute;
+use filter_posts::msg::{HandleMsg, InitMsg, QueryMsg};
+use filter_posts::state::REPORTS_LIMIT_KEY;
 
 #[cfg(not(tarpaulin))]
 const WASM: &[u8] =

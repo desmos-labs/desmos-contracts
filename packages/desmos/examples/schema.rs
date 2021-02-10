@@ -1,14 +1,14 @@
-use std::env::current_dir;
+use std::env::{current_dir, set_current_dir};
 use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
-use custom_query::{PostsQueryResponse, ReportsQueryResponse};
-use desmos_contracts::types::{Attachment, OptionalData, PollAnswer, PollData, Post, Report};
+use desmos::custom_query::{PostsQueryResponse, ReportsQueryResponse};
+use desmos::types::{Attachment, OptionalData, PollAnswer, PollData, Post, Report};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
-    out_dir.push("schema");
+    out_dir.push("packages/desmos/schema");
     create_dir_all(&out_dir).unwrap();
     remove_schemas(&out_dir).unwrap();
 

@@ -1,5 +1,6 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
 /// This file contains all the desmos related types used inside the contract
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

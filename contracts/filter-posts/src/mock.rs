@@ -1,7 +1,6 @@
-use desmos::custom_query::{DesmosQuery, PostsQueryResponse, ReportsQueryResponse};
-use crate::types::{Post, Report};
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{to_binary, Binary, Coin, ContractResult, HumanAddr, OwnedDeps, SystemResult};
+use desmos::custom_query::{DesmosQuery, PostsQueryResponse, ReportsQueryResponse};
 use desmos::types::{Post, Report};
 
 /// Replacement for cosmwasm_std::testing::mock_dependencies
