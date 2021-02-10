@@ -1,4 +1,4 @@
-name: Contracts
+name: Contract-Filter-posts
 # Based on https://github.com/actions-rs/example/blob/master/.github/workflows/quickstart.yml
 
 on:
@@ -9,11 +9,10 @@ jobs:
   test:
     name: Test Suite
     runs-on: ubuntu-latest
-    env:
-      working-directory: ~/project/contracts
     defaults:
       run:
         shell: bash
+        working-directory: ~/project/contracts
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
