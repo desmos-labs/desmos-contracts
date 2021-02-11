@@ -12,7 +12,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ~/project/contracts
+        working-directory: contracts
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
