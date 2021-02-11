@@ -24,19 +24,16 @@ jobs:
           profile: minimal
           override: true
       - name: Compile WASM contract
-        uses: actions-rs/cargo@v1
         run: cargo wasm --locked
         working-directory: packages/desmos
         env:
           RUSTFLAGS: "-C link-arg=-s"
       - name: Unit tests
-        uses: actions-rs/cargo@v1
         run: cargo unit-test --locked
         env:
           RUST_BACKTRACE: 1
         working-directory: packages/desmos
       - name: Integration tests
-        uses: actions-rs/cargo@v1
         run: cargo integration-test --locked
         working-directory: packages/desmos
         env:
@@ -80,11 +77,9 @@ jobs:
           components: rustfmt, clippy
 
       - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
         run: cargo fmt --all -- --check
         working-directory: packages/desmos
       - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
         run: cargo clippy -- -D warnings
         working-directory: packages/desmos
 
@@ -92,6 +87,5 @@ jobs:
       # CHANGES_IN_REPO=$(git status --porcelain)
       # after this, but I don't know how
       - name: Generate Schema
-        uses: actions-rs/cargo@v1
         run: cargo schema --locked
         working-directory: packages/desmos
