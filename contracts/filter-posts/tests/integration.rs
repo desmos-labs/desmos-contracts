@@ -33,8 +33,7 @@ use filter_posts::msg::{HandleMsg, InitMsg, QueryMsg};
 use filter_posts::state::REPORTS_LIMIT_KEY;
 
 #[cfg(not(tarpaulin))]
-const WASM: &[u8] =
-    include_bytes!("desmos_contracts.wasm");
+const WASM: &[u8] = include_bytes!("desmos_contracts.wasm");
 
 #[cfg(not(tarpaulin))]
 fn setup_test(
