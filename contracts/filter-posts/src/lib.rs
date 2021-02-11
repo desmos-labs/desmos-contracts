@@ -1,9 +1,7 @@
 pub mod contract;
-pub mod custom_query;
 pub mod error;
 pub mod msg;
 pub mod state;
-pub mod types;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod mock;

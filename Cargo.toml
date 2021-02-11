@@ -1,19 +1,9 @@
-[package]
-name = "desmos-contracts"
-version = "0.0.1"
-authors = ["bragaz <leo.braga95@gmail.com>"]
-edition = "2018"
+[workspace]
+members = ["packages/*", "contracts/*"]
 
-exclude = [
-  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
-  "contract.wasm",
-  "hash.txt",
-]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[lib]
-crate-type = ["cdylib", "rlib"]
+[profile.release.package.desmos]
+codegen-units = 1
+incremental = false
 
 [profile.release]
 opt-level = 3
@@ -25,22 +15,3 @@ codegen-units = 1
 panic = 'abort'
 incremental = false
 overflow-checks = true
-
-[features]
-# for more explicit tests, cargo test --features=backtraces
-backtraces = ["cosmwasm-std/backtraces", "cosmwasm-vm/backtraces"]
-
-##[patch.crates-io.enumset_derive]
-##git = "https://github.com/ocboogie/enumset"
-##branch = "span-fix"
-
-[dependencies]
-cosmwasm-std = { version = "0.13.1" }
-cosmwasm-storage = { version = "0.13.1" }
-schemars = "0.7"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0.22" }
-
-[dev-dependencies]
-cosmwasm-vm = { version = "0.13.1", default-features = false }
-cosmwasm-schema = { version = "0.13.1" }

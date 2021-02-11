@@ -1,17 +1,19 @@
-name: Tests
+name: Contract-Filter-posts
 # Based on https://github.com/actions-rs/example/blob/master/.github/workflows/quickstart.yml
 
 on:
   push:
   pull_request:
 
+defaults:
+  run:
+    shell: bash
+    working-directory: contracts/filter-posts
+
 jobs:
   test:
     name: Test Suite
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
@@ -23,24 +25,15 @@ jobs:
           profile: minimal
           override: true
       - name: Compile WASM contract
-        uses: actions-rs/cargo@v1
-        with:
-          command: wasm
-          args: --locked
+        run: cargo wasm --locked
         env:
           RUSTFLAGS: "-C link-arg=-s"
       - name: Unit tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: unit-test
-          args: --locked
+        run: cargo unit-test --locked
         env:
           RUST_BACKTRACE: 1
       - name: Integration tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: integration-test
-          args: --locked
+        run: cargo integration-test --locked
         env:
           RUST_BACKTRACE: 1
   coverage:
@@ -82,22 +75,12 @@ jobs:
           components: rustfmt, clippy
 
       - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-
+        run: cargo fmt --all -- --check
       - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
+        run: cargo clippy -- -D warnings
 
       # TODO: we should check
       # CHANGES_IN_REPO=$(git status --porcelain)
       # after this, but I don't know how
       - name: Generate Schema
-        uses: actions-rs/cargo@v1
-        with:
-          command: schema
-          args: --locked
+        run: cargo schema --locked
