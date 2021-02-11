@@ -8,6 +8,7 @@ on:
 defaults:
   run:
     shell: bash
+    working-directory: packages/desmos
 
 jobs:
   test:
@@ -25,17 +26,11 @@ jobs:
           override: true
       - name: Compile WASM contract
         run: cargo wasm --locked
-        working-directory: packages/desmos
+
         env:
           RUSTFLAGS: "-C link-arg=-s"
       - name: Unit tests
         run: cargo unit-test --locked
-        env:
-          RUST_BACKTRACE: 1
-        working-directory: packages/desmos
-      - name: Integration tests
-        run: cargo integration-test --locked
-        working-directory: packages/desmos
         env:
           RUST_BACKTRACE: 1
   coverage:
@@ -78,14 +73,11 @@ jobs:
 
       - name: Run cargo fmt
         run: cargo fmt --all -- --check
-        working-directory: packages/desmos
       - name: Run cargo clippy
         run: cargo clippy -- -D warnings
-        working-directory: packages/desmos
 
       # TODO: we should check
       # CHANGES_IN_REPO=$(git status --porcelain)
       # after this, but I don't know how
       - name: Generate Schema
         run: cargo schema --locked
-        working-directory: packages/desmos
