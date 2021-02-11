@@ -8,7 +8,6 @@ on:
 defaults:
   run:
     shell: bash
-    working-directory: packages/desmos
 
 jobs:
   test:
@@ -26,23 +25,20 @@ jobs:
           override: true
       - name: Compile WASM contract
         uses: actions-rs/cargo@v1
-        with:
-          command: wasm
-          args: --locked
+        run: cargo wasm --locked
+        working-directory: packages/desmos
         env:
           RUSTFLAGS: "-C link-arg=-s"
       - name: Unit tests
         uses: actions-rs/cargo@v1
-        with:
-          command: unit-test
-          args: --locked
+        run: cargo unit-test --locked
         env:
           RUST_BACKTRACE: 1
+        working-directory: packages/desmos
       - name: Integration tests
         uses: actions-rs/cargo@v1
-        with:
-          command: integration-test
-          args: --locked
+        run: cargo integration-test --locked
+        working-directory: packages/desmos
         env:
           RUST_BACKTRACE: 1
   coverage:
@@ -85,21 +81,17 @@ jobs:
 
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-
+        run: cargo fmt --all -- --check
+        working-directory: packages/desmos
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
+        run: cargo clippy -- -D warnings
+        working-directory: packages/desmos
 
       # TODO: we should check
       # CHANGES_IN_REPO=$(git status --porcelain)
       # after this, but I don't know how
       - name: Generate Schema
         uses: actions-rs/cargo@v1
-        with:
-          command: schema
-          args: --locked
+        run: cargo schema --locked
+        working-directory: packages/desmos
