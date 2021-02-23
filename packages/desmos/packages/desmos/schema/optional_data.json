@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OptionalData",
+  "description": "This file contains all the desmos related types used inside the contract",
+  "type": "object",
+  "required": [
+    "key",
+    "value"
+  ],
+  "properties": {
+    "key": {
+      "type": "string"
+    },
+    "value": {
+      "type": "string"
+    }
+  }
+}

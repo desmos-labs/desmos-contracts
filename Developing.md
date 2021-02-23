@@ -74,7 +74,7 @@ to run it is this:
 docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/rust-optimizer:0.10.3
+  cosmwasm/rust-optimizer:0.10.7
 ```
 
 We must mount the contract code to `/code`. You can use a absolute path instead
@@ -92,5 +92,5 @@ This produces an `artifacts` directory with a `PROJECT_NAME.wasm`, as well as
 `checksums.txt`, containing the Sha256 hash of the wasm file.
 The wasm file is compiled deterministically (anyone else running the same
 docker on the same git commit should get the identical file with the same Sha256 hash).
-It is also stripped and minimized for upload to a blockchain (we will also 
+It is also stripped and minimized for upload to a blockchain (we will also
 gzip it in the uploading process to make it even smaller).
