@@ -12,30 +12,30 @@ pub enum DesmosQuery {
 
 impl CustomQuery for DesmosQuery {}
 
-/// PostsQueryResponse contains a list of posts
+/// PostsResponse contains a list of posts
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct PostsQueryResponse {
+pub struct PostsResponse {
     pub posts: Vec<Post>,
 }
 
 pub fn query_posts(querier: &QuerierWrapper) -> StdResult<Vec<Post>> {
     let request: QueryRequest<DesmosQuery> = DesmosQuery::Posts {}.into();
 
-    let res: PostsQueryResponse = querier.custom_query(&request)?;
+    let res: PostsResponse = querier.custom_query(&request)?;
     Ok(res.posts)
 }
 
-/// ReportsQueryResponse contains the list of reports associated with the given post_id
+/// ReportsResponse contains the list of reports associated with the given post_id
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct ReportsQueryResponse {
+pub struct ReportsResponse {
     pub reports: Vec<Report>,
 }
 
 pub fn query_post_reports(querier: &QuerierWrapper, post_id: String) -> StdResult<Vec<Report>> {
     let request: QueryRequest<DesmosQuery> = DesmosQuery::Reports { post_id }.into();
 
-    let res: ReportsQueryResponse = querier.custom_query(&request)?;
+    let res: ReportsResponse = querier.custom_query(&request)?;
     Ok(res.reports)
 }

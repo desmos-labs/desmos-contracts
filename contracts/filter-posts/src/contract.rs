@@ -6,7 +6,7 @@ use cosmwasm_std::{
 use crate::error::ContractError;
 use crate::msg::{HandleMsg, InitMsg, QueryMsg};
 use crate::state::{state_read, state_store, State};
-use desmos::custom_query::{query_post_reports, query_posts, PostsQueryResponse};
+use desmos::custom_query::{query_post_reports, query_posts, PostsResponse};
 use desmos::types::Post;
 
 // Note, you can use StdResult in some functions where you do not
@@ -81,13 +81,13 @@ pub fn is_under_reports_limit(deps: Deps, post: &Post, reports_limit: u16) -> bo
 }
 
 /// query_filtered_posts returns a list of filtered posts that has less reports than the reports_limit
-pub fn query_filtered_posts(deps: Deps, reports_limit: u16) -> StdResult<PostsQueryResponse> {
+pub fn query_filtered_posts(deps: Deps, reports_limit: u16) -> StdResult<PostsResponse> {
     let posts = query_posts(&deps.querier)?;
     let filtered_posts = posts
         .into_iter()
         .filter(|post| is_under_reports_limit(deps, post, reports_limit))
         .collect::<Vec<Post>>();
-    Ok(PostsQueryResponse {
+    Ok(PostsResponse {
         posts: filtered_posts,
     })
 }

@@ -5,7 +5,7 @@ use crate::msg::{HandleMsg, InitMsg};
 use crate::state::state_read;
 use cosmwasm_std::testing::{mock_env, mock_info};
 use cosmwasm_std::{attr, DepsMut, Env, HandleResponse, HumanAddr, MessageInfo};
-use desmos::custom_query::PostsQueryResponse;
+use desmos::custom_query::PostsResponse;
 use desmos::types::Post;
 
 fn setup_test(deps: DepsMut, env: Env, info: MessageInfo, default_reports_limit: u16) {
@@ -115,7 +115,7 @@ fn query_filtered_posts_filter_correctly() {
         creator: "default_creator".to_string(),
     };
 
-    let expected = PostsQueryResponse { posts: vec![post] };
+    let expected = PostsResponse { posts: vec![post] };
 
     // post has less reports than the limit
     let res = query_filtered_posts(deps.as_ref(), 3).unwrap();
@@ -123,5 +123,5 @@ fn query_filtered_posts_filter_correctly() {
 
     // post has equal reports to the limit
     let res = query_filtered_posts(deps.as_ref(), 1).unwrap();
-    assert_eq!(res, PostsQueryResponse { posts: vec![] })
+    assert_eq!(res, PostsResponse { posts: vec![] })
 }

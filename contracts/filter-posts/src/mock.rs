@@ -1,6 +1,6 @@
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{to_binary, Binary, Coin, ContractResult, HumanAddr, OwnedDeps, SystemResult};
-use desmos::custom_query::{DesmosQuery, PostsQueryResponse, ReportsQueryResponse};
+use desmos::custom_query::{DesmosQuery, PostsResponse, ReportsResponse};
 use desmos::types::{Post, Report};
 
 /// Replacement for cosmwasm_std::testing::mock_dependencies
@@ -36,7 +36,7 @@ pub fn custom_query_execute(query: &DesmosQuery) -> ContractResult<Binary> {
                 poll_data: vec![],
                 creator: String::from("default_creator"),
             };
-            to_binary(&PostsQueryResponse { posts: vec![post] })
+            to_binary(&PostsResponse { posts: vec![post] })
         }
         DesmosQuery::Reports { post_id } => {
             let report = Report {
@@ -45,7 +45,7 @@ pub fn custom_query_execute(query: &DesmosQuery) -> ContractResult<Binary> {
                 message: String::from("test"),
                 user: String::from("default_creator"),
             };
-            to_binary(&ReportsQueryResponse {
+            to_binary(&ReportsResponse {
                 reports: vec![report],
             })
         }
@@ -74,9 +74,9 @@ mod tests {
             poll_data: vec![],
             creator: String::from("default_creator"),
         };
-        let expected = PostsQueryResponse { posts: vec![post] };
+        let expected = PostsResponse { posts: vec![post] };
         let bz = custom_query_execute(&DesmosQuery::Posts {}).unwrap();
-        let response: PostsQueryResponse = from_binary(&bz).unwrap();
+        let response: PostsResponse = from_binary(&bz).unwrap();
         assert_eq!(response, expected)
     }
 
@@ -88,14 +88,14 @@ mod tests {
             message: String::from("test"),
             user: String::from("default_creator"),
         };
-        let expected = ReportsQueryResponse {
+        let expected = ReportsResponse {
             reports: vec![report],
         };
         let bz = custom_query_execute(&DesmosQuery::Reports {
             post_id: "id123".to_string(),
         })
         .unwrap();
-        let response: ReportsQueryResponse = from_binary(&bz).unwrap();
+        let response: ReportsResponse = from_binary(&bz).unwrap();
         assert_eq!(response, expected)
     }
 
@@ -107,7 +107,7 @@ mod tests {
         }
         .into();
         let wrapper = QuerierWrapper::new(&deps.querier);
-        let response: ReportsQueryResponse = wrapper.custom_query(&req).unwrap();
+        let response: ReportsResponse = wrapper.custom_query(&req).unwrap();
         let expected = vec![Report {
             post_id: String::from("id123"),
             _type: String::from("test"),

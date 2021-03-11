@@ -26,7 +26,7 @@ use cosmwasm_vm::testing::{
     MockStorage, MOCK_CONTRACT_ADDR,
 };
 use cosmwasm_vm::{Backend, Instance, Storage};
-use desmos::custom_query::{DesmosQuery, PostsQueryResponse};
+use desmos::custom_query::{DesmosQuery, PostsResponse};
 use desmos::types::Post;
 use filter_posts::mock::custom_query_execute;
 use filter_posts::msg::{HandleMsg, InitMsg, QueryMsg};
@@ -150,17 +150,17 @@ fn query_filtered_posts_filter_correctly() {
         creator: "default_creator".to_string(),
     };
 
-    let expected = PostsQueryResponse { posts: vec![post] };
+    let expected = PostsResponse { posts: vec![post] };
     let query_msg = QueryMsg::GetFilteredPosts { reports_limit: 3 };
 
     // post has less reports than the limit
     let res = query(&mut deps, mock_env(), query_msg).unwrap();
-    let unwrapped: PostsQueryResponse = from_binary(&res).unwrap();
+    let unwrapped: PostsResponse = from_binary(&res).unwrap();
     assert_eq!(unwrapped, expected);
 
     // post has equal reports to the limit
     let query_msg = QueryMsg::GetFilteredPosts { reports_limit: 1 };
     let res = query(&mut deps, mock_env(), query_msg).unwrap();
-    let unwrapped: PostsQueryResponse = from_binary(&res).unwrap();
-    assert_eq!(unwrapped, PostsQueryResponse { posts: vec![] })
+    let unwrapped: PostsResponse = from_binary(&res).unwrap();
+    assert_eq!(unwrapped, PostsResponse { posts: vec![] })
 }
