@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 /// This file contains all the desmos related types used inside the contract
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct OptionalData {
+pub struct OptionalDataEntry {
     pub key: String,
     pub value: String,
 }
@@ -40,10 +40,10 @@ pub struct Post {
     pub last_edited: String,
     pub allows_comments: bool,
     pub subspace: String,
-    pub optional_data: Vec<OptionalData>,
-    pub attachments: Vec<Attachment>,
-    pub poll_data: Vec<PollData>,
+    pub optional_data: Vec<OptionalDataEntry>,
     pub creator: String,
+    pub attachments: Vec<Attachment>,
+    pub poll_data: PollData,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
