@@ -27,13 +27,13 @@ use cosmwasm_vm::testing::{
 };
 use cosmwasm_vm::{Backend, Instance, Storage};
 use desmos::custom_query::{DesmosQuery, PostsResponse};
-use desmos::types::Post;
+use desmos::types::{Post, PollData};
 use filter_posts::mock::custom_query_execute;
 use filter_posts::msg::{HandleMsg, InitMsg, QueryMsg};
 use filter_posts::state::REPORTS_LIMIT_KEY;
 
 #[cfg(not(tarpaulin))]
-const WASM: &[u8] = include_bytes!("desmos_contracts.wasm");
+const WASM: &[u8] = include_bytes!("filter_posts.wasm");
 
 #[cfg(not(tarpaulin))]
 fn setup_test(
@@ -146,7 +146,13 @@ fn query_filtered_posts_filter_correctly() {
         subspace: "subspace".to_string(),
         optional_data: vec![],
         attachments: vec![],
-        poll_data: vec![],
+        poll_data: PollData{
+            question: "".to_string(),
+            provided_answers: vec![],
+            end_date: "".to_string(),
+            allows_multiple_answers: false,
+            allows_answer_edits: false
+        },
         creator: "default_creator".to_string(),
     };
 

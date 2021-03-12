@@ -145,10 +145,7 @@
           "type": "string"
         },
         "poll_data": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/PollData"
-          }
+          "$ref": "#/definitions/PollData"
         },
         "post_id": {
           "type": "string"
