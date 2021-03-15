@@ -6,7 +6,7 @@ use crate::state::state_read;
 use cosmwasm_std::testing::{mock_env, mock_info};
 use cosmwasm_std::{attr, DepsMut, Env, HandleResponse, HumanAddr, MessageInfo};
 use desmos::custom_query::PostsResponse;
-use desmos::types::{Post, PollData};
+use desmos::types::{PollData, Post};
 
 fn setup_test(deps: DepsMut, env: Env, info: MessageInfo, default_reports_limit: u16) {
     let init_msg = InitMsg {
@@ -80,12 +80,12 @@ fn is_under_reports_limit_checks_correctly() {
         subspace: "subspace".to_string(),
         optional_data: vec![],
         attachments: vec![],
-        poll_data: PollData{
+        poll_data: PollData {
             question: "".to_string(),
             provided_answers: vec![],
             end_date: "".to_string(),
             allows_multiple_answers: false,
-            allows_answer_edits: false
+            allows_answer_edits: false,
         },
         creator: "default_creator".to_string(),
     };
@@ -117,12 +117,12 @@ fn query_filtered_posts_filter_correctly() {
         subspace: "subspace".to_string(),
         optional_data: vec![],
         attachments: vec![],
-        poll_data: PollData{
+        poll_data: PollData {
             question: "".to_string(),
             provided_answers: vec![],
             end_date: "".to_string(),
             allows_multiple_answers: false,
-            allows_answer_edits: false
+            allows_answer_edits: false,
         },
         creator: "default_creator".to_string(),
     };

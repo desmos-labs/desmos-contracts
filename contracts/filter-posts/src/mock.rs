@@ -1,7 +1,7 @@
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{to_binary, Binary, Coin, ContractResult, HumanAddr, OwnedDeps, SystemResult};
 use desmos::custom_query::{DesmosQuery, PostsResponse, ReportsResponse};
-use desmos::types::{Post, Report, PollData};
+use desmos::types::{PollData, Post, Report};
 
 /// Replacement for cosmwasm_std::testing::mock_dependencies
 /// this use our CustomQuerier
@@ -33,12 +33,12 @@ pub fn custom_query_execute(query: &DesmosQuery) -> ContractResult<Binary> {
                 subspace: String::from("subspace"),
                 optional_data: vec![],
                 attachments: vec![],
-                poll_data: PollData{
+                poll_data: PollData {
                     question: "".to_string(),
                     provided_answers: vec![],
                     end_date: "".to_string(),
                     allows_multiple_answers: false,
-                    allows_answer_edits: false
+                    allows_answer_edits: false,
                 },
                 creator: String::from("default_creator"),
             };
@@ -77,12 +77,12 @@ mod tests {
             subspace: String::from("subspace"),
             optional_data: vec![],
             attachments: vec![],
-            poll_data: PollData{
+            poll_data: PollData {
                 question: "".to_string(),
                 provided_answers: vec![],
                 end_date: "".to_string(),
                 allows_multiple_answers: false,
-                allows_answer_edits: false
+                allows_answer_edits: false,
             },
             creator: String::from("default_creator"),
         };
