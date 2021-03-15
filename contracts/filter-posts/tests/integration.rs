@@ -26,7 +26,7 @@ use cosmwasm_vm::testing::{
     MockStorage, MOCK_CONTRACT_ADDR,
 };
 use cosmwasm_vm::{Backend, Instance, Storage};
-use desmos::custom_query::{DesmosQuery, PostsResponse};
+use desmos::query_types::{DesmosQuery, DesmosQueryWrapper, PostsResponse};
 use desmos::types::{PollData, Post};
 use filter_posts::mock::custom_query_execute;
 use filter_posts::msg::{HandleMsg, InitMsg, QueryMsg};
@@ -37,7 +37,7 @@ const WASM: &[u8] = include_bytes!("filter_posts.wasm");
 
 #[cfg(not(tarpaulin))]
 fn setup_test(
-    deps: &mut Instance<MockApi, MockStorage, MockQuerier<DesmosQuery>>,
+    deps: &mut Instance<MockApi, MockStorage, MockQuerier<DesmosQueryWrapper>>,
     env: Env,
     info: MessageInfo,
     report_limit: u16,
@@ -51,9 +51,9 @@ fn setup_test(
 #[cfg(not(tarpaulin))]
 pub fn mock_dependencies_with_custom_querier(
     contract_balance: &[Coin],
-) -> Backend<MockApi, MockStorage, MockQuerier<DesmosQuery>> {
+) -> Backend<MockApi, MockStorage, MockQuerier<DesmosQueryWrapper>> {
     let contract_addr = HumanAddr::from(MOCK_CONTRACT_ADDR);
-    let custom_querier: MockQuerier<DesmosQuery> =
+    let custom_querier: MockQuerier<DesmosQueryWrapper> =
         MockQuerier::new(&[(&contract_addr, contract_balance)])
             .with_custom_handler(|query| SystemResult::Ok(custom_query_execute(query)));
 

@@ -23,6 +23,17 @@
           }
         }
       }
+    },
+    {
+      "type": "object",
+      "required": [
+        "posts"
+      ],
+      "properties": {
+        "posts": {
+          "type": "object"
+        }
+      }
     }
   ]
 }

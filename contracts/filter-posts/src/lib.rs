@@ -6,8 +6,5 @@ pub mod state;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod mock;
 
-#[cfg(test)]
-mod contract_test;
-
 #[cfg(target_arch = "wasm32")]
 cosmwasm_std::create_entry_points!(contract);
