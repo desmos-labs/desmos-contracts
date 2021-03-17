@@ -19,7 +19,6 @@
       "type": "object",
       "required": [
         "mime_type",
-        "tags",
         "uri"
       ],
       "properties": {
@@ -27,7 +26,10 @@
           "type": "string"
         },
         "tags": {
-          "type": "array",
+          "type": [
+            "array",
+            "null"
+          ],
           "items": {
             "type": "string"
           }
@@ -38,7 +40,7 @@
       }
     },
     "OptionalData": {
-      "description": "This file contains all the desmos related types used inside the contract",
+      "description": "This file contains all the desmos related types used inside desmos' contracts",
       "type": "object",
       "required": [
         "key",
@@ -56,11 +58,11 @@
     "PollAnswer": {
       "type": "object",
       "required": [
-        "id",
+        "answer_id",
         "text"
       ],
       "properties": {
-        "id": {
+        "answer_id": {
           "type": "string"
         },
         "text": {
@@ -102,14 +104,10 @@
       "type": "object",
       "required": [
         "allows_comments",
-        "attachments",
         "created",
         "creator",
         "last_edited",
         "message",
-        "optional_data",
-        "parent_id",
-        "poll_data",
         "post_id",
         "subspace"
       ],
@@ -118,7 +116,10 @@
           "type": "boolean"
         },
         "attachments": {
-          "type": "array",
+          "type": [
+            "array",
+            "null"
+          ],
           "items": {
             "$ref": "#/definitions/Attachment"
           }
@@ -136,16 +137,29 @@
           "type": "string"
         },
         "optional_data": {
-          "type": "array",
+          "type": [
+            "array",
+            "null"
+          ],
           "items": {
             "$ref": "#/definitions/OptionalData"
           }
         },
         "parent_id": {
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "poll_data": {
-          "$ref": "#/definitions/PollData"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PollData"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "post_id": {
           "type": "string"

@@ -1,15 +1,19 @@
-use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
-use cosmwasm_std::{to_binary, Binary, Coin, ContractResult, HumanAddr, OwnedDeps, SystemResult};
-use desmos::custom_query::{DesmosQuery, PostsResponse, ReportsResponse};
-use desmos::types::{PollData, Post, Report};
+use cosmwasm_std::{
+    testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
+    to_binary, Binary, Coin, ContractResult, HumanAddr, OwnedDeps, SystemResult,
+};
+use desmos::{
+    query_types::{DesmosQuery, DesmosQueryWrapper, PostsResponse, ReportsResponse},
+    types::{PollData, Post, Report},
+};
 
 /// Replacement for cosmwasm_std::testing::mock_dependencies
 /// this use our CustomQuerier
 pub fn mock_dependencies_with_custom_querier(
     contract_balance: &[Coin],
-) -> OwnedDeps<MockStorage, MockApi, MockQuerier<DesmosQuery>> {
+) -> OwnedDeps<MockStorage, MockApi, MockQuerier<DesmosQueryWrapper>> {
     let contract_addr = HumanAddr::from(MOCK_CONTRACT_ADDR);
-    let custom_querier: MockQuerier<DesmosQuery> =
+    let custom_querier: MockQuerier<DesmosQueryWrapper> =
         MockQuerier::new(&[(&contract_addr, contract_balance)])
             .with_custom_handler(|query| SystemResult::Ok(custom_query_execute(&query)));
     OwnedDeps {
@@ -20,34 +24,34 @@ pub fn mock_dependencies_with_custom_querier(
 }
 
 /// custom_query_execute returns mock responses to custom queries
-pub fn custom_query_execute(query: &DesmosQuery) -> ContractResult<Binary> {
-    let response = match query {
+pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary> {
+    let response = match query.clone().query_data {
         DesmosQuery::Posts {} => {
             let post = Post {
                 post_id: "id123".to_string(),
-                parent_id: String::from("id345"),
+                parent_id: Some(String::from("id345")),
                 message: String::from("message"),
                 created: String::from("date-time"),
                 last_edited: String::from("date-time"),
                 allows_comments: false,
                 subspace: String::from("subspace"),
-                optional_data: vec![],
-                attachments: vec![],
-                poll_data: PollData {
+                optional_data: Some(vec![]),
+                attachments: Some(vec![]),
+                poll_data: Some(PollData {
                     question: "".to_string(),
                     provided_answers: vec![],
                     end_date: "".to_string(),
                     allows_multiple_answers: false,
                     allows_answer_edits: false,
-                },
+                }),
                 creator: String::from("default_creator"),
             };
             to_binary(&PostsResponse { posts: vec![post] })
         }
         DesmosQuery::Reports { post_id } => {
             let report = Report {
-                post_id: post_id.to_string(),
-                _type: String::from("test"),
+                post_id,
+                kind: String::from("test"),
                 message: String::from("test"),
                 user: String::from("default_creator"),
             };
@@ -62,32 +66,37 @@ pub fn custom_query_execute(query: &DesmosQuery) -> ContractResult<Binary> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::{from_binary, QuerierWrapper, QueryRequest};
+    use cosmwasm_std::{from_binary, QuerierWrapper};
+    use desmos::query_types::{DesmosRoute, PostsResponse};
     use desmos::types::Report;
 
     #[test]
     fn custom_query_execute_posts() {
         let post = Post {
             post_id: String::from("id123"),
-            parent_id: String::from("id345"),
+            parent_id: Some(String::from("id345")),
             message: String::from("message"),
             created: String::from("date-time"),
             last_edited: String::from("date-time"),
             allows_comments: false,
             subspace: String::from("subspace"),
-            optional_data: vec![],
-            attachments: vec![],
-            poll_data: PollData {
+            optional_data: Some(vec![]),
+            attachments: Some(vec![]),
+            poll_data: Some(PollData {
                 question: "".to_string(),
                 provided_answers: vec![],
                 end_date: "".to_string(),
                 allows_multiple_answers: false,
                 allows_answer_edits: false,
-            },
+            }),
             creator: String::from("default_creator"),
         };
         let expected = PostsResponse { posts: vec![post] };
-        let bz = custom_query_execute(&DesmosQuery::Posts {}).unwrap();
+        let desmos_query_wrapper = DesmosQueryWrapper {
+            route: DesmosRoute::Posts,
+            query_data: DesmosQuery::Posts {},
+        };
+        let bz = custom_query_execute(&desmos_query_wrapper).unwrap();
         let response: PostsResponse = from_binary(&bz).unwrap();
         assert_eq!(response, expected)
     }
@@ -96,17 +105,21 @@ mod tests {
     fn custom_query_execute_reports() {
         let report = Report {
             post_id: String::from("id123"),
-            _type: String::from("test"),
+            kind: String::from("test"),
             message: String::from("test"),
             user: String::from("default_creator"),
         };
         let expected = ReportsResponse {
             reports: vec![report],
         };
-        let bz = custom_query_execute(&DesmosQuery::Reports {
-            post_id: "id123".to_string(),
-        })
-        .unwrap();
+        let desmos_query_wrapper = DesmosQueryWrapper {
+            route: DesmosRoute::Posts,
+            query_data: DesmosQuery::Reports {
+                post_id: "id123".to_string(),
+            },
+        };
+
+        let bz = custom_query_execute(&desmos_query_wrapper).unwrap();
         let response: ReportsResponse = from_binary(&bz).unwrap();
         assert_eq!(response, expected)
     }
@@ -114,15 +127,18 @@ mod tests {
     #[test]
     fn custom_querier() {
         let deps = mock_dependencies_with_custom_querier(&[]);
-        let req: QueryRequest<_> = DesmosQuery::Reports {
-            post_id: "id123".to_string(),
+        let req = DesmosQueryWrapper {
+            route: DesmosRoute::Reports,
+            query_data: DesmosQuery::Reports {
+                post_id: "id123".to_string(),
+            },
         }
         .into();
         let wrapper = QuerierWrapper::new(&deps.querier);
         let response: ReportsResponse = wrapper.custom_query(&req).unwrap();
         let expected = vec![Report {
             post_id: String::from("id123"),
-            _type: String::from("test"),
+            kind: String::from("test"),
             message: String::from("test"),
             user: String::from("default_creator"),
         }];
