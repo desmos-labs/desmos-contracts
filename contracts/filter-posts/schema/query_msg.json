@@ -23,25 +23,6 @@
           }
         }
       }
-    },
-    {
-      "type": "object",
-      "required": [
-        "reports"
-      ],
-      "properties": {
-        "reports": {
-          "type": "object",
-          "required": [
-            "post_id"
-          ],
-          "properties": {
-            "post_id": {
-              "type": "string"
-            }
-          }
-        }
-      }
     }
   ]
 }
