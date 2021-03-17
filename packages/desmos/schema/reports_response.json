@@ -18,13 +18,13 @@
     "Report": {
       "type": "object",
       "required": [
-        "_type",
+        "kind",
         "message",
         "post_id",
         "user"
       ],
       "properties": {
-        "_type": {
+        "kind": {
           "type": "string"
         },
         "message": {

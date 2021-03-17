@@ -27,11 +27,19 @@
     {
       "type": "object",
       "required": [
-        "posts"
+        "reports"
       ],
       "properties": {
-        "posts": {
-          "type": "object"
+        "reports": {
+          "type": "object",
+          "required": [
+            "post_id"
+          ],
+          "properties": {
+            "post_id": {
+              "type": "string"
+            }
+          }
         }
       }
     }

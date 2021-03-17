@@ -73,7 +73,6 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetFilteredPosts { reports_limit } => {
             to_binary(&query_filtered_posts(deps, reports_limit)?)
         }
-        QueryMsg::Posts {} => to_binary(&query_posts(&deps.querier)?),
     }
 }
 
@@ -177,21 +176,21 @@ mod tests {
         let deps = mock_dependencies_with_custom_querier(&[]);
         let post = Post {
             post_id: "id123".to_string(),
-            parent_id: "id345".to_string(),
+            parent_id: Some("id345".to_string()),
             message: "message".to_string(),
             created: "date-time".to_string(),
             last_edited: "date-time".to_string(),
             allows_comments: false,
             subspace: "subspace".to_string(),
-            optional_data: vec![],
-            attachments: vec![],
-            poll_data: PollData {
+            optional_data: Some(vec![]),
+            attachments: Some(vec![]),
+            poll_data: Some(PollData {
                 question: "".to_string(),
                 provided_answers: vec![],
                 end_date: "".to_string(),
                 allows_multiple_answers: false,
                 allows_answer_edits: false,
-            },
+            }),
             creator: "default_creator".to_string(),
         };
 
@@ -214,21 +213,21 @@ mod tests {
 
         let post = Post {
             post_id: "id123".to_string(),
-            parent_id: "id345".to_string(),
+            parent_id: Some("id345".to_string()),
             message: "message".to_string(),
             created: "date-time".to_string(),
             last_edited: "date-time".to_string(),
             allows_comments: false,
             subspace: "subspace".to_string(),
-            optional_data: vec![],
-            attachments: vec![],
-            poll_data: PollData {
+            optional_data: Some(vec![]),
+            attachments: Some(vec![]),
+            poll_data: Some(PollData {
                 question: "".to_string(),
                 provided_answers: vec![],
                 end_date: "".to_string(),
                 allows_multiple_answers: false,
                 allows_answer_edits: false,
-            },
+            }),
             creator: "default_creator".to_string(),
         };
 

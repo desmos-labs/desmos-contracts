@@ -15,7 +15,7 @@ pub struct OptionalData {
 pub struct Attachment {
     pub uri: String,
     pub mime_type: String,
-    pub tags: Vec<String>,
+    pub tags: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -39,23 +39,23 @@ pub struct PollData {
 #[serde(rename_all = "snake_case")]
 pub struct Post {
     pub post_id: String,
-    pub parent_id: String,
+    pub parent_id: Option<String>,
     pub message: String,
     pub created: String,
     pub last_edited: String,
     pub allows_comments: bool,
     pub subspace: String,
-    pub optional_data: Vec<OptionalData>,
+    pub optional_data: Option<Vec<OptionalData>>,
     pub creator: String,
-    pub attachments: Vec<Attachment>,
-    pub poll_data: PollData,
+    pub attachments: Option<Vec<Attachment>>,
+    pub poll_data: Option<PollData>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct Report {
     pub post_id: String,
-    pub _type: String,
+    pub kind: String,
     pub message: String,
     pub user: String,
 }

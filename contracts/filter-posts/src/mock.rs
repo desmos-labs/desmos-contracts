@@ -29,21 +29,21 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
         DesmosQuery::Posts {} => {
             let post = Post {
                 post_id: "id123".to_string(),
-                parent_id: String::from("id345"),
+                parent_id: Some(String::from("id345")),
                 message: String::from("message"),
                 created: String::from("date-time"),
                 last_edited: String::from("date-time"),
                 allows_comments: false,
                 subspace: String::from("subspace"),
-                optional_data: vec![],
-                attachments: vec![],
-                poll_data: PollData {
+                optional_data: Some(vec![]),
+                attachments: Some(vec![]),
+                poll_data: Some(PollData {
                     question: "".to_string(),
                     provided_answers: vec![],
                     end_date: "".to_string(),
                     allows_multiple_answers: false,
                     allows_answer_edits: false,
-                },
+                }),
                 creator: String::from("default_creator"),
             };
             to_binary(&PostsResponse { posts: vec![post] })
@@ -51,7 +51,7 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
         DesmosQuery::Reports { post_id } => {
             let report = Report {
                 post_id,
-                _type: String::from("test"),
+                kind: String::from("test"),
                 message: String::from("test"),
                 user: String::from("default_creator"),
             };
@@ -66,7 +66,7 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::{from_binary, QuerierWrapper, QueryRequest};
+    use cosmwasm_std::{from_binary, QuerierWrapper};
     use desmos::query_types::{DesmosRoute, PostsResponse};
     use desmos::types::Report;
 
@@ -74,21 +74,21 @@ mod tests {
     fn custom_query_execute_posts() {
         let post = Post {
             post_id: String::from("id123"),
-            parent_id: String::from("id345"),
+            parent_id: Some(String::from("id345")),
             message: String::from("message"),
             created: String::from("date-time"),
             last_edited: String::from("date-time"),
             allows_comments: false,
             subspace: String::from("subspace"),
-            optional_data: vec![],
-            attachments: vec![],
-            poll_data: PollData {
+            optional_data: Some(vec![]),
+            attachments: Some(vec![]),
+            poll_data: Some(PollData {
                 question: "".to_string(),
                 provided_answers: vec![],
                 end_date: "".to_string(),
                 allows_multiple_answers: false,
                 allows_answer_edits: false,
-            },
+            }),
             creator: String::from("default_creator"),
         };
         let expected = PostsResponse { posts: vec![post] };
@@ -105,7 +105,7 @@ mod tests {
     fn custom_query_execute_reports() {
         let report = Report {
             post_id: String::from("id123"),
-            _type: String::from("test"),
+            kind: String::from("test"),
             message: String::from("test"),
             user: String::from("default_creator"),
         };
@@ -138,7 +138,7 @@ mod tests {
         let response: ReportsResponse = wrapper.custom_query(&req).unwrap();
         let expected = vec![Report {
             post_id: String::from("id123"),
-            _type: String::from("test"),
+            kind: String::from("test"),
             message: String::from("test"),
             user: String::from("default_creator"),
         }];

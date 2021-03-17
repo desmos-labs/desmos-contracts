@@ -21,16 +21,22 @@ use cosmwasm_std::{
     MessageInfo, SystemResult,
 };
 use cosmwasm_storage::to_length_prefixed;
-use cosmwasm_vm::testing::{
-    handle, init, mock_env, mock_info, mock_instance_options, query, MockApi, MockQuerier,
-    MockStorage, MOCK_CONTRACT_ADDR,
+use cosmwasm_vm::{
+    Backend, Instance, Storage,
+    testing::{
+        handle, init, mock_env, mock_info, mock_instance_options, query, MockApi, MockQuerier,
+        MockStorage, MOCK_CONTRACT_ADDR,
+    }
 };
-use cosmwasm_vm::{Backend, Instance, Storage};
-use desmos::query_types::{DesmosQuery, DesmosQueryWrapper, PostsResponse};
-use desmos::types::{PollData, Post};
-use filter_posts::mock::custom_query_execute;
-use filter_posts::msg::{HandleMsg, InitMsg, QueryMsg};
-use filter_posts::state::REPORTS_LIMIT_KEY;
+use desmos::{
+    query_types::{DesmosQueryWrapper, PostsResponse},
+    types::{PollData, Post}
+};
+use filter_posts::{
+    mock::custom_query_execute,
+    msg::{HandleMsg, InitMsg, QueryMsg},
+    state::REPORTS_LIMIT_KEY
+};
 
 #[cfg(not(tarpaulin))]
 const WASM: &[u8] = include_bytes!("filter_posts.wasm");
@@ -138,21 +144,21 @@ fn query_filtered_posts_filter_correctly() {
 
     let post = Post {
         post_id: "id123".to_string(),
-        parent_id: "id345".to_string(),
+        parent_id: Some("id345".to_string()),
         message: "message".to_string(),
         created: "date-time".to_string(),
         last_edited: "date-time".to_string(),
         allows_comments: false,
         subspace: "subspace".to_string(),
-        optional_data: vec![],
-        attachments: vec![],
-        poll_data: PollData {
+        optional_data: Some(vec![]),
+        attachments: Some(vec![]),
+        poll_data: Some(PollData {
             question: "".to_string(),
             provided_answers: vec![],
             end_date: "".to_string(),
             allows_multiple_answers: false,
             allows_answer_edits: false,
-        },
+        }),
         creator: "default_creator".to_string(),
     };
 

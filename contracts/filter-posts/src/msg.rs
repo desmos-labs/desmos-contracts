@@ -18,7 +18,4 @@ pub enum HandleMsg {
 pub enum QueryMsg {
     /// GetFilteredPosts returns a list of filtered posts where each post has been reported at most (reports_limit - 1) time
     GetFilteredPosts { reports_limit: u16 },
-
-    ///
-    Posts {},
 }
