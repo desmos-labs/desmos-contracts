@@ -22,20 +22,20 @@ use cosmwasm_std::{
 };
 use cosmwasm_storage::to_length_prefixed;
 use cosmwasm_vm::{
-    Backend, Instance, Storage,
     testing::{
         handle, init, mock_env, mock_info, mock_instance_options, query, MockApi, MockQuerier,
         MockStorage, MOCK_CONTRACT_ADDR,
-    }
+    },
+    Backend, Instance, Storage,
 };
 use desmos::{
     query_types::{DesmosQueryWrapper, PostsResponse},
-    types::{PollData, Post}
+    types::{PollData, Post},
 };
 use filter_posts::{
     mock::custom_query_execute,
     msg::{HandleMsg, InitMsg, QueryMsg},
-    state::REPORTS_LIMIT_KEY
+    state::REPORTS_LIMIT_KEY,
 };
 
 #[cfg(not(tarpaulin))]
