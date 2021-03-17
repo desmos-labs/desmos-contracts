@@ -21,7 +21,7 @@ pub struct Attachment {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PollAnswer {
-    pub id: String,
+    pub answer_id: String,
     pub text: String,
 }
 

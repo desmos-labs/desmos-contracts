@@ -3,11 +3,11 @@
   "title": "PollAnswer",
   "type": "object",
   "required": [
-    "id",
+    "answer_id",
     "text"
   ],
   "properties": {
-    "id": {
+    "answer_id": {
       "type": "string"
     },
     "text": {
