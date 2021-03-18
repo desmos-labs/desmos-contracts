@@ -1,10 +1,10 @@
 [package]
-name = "filter-posts"
+name = "cw-desmos-filter-posts"
 version = "0.1.0"
 authors = ["bragaz <leo.braga95@gmail.com>"]
 edition = "2018"
 description = "A cosmwasm contract that filters desmos' network posts based on the number of reports a post has"
-license = "Apache 2.0"
+license = "Apache-2.0"
 repository = "https://github.com/desmos-labs/desmos-contracts"
 
 exclude = [
