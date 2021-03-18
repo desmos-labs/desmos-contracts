@@ -32,10 +32,11 @@ use desmos::{
     query_types::{DesmosQueryWrapper, PostsResponse},
     types::{PollData, Post},
 };
-use filter_posts::{
+
+use cw_desmos_filter_posts::{
+    msg::{InitMsg, HandleMsg, QueryMsg},
     mock::custom_query_execute,
-    msg::{HandleMsg, InitMsg, QueryMsg},
-    state::REPORTS_LIMIT_KEY,
+    state::REPORTS_LIMIT_KEY
 };
 
 #[cfg(not(tarpaulin))]
