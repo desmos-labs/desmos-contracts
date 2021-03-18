@@ -34,9 +34,9 @@ as this will be included in the body of a transaction. We also want to have a
 reproducible build process, so third parties can verify that the uploaded Wasm
 code did indeed come from the claimed rust code.
 
-To solve both these issues, we have produced `rust-optimizer`, a docker image to
-produce an extremely small build output in a consistent manner. The suggest way
-to run it is this:
+To solve both these issues, we use the [rust-optimizer](https://github.com/CosmWasm/rust-optimizer)
+provided by [Cosmwasm](https://github.com/CosmWasm) team, a docker image to produce an extremely small build output in a consistent manner.
+The suggest way to run it is this:
 
 ```sh
 docker run --rm -v "$(pwd)":/code \
@@ -46,19 +46,16 @@ docker run --rm -v "$(pwd)":/code \
 ```
 
 We must mount the contract code to `/code`. You can use a absolute path instead
-of `$(pwd)` if you don't want to `cd` to the directory first. The other two
-volumes are nice for speedup. Mounting `/code/target` in particular is useful
-to avoid docker overwriting your local dev files with root permissions.
-Note the `/code/target` cache is unique for each contract being compiled to limit
-interference, while the registry cache is global.
-
-This is rather slow compared to local compilations, especially the first compile
-of a given contract. The use of the two volume caches is very useful to speed up
-following compiles of the same contract.
-
+of `$(pwd)` if you don't want to `cd` to the directory first.
 This produces an `artifacts` directory with a `PROJECT_NAME.wasm`, as well as
 `checksums.txt`, containing the Sha256 hash of the wasm file.
 The wasm file is compiled deterministically (anyone else running the same
 docker on the same git commit should get the identical file with the same Sha256 hash).
-It is also stripped and minimized for upload to a blockchain (we will also
-gzip it in the uploading process to make it even smaller).
+It is also stripped and minimized for upload to a blockchain.
+
+## Publishing contracts on crates.io
+Once you've finished to build (and test) your contract, it's time to publish it into [crates.io](https://crates.io).
+```sh
+cargo package
+cargo publish
+```
