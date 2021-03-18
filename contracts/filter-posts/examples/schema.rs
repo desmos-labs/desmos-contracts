@@ -2,7 +2,7 @@ use std::{env::current_dir, fs::create_dir_all};
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
-use filter_posts::{
+use cw_desmos_filter_posts::{
     msg::{HandleMsg, InitMsg, QueryMsg},
     state::State,
 };
