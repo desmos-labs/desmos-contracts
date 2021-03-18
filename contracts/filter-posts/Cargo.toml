@@ -6,6 +6,7 @@ edition = "2018"
 description = "A cosmwasm contract that filters desmos' network posts based on the number of reports a post has"
 license = "Apache-2.0"
 repository = "https://github.com/desmos-labs/desmos-contracts"
+keywords = ["desmos-network", "social-network", "blockchain", "smart-contracts"]
 
 exclude = [
   # Those files are rust-optimizer artifacts.
