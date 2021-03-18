@@ -34,9 +34,9 @@ use desmos::{
 };
 
 use cw_desmos_filter_posts::{
-    msg::{InitMsg, HandleMsg, QueryMsg},
     mock::custom_query_execute,
-    state::REPORTS_LIMIT_KEY
+    msg::{HandleMsg, InitMsg, QueryMsg},
+    state::REPORTS_LIMIT_KEY,
 };
 
 #[cfg(not(tarpaulin))]
