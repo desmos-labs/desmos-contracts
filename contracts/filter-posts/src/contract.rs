@@ -1,11 +1,10 @@
 use crate::{
     error::ContractError,
-    msg::{HandleMsg, InitMsg, QueryMsg},
+    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::{state_read, state_store, State},
 };
 use cosmwasm_std::{
-    attr, to_binary, Binary, Deps, DepsMut, Env, HandleResponse, InitResponse, MessageInfo,
-    StdResult,
+    attr, entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
 use desmos::{
     custom_query::{query_post_reports, query_posts},
@@ -14,27 +13,34 @@ use desmos::{
 };
 
 // Note, you can use StdResult in some functions where you do not
-// make use of the custom errors
-pub fn init(deps: DepsMut, _env: Env, _: MessageInfo, msg: InitMsg) -> StdResult<InitResponse> {
+// make use of the custom errors and declare a custom Error variant for the ones where you will want to make use of it
+
+#[entry_point]
+pub fn instantiate(
+    deps: DepsMut,
+    _env: Env,
+    _: MessageInfo,
+    msg: InstantiateMsg,
+) -> StdResult<Response> {
     let state = State {
         default_reports_limit: msg.reports_limit,
     };
     state_store(deps.storage).save(&state)?;
 
-    let mut res = InitResponse::default();
+    let mut res = Response::default();
     res.attributes = vec![attr("action", "set_default_reports_limit")];
     Ok(res)
 }
 
-// And declare a custom Error variant for the ones where you will want to make use of it
-pub fn handle(
+#[entry_point]
+pub fn execute(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    msg: HandleMsg,
-) -> Result<HandleResponse, ContractError> {
+    msg: ExecuteMsg,
+) -> Result<Response, ContractError> {
     match msg {
-        HandleMsg::EditReportsLimit {
+        ExecuteMsg::EditReportsLimit {
             reports_limit: report_limit,
         } => handle_report_limit_edit(deps, info, report_limit),
     }
@@ -44,7 +50,7 @@ pub fn handle_report_limit_edit(
     deps: DepsMut,
     info: MessageInfo,
     report_limit: u16,
-) -> Result<HandleResponse, ContractError> {
+) -> Result<Response, ContractError> {
     let state = state_read(deps.storage).load()?;
 
     // if the given report_limit is equal to the stored one returns error
@@ -56,7 +62,8 @@ pub fn handle_report_limit_edit(
         default_reports_limit: report_limit,
     })?;
 
-    let response = HandleResponse {
+    let response = Response {
+        submessages: vec![],
         messages: vec![],
         attributes: vec![
             attr("action", "edit_reports_limit"),
@@ -68,6 +75,7 @@ pub fn handle_report_limit_edit(
     Ok(response)
 }
 
+#[entry_point]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::GetFilteredPosts { reports_limit } => {
@@ -102,33 +110,28 @@ pub fn query_filtered_posts(deps: Deps, reports_limit: u16) -> StdResult<PostsRe
 mod tests {
     use super::*;
     use crate::{
-        contract::{handle, init, is_under_reports_limit, query_filtered_posts},
+        contract::{execute, instantiate, is_under_reports_limit, query_filtered_posts},
         mock::mock_dependencies_with_custom_querier,
-        msg::{HandleMsg, InitMsg},
+        msg::{ExecuteMsg, InstantiateMsg},
     };
-    use cosmwasm_std::{
-        testing::{mock_env, mock_info},
-        HumanAddr,
-    };
+    use cosmwasm_std::testing::{mock_env, mock_info};
     use desmos::types::PollData;
 
     fn setup_test(deps: DepsMut, env: Env, info: MessageInfo, default_reports_limit: u16) {
-        let init_msg = InitMsg {
+        let init_msg = InstantiateMsg {
             reports_limit: default_reports_limit,
         };
-        init(deps, env, info, init_msg).unwrap();
+        instantiate(deps, env, info, init_msg).unwrap();
     }
 
     #[test]
     fn test_init() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let info = mock_info("addr0001", &[]);
 
-        let sender_addr = HumanAddr::from("addr0001");
-        let info = mock_info(&sender_addr, &[]);
+        let init_msg = InstantiateMsg { reports_limit: 5 };
 
-        let init_msg = InitMsg { reports_limit: 5 };
-
-        let res = init(deps.as_mut(), mock_env(), info, init_msg).unwrap();
+        let res = instantiate(deps.as_mut(), mock_env(), info, init_msg).unwrap();
         assert_eq!(0, res.messages.len());
 
         let exp_log = vec![attr("action", "set_default_reports_limit")];
@@ -143,11 +146,11 @@ mod tests {
     #[test]
     fn test_handle() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
-        let editor_addr = HumanAddr::from("editor");
-        let info = mock_info(&editor_addr, &[]);
+        let info = mock_info("editor", &[]);
         setup_test(deps.as_mut(), mock_env(), info.clone(), 3);
 
-        let exp_res = HandleResponse {
+        let exp_res = Response {
+            submessages: vec![],
             messages: vec![],
             attributes: vec![
                 attr("action", "edit_reports_limit"),
@@ -156,15 +159,15 @@ mod tests {
             data: None,
         };
 
-        let msg = HandleMsg::EditReportsLimit { reports_limit: 5 };
-        let res = handle(deps.as_mut(), mock_env(), info.clone(), msg.clone());
+        let msg = ExecuteMsg::EditReportsLimit { reports_limit: 5 };
+        let res = execute(deps.as_mut(), mock_env(), info.clone(), msg.clone());
 
         // assert it not fails
         assert!(res.is_ok());
 
         assert_eq!(res.unwrap(), exp_res);
 
-        let res = handle(deps.as_mut(), mock_env(), info.clone(), msg.clone());
+        let res = execute(deps.as_mut(), mock_env(), info.clone(), msg.clone());
         match res.unwrap_err() {
             ContractError::EqualsReportLimits { .. } => {}
             _ => panic!("expected unregistered error"),
@@ -206,8 +209,7 @@ mod tests {
     #[test]
     fn query_filtered_posts_filter_correctly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
-        let sender_addr = HumanAddr::from("addr0001");
-        let info = mock_info(&sender_addr, &[]);
+        let info = mock_info("addr0001", &[]);
 
         setup_test(deps.as_mut(), mock_env(), info, 5);
 

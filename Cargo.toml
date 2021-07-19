@@ -1,5 +1,5 @@
 [workspace]
-members = ["packages/desmos", "contracts/filter-posts"]
+members = ["packages/*", "contracts/*"]
 
 [profile.release.package.desmos]
 codegen-units = 1

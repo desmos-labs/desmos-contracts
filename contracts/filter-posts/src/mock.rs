@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
-    to_binary, Binary, Coin, ContractResult, HumanAddr, OwnedDeps, SystemResult,
+    to_binary, Binary, Coin, ContractResult, OwnedDeps, SystemResult,
 };
 use desmos::{
     query_types::{DesmosQuery, DesmosQueryWrapper, PostsResponse, ReportsResponse},
@@ -12,7 +12,7 @@ use desmos::{
 pub fn mock_dependencies_with_custom_querier(
     contract_balance: &[Coin],
 ) -> OwnedDeps<MockStorage, MockApi, MockQuerier<DesmosQueryWrapper>> {
-    let contract_addr = HumanAddr::from(MOCK_CONTRACT_ADDR);
+    let contract_addr = MOCK_CONTRACT_ADDR;
     let custom_querier: MockQuerier<DesmosQueryWrapper> =
         MockQuerier::new(&[(&contract_addr, contract_balance)])
             .with_custom_handler(|query| SystemResult::Ok(custom_query_execute(&query)));
@@ -128,7 +128,7 @@ mod tests {
     fn custom_querier() {
         let deps = mock_dependencies_with_custom_querier(&[]);
         let req = DesmosQueryWrapper {
-            route: DesmosRoute::Reports,
+            route: DesmosRoute::Posts,
             query_data: DesmosQuery::Reports {
                 post_id: "id123".to_string(),
             },
