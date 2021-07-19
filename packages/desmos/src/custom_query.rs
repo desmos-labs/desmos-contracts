@@ -15,7 +15,7 @@ pub fn query_posts(querier: &QuerierWrapper) -> StdResult<PostsResponse> {
 
 pub fn query_post_reports(querier: &QuerierWrapper, post_id: String) -> StdResult<ReportsResponse> {
     let request = DesmosQueryWrapper {
-        route: DesmosRoute::Reports,
+        route: DesmosRoute::Posts,
         query_data: DesmosQuery::Reports { post_id },
     };
 
