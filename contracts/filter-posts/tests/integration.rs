@@ -29,7 +29,7 @@ use cosmwasm_vm::{
 };
 use desmos::{
     query_types::{DesmosQueryWrapper, PostsResponse},
-    types::{PollData, Post},
+    types::{Poll, Post},
 };
 
 use cw_desmos_filter_posts::{
@@ -151,7 +151,7 @@ fn query_filtered_posts_filter_correctly() {
         subspace: "subspace".to_string(),
         optional_data: Some(vec![]),
         attachments: Some(vec![]),
-        poll_data: Some(PollData {
+        poll: Some(Poll {
             question: "".to_string(),
             provided_answers: vec![],
             end_date: "".to_string(),

@@ -115,7 +115,7 @@ mod tests {
         msg::{ExecuteMsg, InstantiateMsg},
     };
     use cosmwasm_std::testing::{mock_env, mock_info};
-    use desmos::types::PollData;
+    use desmos::types::Poll;
 
     fn setup_test(deps: DepsMut, env: Env, info: MessageInfo, default_reports_limit: u16) {
         let init_msg = InstantiateMsg {
@@ -187,7 +187,7 @@ mod tests {
             subspace: "subspace".to_string(),
             optional_data: Some(vec![]),
             attachments: Some(vec![]),
-            poll_data: Some(PollData {
+            poll: Some(Poll {
                 question: "".to_string(),
                 provided_answers: vec![],
                 end_date: "".to_string(),
@@ -223,7 +223,7 @@ mod tests {
             subspace: "subspace".to_string(),
             optional_data: Some(vec![]),
             attachments: Some(vec![]),
-            poll_data: Some(PollData {
+            poll: Some(Poll {
                 question: "".to_string(),
                 provided_answers: vec![],
                 end_date: "".to_string(),

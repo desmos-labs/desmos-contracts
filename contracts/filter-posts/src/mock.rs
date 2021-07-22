@@ -4,7 +4,7 @@ use cosmwasm_std::{
 };
 use desmos::{
     query_types::{DesmosQuery, DesmosQueryWrapper, PostsResponse, ReportsResponse},
-    types::{PollData, Post, Report},
+    types::{Poll, Post, Report},
 };
 
 /// Replacement for cosmwasm_std::testing::mock_dependencies
@@ -37,7 +37,7 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
                 subspace: String::from("subspace"),
                 optional_data: Some(vec![]),
                 attachments: Some(vec![]),
-                poll_data: Some(PollData {
+                poll: Some(Poll {
                     question: "".to_string(),
                     provided_answers: vec![],
                     end_date: "".to_string(),
@@ -82,7 +82,7 @@ mod tests {
             subspace: String::from("subspace"),
             optional_data: Some(vec![]),
             attachments: Some(vec![]),
-            poll_data: Some(PollData {
+            poll: Some(Poll {
                 question: "".to_string(),
                 provided_answers: vec![],
                 end_date: "".to_string(),
