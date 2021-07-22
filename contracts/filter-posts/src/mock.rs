@@ -33,9 +33,9 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
                 message: String::from("message"),
                 created: String::from("date-time"),
                 last_edited: String::from("date-time"),
-                allows_comments: false,
+                comments_state: String::from("ALLOWED"),
                 subspace: String::from("subspace"),
-                optional_data: Some(vec![]),
+                additional_attributes: Some(vec![]),
                 attachments: Some(vec![]),
                 poll: Some(Poll {
                     question: "".to_string(),
@@ -78,9 +78,9 @@ mod tests {
             message: String::from("message"),
             created: String::from("date-time"),
             last_edited: String::from("date-time"),
-            allows_comments: false,
+            comments_state: String::from("ALLOWED"),
             subspace: String::from("subspace"),
-            optional_data: Some(vec![]),
+            additional_attributes: Some(vec![]),
             attachments: Some(vec![]),
             poll: Some(Poll {
                 question: "".to_string(),

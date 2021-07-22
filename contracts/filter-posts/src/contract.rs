@@ -27,8 +27,10 @@ pub fn instantiate(
     };
     state_store(deps.storage).save(&state)?;
 
-    let mut res = Response::default();
-    res.attributes = vec![attr("action", "set_default_reports_limit")];
+    let res = Response {
+        attributes: vec![attr("action", "set_default_reports_limit")],
+        ..Response::default()
+    };
     Ok(res)
 }
 
@@ -63,13 +65,11 @@ pub fn handle_report_limit_edit(
     })?;
 
     let response = Response {
-        submessages: vec![],
-        messages: vec![],
         attributes: vec![
             attr("action", "edit_reports_limit"),
             attr("editor", info.sender),
         ],
-        data: None,
+        ..Response::default()
     };
 
     Ok(response)
@@ -150,13 +150,11 @@ mod tests {
         setup_test(deps.as_mut(), mock_env(), info.clone(), 3);
 
         let exp_res = Response {
-            submessages: vec![],
-            messages: vec![],
             attributes: vec![
                 attr("action", "edit_reports_limit"),
                 attr("editor", info.sender.clone()),
             ],
-            data: None,
+            ..Response::default()
         };
 
         let msg = ExecuteMsg::EditReportsLimit { reports_limit: 5 };
@@ -183,12 +181,12 @@ mod tests {
             message: "message".to_string(),
             created: "date-time".to_string(),
             last_edited: "date-time".to_string(),
-            allows_comments: false,
+            comments_state: "ALLOWED".to_string(),
             subspace: "subspace".to_string(),
-            optional_data: Some(vec![]),
+            additional_attributes: Some(vec![]),
             attachments: Some(vec![]),
             poll: Some(Poll {
-                question: "".to_string(),
+                question: "question".to_string(),
                 provided_answers: vec![],
                 end_date: "".to_string(),
                 allows_multiple_answers: false,
@@ -219,9 +217,9 @@ mod tests {
             message: "message".to_string(),
             created: "date-time".to_string(),
             last_edited: "date-time".to_string(),
-            allows_comments: false,
+            comments_state: "ALLOWED".to_string(),
             subspace: "subspace".to_string(),
-            optional_data: Some(vec![]),
+            additional_attributes: Some(vec![]),
             attachments: Some(vec![]),
             poll: Some(Poll {
                 question: "".to_string(),
