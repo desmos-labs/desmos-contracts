@@ -22,7 +22,7 @@ use cosmwasm_std::{
 use cosmwasm_storage::to_length_prefixed;
 use cosmwasm_vm::{
     testing::{
-        handle, init, mock_env, mock_info, mock_instance_options, query, MockApi, MockQuerier,
+        execute, instantiate, mock_env, mock_info, mock_instance_options, query, MockApi, MockQuerier,
         MockStorage, MOCK_CONTRACT_ADDR,
     },
     Backend, Instance, Storage,
@@ -51,7 +51,7 @@ fn setup_test(
     let init_msg = InstantiateMsg {
         reports_limit: report_limit,
     };
-    let _res: Response = init(deps, env.clone(), info, init_msg).unwrap();
+    let _res: Response = instantiate(deps, env.clone(), info, init_msg).unwrap();
 }
 
 #[cfg(not(tarpaulin))]
@@ -75,13 +75,13 @@ fn test_init() {
     let custom = mock_dependencies_with_custom_querier(&[]);
     let instance_options = mock_instance_options();
     let mut deps =
-        Instance::from_code(WASM, custom, instance_options.2, instance_options.1).unwrap();
+        Instance::from_code(WASM, custom, instance_options.0, instance_options.1).unwrap();
 
     let info = mock_info("addr0001", &[]);
 
     let init_msg = InstantiateMsg { reports_limit: 5 };
 
-    let res: Response = init(&mut deps, mock_env(), info, init_msg).unwrap();
+    let res: Response = instantiate(&mut deps, mock_env(), info, init_msg).unwrap();
     assert_eq!(0, res.messages.len());
 
     let exp_log = vec![attr("action", "set_default_reports_limit")];
@@ -105,28 +105,26 @@ fn test_handle() {
     let custom = mock_dependencies_with_custom_querier(&[]);
     let instance_options = mock_instance_options();
     let mut deps =
-        Instance::from_code(WASM, custom, instance_options.2, instance_options.1).unwrap();
+        Instance::from_code(WASM, custom, instance_options.0, instance_options.1).unwrap();
 
     let info = mock_info("addr0001", &[]);
 
     setup_test(&mut deps, mock_env(), info.clone(), 3);
 
     let exp_res = Response {
-        submessages: vec![],
-        messages: vec![],
         attributes: vec![
             attr("action", "edit_reports_limit"),
             attr("editor", info.sender.clone()),
         ],
-        data: None,
+        ..Response::default()
     };
 
     let msg = ExecuteMsg::EditReportsLimit { reports_limit: 5 };
-    let res: ContractResult<Response> = handle(&mut deps, mock_env(), info.clone(), msg.clone());
+    let res: ContractResult<Response> = execute(&mut deps, mock_env(), info.clone(), msg.clone());
 
     assert_eq!(res.unwrap(), exp_res);
 
-    let res: ContractResult<Response> = handle(&mut deps, mock_env(), info.clone(), msg.clone());
+    let res: ContractResult<Response> = execute(&mut deps, mock_env(), info.clone(), msg.clone());
 
     assert!(res
         .unwrap_err()
@@ -139,7 +137,7 @@ fn query_filtered_posts_filter_correctly() {
     let custom = mock_dependencies_with_custom_querier(&[]);
     let instance_options = mock_instance_options();
     let mut deps =
-        Instance::from_code(WASM, custom, instance_options.2, instance_options.1).unwrap();
+        Instance::from_code(WASM, custom, instance_options.0, instance_options.1).unwrap();
 
     let post = Post {
         post_id: "id123".to_string(),
@@ -147,9 +145,9 @@ fn query_filtered_posts_filter_correctly() {
         message: "message".to_string(),
         created: "date-time".to_string(),
         last_edited: "date-time".to_string(),
-        allows_comments: false,
+        comments_state: "ALLOWED".to_string(),
         subspace: "subspace".to_string(),
-        optional_data: Some(vec![]),
+        additional_attributes: Some(vec![]),
         attachments: Some(vec![]),
         poll: Some(Poll {
             question: "".to_string(),

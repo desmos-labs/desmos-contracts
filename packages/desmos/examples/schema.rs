@@ -4,7 +4,7 @@ use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
 use desmos::{
     query_types::{PostsResponse, ReportsResponse},
-    types::{Attachment, Attribute, ProvidedAnswer, Poll, Post, Report},
+    types::{Attachment, Attribute, Poll, Post, ProvidedAnswer, Report},
 };
 
 fn main() {
