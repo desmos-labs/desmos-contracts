@@ -133,7 +133,7 @@ mod tests {
                 post_id: "id123".to_string(),
             },
         }
-        .into();
+            .into();
         let wrapper = QuerierWrapper::new(&deps.querier);
         let response: ReportsResponse = wrapper.custom_query(&req).unwrap();
         let expected = vec![Report {

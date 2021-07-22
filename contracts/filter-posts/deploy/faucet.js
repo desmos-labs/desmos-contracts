@@ -2,10 +2,10 @@
 
 /* eslint-disable @typescript-eslint/naming-convention */
 const {GasPrice} = require("@cosmjs/launchpad");
-const { stringToPath } = require("@cosmjs/crypto")
-const { coins } = require("@cosmjs/launchpad");
-const { DirectSecp256k1HdWallet } = require("@cosmjs/proto-signing");
-const { assertIsBroadcastTxSuccess, SigningStargateClient } = require("@cosmjs/stargate");
+const {stringToPath} = require("@cosmjs/crypto")
+const {coins} = require("@cosmjs/launchpad");
+const {DirectSecp256k1HdWallet} = require("@cosmjs/proto-signing");
+const {assertIsBroadcastTxSuccess, SigningStargateClient} = require("@cosmjs/stargate");
 
 const rpcUrl = "http://localhost:26657"
 const prefix = "desmos"

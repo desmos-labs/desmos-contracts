@@ -22,8 +22,8 @@ use cosmwasm_std::{
 use cosmwasm_storage::to_length_prefixed;
 use cosmwasm_vm::{
     testing::{
-        execute, instantiate, mock_env, mock_info, mock_instance_options, query, MockApi, MockQuerier,
-        MockStorage, MOCK_CONTRACT_ADDR,
+        execute, instantiate, mock_env, mock_info, mock_instance_options, query, MockApi,
+        MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
     },
     Backend, Instance, Storage,
 };
@@ -96,7 +96,7 @@ fn test_init() {
         assert_eq!(default_limit, "{\"default_reports_limit\":5}");
         Ok(())
     })
-    .unwrap();
+        .unwrap();
 }
 
 #[test]
