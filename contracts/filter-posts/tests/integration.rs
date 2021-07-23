@@ -96,7 +96,7 @@ fn test_init() {
         assert_eq!(default_limit, "{\"default_reports_limit\":5}");
         Ok(())
     })
-        .unwrap();
+    .unwrap();
 }
 
 #[test]
