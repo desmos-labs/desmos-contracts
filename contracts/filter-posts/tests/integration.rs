@@ -17,51 +17,49 @@
 //! 4. Anywhere you see query(&deps, ...) you must replace it with query(&mut deps, ...)
 
 use cosmwasm_std::{
-    attr, from_binary, Coin, ContractResult, Env, HandleResponse, HumanAddr, InitResponse,
-    MessageInfo, SystemResult,
+    attr, from_binary, Coin, ContractResult, Env, MessageInfo, Response, SystemResult,
 };
 use cosmwasm_storage::to_length_prefixed;
 use cosmwasm_vm::{
     testing::{
-        handle, init, mock_env, mock_info, mock_instance_options, query, MockApi, MockQuerier,
-        MockStorage, MOCK_CONTRACT_ADDR,
+        execute, instantiate, mock_env, mock_info, mock_instance_options, query, MockApi,
+        MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
     },
     Backend, Instance, Storage,
 };
 use desmos::{
     query_types::{DesmosQueryWrapper, PostsResponse},
-    types::{PollData, Post},
+    types::{Poll, Post},
 };
 
 use cw_desmos_filter_posts::{
     mock::custom_query_execute,
-    msg::{HandleMsg, InitMsg, QueryMsg},
+    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::REPORTS_LIMIT_KEY,
 };
 
-#[cfg(not(tarpaulin))]
+#[cfg(not(tarpaulin_include))]
 const WASM: &[u8] = include_bytes!("filter_posts.wasm");
 
-#[cfg(not(tarpaulin))]
+#[cfg(not(tarpaulin_include))]
 fn setup_test(
     deps: &mut Instance<MockApi, MockStorage, MockQuerier<DesmosQueryWrapper>>,
     env: Env,
     info: MessageInfo,
     report_limit: u16,
 ) {
-    let init_msg = InitMsg {
+    let init_msg = InstantiateMsg {
         reports_limit: report_limit,
     };
-    let _res: InitResponse = init(deps, env.clone(), info, init_msg).unwrap();
+    let _res: Response = instantiate(deps, env.clone(), info, init_msg).unwrap();
 }
 
-#[cfg(not(tarpaulin))]
+#[cfg(not(tarpaulin_include))]
 pub fn mock_dependencies_with_custom_querier(
     contract_balance: &[Coin],
 ) -> Backend<MockApi, MockStorage, MockQuerier<DesmosQueryWrapper>> {
-    let contract_addr = HumanAddr::from(MOCK_CONTRACT_ADDR);
     let custom_querier: MockQuerier<DesmosQueryWrapper> =
-        MockQuerier::new(&[(&contract_addr, contract_balance)])
+        MockQuerier::new(&[(MOCK_CONTRACT_ADDR, contract_balance)])
             .with_custom_handler(|query| SystemResult::Ok(custom_query_execute(query)));
 
     Backend {
@@ -72,18 +70,18 @@ pub fn mock_dependencies_with_custom_querier(
 }
 
 #[test]
-#[cfg(not(tarpaulin))]
+#[cfg(not(tarpaulin_include))]
 fn test_init() {
     let custom = mock_dependencies_with_custom_querier(&[]);
     let instance_options = mock_instance_options();
-    let mut deps = Instance::from_code(WASM, custom, instance_options).unwrap();
+    let mut deps =
+        Instance::from_code(WASM, custom, instance_options.0, instance_options.1).unwrap();
 
-    let sender_addr = HumanAddr::from("addr0001");
-    let info = mock_info(&sender_addr, &[]);
+    let info = mock_info("addr0001", &[]);
 
-    let init_msg = InitMsg { reports_limit: 5 };
+    let init_msg = InstantiateMsg { reports_limit: 5 };
 
-    let res: InitResponse = init(&mut deps, mock_env(), info, init_msg).unwrap();
+    let res: Response = instantiate(&mut deps, mock_env(), info, init_msg).unwrap();
     assert_eq!(0, res.messages.len());
 
     let exp_log = vec![attr("action", "set_default_reports_limit")];
@@ -102,34 +100,31 @@ fn test_init() {
 }
 
 #[test]
-#[cfg(not(tarpaulin))]
+#[cfg(not(tarpaulin_include))]
 fn test_handle() {
     let custom = mock_dependencies_with_custom_querier(&[]);
     let instance_options = mock_instance_options();
-    let mut deps = Instance::from_code(WASM, custom, instance_options).unwrap();
+    let mut deps =
+        Instance::from_code(WASM, custom, instance_options.0, instance_options.1).unwrap();
 
-    let sender_addr = HumanAddr::from("addr0001");
-    let info = mock_info(&sender_addr, &[]);
+    let info = mock_info("addr0001", &[]);
 
     setup_test(&mut deps, mock_env(), info.clone(), 3);
 
-    let exp_res = HandleResponse {
-        messages: vec![],
+    let exp_res = Response {
         attributes: vec![
             attr("action", "edit_reports_limit"),
             attr("editor", info.sender.clone()),
         ],
-        data: None,
+        ..Response::default()
     };
 
-    let msg = HandleMsg::EditReportsLimit { reports_limit: 5 };
-    let res: ContractResult<HandleResponse> =
-        handle(&mut deps, mock_env(), info.clone(), msg.clone());
+    let msg = ExecuteMsg::EditReportsLimit { reports_limit: 5 };
+    let res: ContractResult<Response> = execute(&mut deps, mock_env(), info.clone(), msg.clone());
 
     assert_eq!(res.unwrap(), exp_res);
 
-    let res: ContractResult<HandleResponse> =
-        handle(&mut deps, mock_env(), info.clone(), msg.clone());
+    let res: ContractResult<Response> = execute(&mut deps, mock_env(), info.clone(), msg.clone());
 
     assert!(res
         .unwrap_err()
@@ -137,11 +132,12 @@ fn test_handle() {
 }
 
 #[test]
-#[cfg(not(tarpaulin))]
+#[cfg(not(tarpaulin_include))]
 fn query_filtered_posts_filter_correctly() {
     let custom = mock_dependencies_with_custom_querier(&[]);
     let instance_options = mock_instance_options();
-    let mut deps = Instance::from_code(WASM, custom, instance_options).unwrap();
+    let mut deps =
+        Instance::from_code(WASM, custom, instance_options.0, instance_options.1).unwrap();
 
     let post = Post {
         post_id: "id123".to_string(),
@@ -149,11 +145,11 @@ fn query_filtered_posts_filter_correctly() {
         message: "message".to_string(),
         created: "date-time".to_string(),
         last_edited: "date-time".to_string(),
-        allows_comments: false,
+        comments_state: "ALLOWED".to_string(),
         subspace: "subspace".to_string(),
-        optional_data: Some(vec![]),
+        additional_attributes: Some(vec![]),
         attachments: Some(vec![]),
-        poll_data: Some(PollData {
+        poll: Some(Poll {
             question: "".to_string(),
             provided_answers: vec![],
             end_date: "".to_string(),

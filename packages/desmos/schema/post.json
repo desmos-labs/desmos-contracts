@@ -3,7 +3,7 @@
   "title": "Post",
   "type": "object",
   "required": [
-    "allows_comments",
+    "comments_state",
     "created",
     "creator",
     "last_edited",
@@ -12,8 +12,14 @@
     "subspace"
   ],
   "properties": {
-    "allows_comments": {
-      "type": "boolean"
+    "additional_attributes": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "$ref": "#/definitions/Attribute"
+      }
     },
     "attachments": {
       "type": [
@@ -23,6 +29,9 @@
       "items": {
         "$ref": "#/definitions/Attachment"
       }
+    },
+    "comments_state": {
+      "type": "string"
     },
     "created": {
       "type": "string"
@@ -36,25 +45,16 @@
     "message": {
       "type": "string"
     },
-    "optional_data": {
-      "type": [
-        "array",
-        "null"
-      ],
-      "items": {
-        "$ref": "#/definitions/OptionalData"
-      }
-    },
     "parent_id": {
       "type": [
         "string",
         "null"
       ]
     },
-    "poll_data": {
+    "poll": {
       "anyOf": [
         {
-          "$ref": "#/definitions/PollData"
+          "$ref": "#/definitions/Poll"
         },
         {
           "type": "null"
@@ -93,7 +93,7 @@
         }
       }
     },
-    "OptionalData": {
+    "Attribute": {
       "description": "This file contains all the desmos related types used inside desmos' contracts",
       "type": "object",
       "required": [
@@ -109,22 +109,7 @@
         }
       }
     },
-    "PollAnswer": {
-      "type": "object",
-      "required": [
-        "answer_id",
-        "text"
-      ],
-      "properties": {
-        "answer_id": {
-          "type": "string"
-        },
-        "text": {
-          "type": "string"
-        }
-      }
-    },
-    "PollData": {
+    "Poll": {
       "type": "object",
       "required": [
         "allows_answer_edits",
@@ -146,10 +131,25 @@
         "provided_answers": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/PollAnswer"
+            "$ref": "#/definitions/ProvidedAnswer"
           }
         },
         "question": {
+          "type": "string"
+        }
+      }
+    },
+    "ProvidedAnswer": {
+      "type": "object",
+      "required": [
+        "answer_id",
+        "text"
+      ],
+      "properties": {
+        "answer_id": {
+          "type": "string"
+        },
+        "text": {
           "type": "string"
         }
       }
