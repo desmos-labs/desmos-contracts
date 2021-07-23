@@ -38,10 +38,10 @@ use cw_desmos_filter_posts::{
     state::REPORTS_LIMIT_KEY,
 };
 
-#[cfg(not(tarpaulin))]
+#[cfg(not(tarpaulin_include))]
 const WASM: &[u8] = include_bytes!("filter_posts.wasm");
 
-#[cfg(not(tarpaulin))]
+#[cfg(not(tarpaulin_include))]
 fn setup_test(
     deps: &mut Instance<MockApi, MockStorage, MockQuerier<DesmosQueryWrapper>>,
     env: Env,
@@ -54,7 +54,7 @@ fn setup_test(
     let _res: Response = instantiate(deps, env.clone(), info, init_msg).unwrap();
 }
 
-#[cfg(not(tarpaulin))]
+#[cfg(not(tarpaulin_include))]
 pub fn mock_dependencies_with_custom_querier(
     contract_balance: &[Coin],
 ) -> Backend<MockApi, MockStorage, MockQuerier<DesmosQueryWrapper>> {
@@ -70,7 +70,7 @@ pub fn mock_dependencies_with_custom_querier(
 }
 
 #[test]
-#[cfg(not(tarpaulin))]
+#[cfg(not(tarpaulin_include))]
 fn test_init() {
     let custom = mock_dependencies_with_custom_querier(&[]);
     let instance_options = mock_instance_options();
@@ -100,7 +100,7 @@ fn test_init() {
 }
 
 #[test]
-#[cfg(not(tarpaulin))]
+#[cfg(not(tarpaulin_include))]
 fn test_handle() {
     let custom = mock_dependencies_with_custom_querier(&[]);
     let instance_options = mock_instance_options();
@@ -132,7 +132,7 @@ fn test_handle() {
 }
 
 #[test]
-#[cfg(not(tarpaulin))]
+#[cfg(not(tarpaulin_include))]
 fn query_filtered_posts_filter_correctly() {
     let custom = mock_dependencies_with_custom_querier(&[]);
     let instance_options = mock_instance_options();
