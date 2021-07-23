@@ -117,15 +117,45 @@ mod tests {
     use cosmwasm_std::testing::{mock_env, mock_info};
     use desmos::types::Poll;
 
-    fn setup_test(deps: DepsMut, env: Env, info: MessageInfo, default_reports_limit: u16) {
+    fn setup_test(
+        deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
+        default_reports_limit: u16,
+    ) -> (Post, PostsResponse) {
         let init_msg = InstantiateMsg {
             reports_limit: default_reports_limit,
         };
         instantiate(deps, env, info, init_msg).unwrap();
+
+        let post = Post {
+            post_id: "id123".to_string(),
+            parent_id: Some("id345".to_string()),
+            message: "message".to_string(),
+            created: "date-time".to_string(),
+            last_edited: "date-time".to_string(),
+            comments_state: "ALLOWED".to_string(),
+            subspace: "subspace".to_string(),
+            additional_attributes: Some(vec![]),
+            attachments: Some(vec![]),
+            poll: Some(Poll {
+                question: "".to_string(),
+                provided_answers: vec![],
+                end_date: "".to_string(),
+                allows_multiple_answers: false,
+                allows_answer_edits: false,
+            }),
+            creator: "default_creator".to_string(),
+        };
+        let response = PostsResponse {
+            posts: vec![post.to_owned()],
+        };
+
+        return (post, response);
     }
 
     #[test]
-    fn test_init() {
+    fn test_instantiate() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let info = mock_info("addr0001", &[]);
 
@@ -144,7 +174,7 @@ mod tests {
     }
 
     #[test]
-    fn test_handle() {
+    fn test_execute() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let info = mock_info("editor", &[]);
         setup_test(deps.as_mut(), mock_env(), info.clone(), 3);
@@ -170,6 +200,20 @@ mod tests {
             ContractError::EqualsReportLimits { .. } => {}
             _ => panic!("expected unregistered error"),
         }
+    }
+
+    #[test]
+    fn test_query() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let info = mock_info("editor", &[]);
+        let (_, expected) = setup_test(deps.as_mut(), mock_env(), info.clone(), 3);
+
+        let msg = QueryMsg::GetFilteredPosts { reports_limit: 3 };
+        let res = query(deps.as_ref(), mock_env(), msg);
+
+        let expected_res = to_binary(&expected);
+
+        assert_eq!(res, expected_res)
     }
 
     #[test]
@@ -209,29 +253,7 @@ mod tests {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let info = mock_info("addr0001", &[]);
 
-        setup_test(deps.as_mut(), mock_env(), info, 5);
-
-        let post = Post {
-            post_id: "id123".to_string(),
-            parent_id: Some("id345".to_string()),
-            message: "message".to_string(),
-            created: "date-time".to_string(),
-            last_edited: "date-time".to_string(),
-            comments_state: "ALLOWED".to_string(),
-            subspace: "subspace".to_string(),
-            additional_attributes: Some(vec![]),
-            attachments: Some(vec![]),
-            poll: Some(Poll {
-                question: "".to_string(),
-                provided_answers: vec![],
-                end_date: "".to_string(),
-                allows_multiple_answers: false,
-                allows_answer_edits: false,
-            }),
-            creator: "default_creator".to_string(),
-        };
-
-        let expected = PostsResponse { posts: vec![post] };
+        let (_, expected) = setup_test(deps.as_mut(), mock_env(), info, 5);
 
         // post has less reports than the limit
         let res = query_filtered_posts(deps.as_ref(), 3).unwrap();
