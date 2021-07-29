@@ -58,3 +58,12 @@ pub struct Report {
     pub message: String,
     pub user: String,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct Reaction {
+    pub post_id: String,
+    pub short_code: String,
+    pub value: String,
+    pub owner: String,
+}
