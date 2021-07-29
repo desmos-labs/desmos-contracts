@@ -1,10 +1,10 @@
 use cosmwasm_std::{
     testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
-    to_binary, Binary, Coin, ContractResult, HumanAddr, OwnedDeps, SystemResult,
+    to_binary, Binary, Coin, ContractResult, OwnedDeps, SystemResult,
 };
 use desmos::{
     query_types::{DesmosQuery, DesmosQueryWrapper, PostsResponse, ReportsResponse},
-    types::{PollData, Post, Report},
+    types::{Poll, Post, Report},
 };
 
 /// Replacement for cosmwasm_std::testing::mock_dependencies
@@ -12,7 +12,7 @@ use desmos::{
 pub fn mock_dependencies_with_custom_querier(
     contract_balance: &[Coin],
 ) -> OwnedDeps<MockStorage, MockApi, MockQuerier<DesmosQueryWrapper>> {
-    let contract_addr = HumanAddr::from(MOCK_CONTRACT_ADDR);
+    let contract_addr = MOCK_CONTRACT_ADDR;
     let custom_querier: MockQuerier<DesmosQueryWrapper> =
         MockQuerier::new(&[(&contract_addr, contract_balance)])
             .with_custom_handler(|query| SystemResult::Ok(custom_query_execute(&query)));
@@ -33,11 +33,11 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
                 message: String::from("message"),
                 created: String::from("date-time"),
                 last_edited: String::from("date-time"),
-                allows_comments: false,
+                comments_state: String::from("ALLOWED"),
                 subspace: String::from("subspace"),
-                optional_data: Some(vec![]),
+                additional_attributes: Some(vec![]),
                 attachments: Some(vec![]),
-                poll_data: Some(PollData {
+                poll: Some(Poll {
                     question: "".to_string(),
                     provided_answers: vec![],
                     end_date: "".to_string(),
@@ -78,11 +78,11 @@ mod tests {
             message: String::from("message"),
             created: String::from("date-time"),
             last_edited: String::from("date-time"),
-            allows_comments: false,
+            comments_state: String::from("ALLOWED"),
             subspace: String::from("subspace"),
-            optional_data: Some(vec![]),
+            additional_attributes: Some(vec![]),
             attachments: Some(vec![]),
-            poll_data: Some(PollData {
+            poll: Some(Poll {
                 question: "".to_string(),
                 provided_answers: vec![],
                 end_date: "".to_string(),
@@ -128,7 +128,7 @@ mod tests {
     fn custom_querier() {
         let deps = mock_dependencies_with_custom_querier(&[]);
         let req = DesmosQueryWrapper {
-            route: DesmosRoute::Reports,
+            route: DesmosRoute::Posts,
             query_data: DesmosQuery::Reports {
                 post_id: "id123".to_string(),
             },

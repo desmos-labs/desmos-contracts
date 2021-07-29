@@ -2,10 +2,9 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// This file contains all the desmos related types used inside desmos' contracts
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct OptionalData {
+pub struct Attribute {
     pub key: String,
     pub value: String,
 }
@@ -20,16 +19,16 @@ pub struct Attachment {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct PollAnswer {
+pub struct ProvidedAnswer {
     pub answer_id: String,
     pub text: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct PollData {
+pub struct Poll {
     pub question: String,
-    pub provided_answers: Vec<PollAnswer>,
+    pub provided_answers: Vec<ProvidedAnswer>,
     pub end_date: String,
     pub allows_multiple_answers: bool,
     pub allows_answer_edits: bool,
@@ -43,12 +42,12 @@ pub struct Post {
     pub message: String,
     pub created: String,
     pub last_edited: String,
-    pub allows_comments: bool,
+    pub comments_state: String,
     pub subspace: String,
-    pub optional_data: Option<Vec<OptionalData>>,
+    pub additional_attributes: Option<Vec<Attribute>>,
     pub creator: String,
     pub attachments: Option<Vec<Attachment>>,
-    pub poll_data: Option<PollData>,
+    pub poll: Option<Poll>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

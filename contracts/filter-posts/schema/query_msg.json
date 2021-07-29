@@ -22,7 +22,8 @@
             }
           }
         }
-      }
+      },
+      "additionalProperties": false
     }
   ]
 }

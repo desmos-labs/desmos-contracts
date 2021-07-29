@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /* eslint-disable @typescript-eslint/naming-convention */
-const { DirectSecp256k1HdWallet } = require("@cosmjs/proto-signing");
-const { SigningCosmWasmClient } = require("@cosmjs/cosmwasm-stargate");
+const {DirectSecp256k1HdWallet} = require("@cosmjs/proto-signing");
+const {SigningCosmWasmClient} = require("@cosmjs/cosmwasm-stargate");
 const fs = require("fs");
 const {coins} = require("@cosmjs/launchpad");
 const {stringToPath} = require("@cosmjs/crypto");
@@ -39,7 +39,7 @@ async function main() {
     reports_limit: 2
   };
   const label = "Desmos posts filter tests";
-  const { contractAddress } = await client.instantiate(deployer.address, uploadReceipt.codeId, initMsg, label, {
+  const {contractAddress} = await client.instantiate(deployer.address, uploadReceipt.codeId, initMsg, label, {
     memo: `Create a posts filter contract instance for ${deployer.address}`,
     admin: deployer.address,
   });
