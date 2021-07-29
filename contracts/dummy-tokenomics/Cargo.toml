@@ -1,0 +1,39 @@
+[package]
+name = "cw-desmos-dummy-tokenomics"
+version = "0.0.1"
+authors = ["bragaz <leo.braga95@gmail.com>"]
+edition = "2018"
+description = "A cosmwasm contract that manage a simple Desmos tokenomics"
+license = "Apache-2.0"
+repository = "https://github.com/desmos-labs/desmos-contracts"
+keywords = ["desmos-network", "social-network", "blockchain", "smart-contracts", "tokenomics"]
+
+exclude = [
+  # Those files are rust-optimizer artifacts.
+  # You might want to commit them for convenience but they should not be part of the source code publication.
+  "contract.wasm",
+  "hash.txt",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces", "cosmwasm-vm/backtraces"]
+# use library feature to disable all init/handle/query exports
+library = []
+
+[dependencies]
+desmos = { path = "../../packages/desmos", version = "0.1.1" }
+cosmwasm-std = { version = "0.13.0" }
+cosmwasm-storage = { version = "0.13.0" }
+schemars = "0.7"
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0.22" }
+
+[dev-dependencies]
+cosmwasm-vm = { version = "0.13.0", default-features = false }
+cosmwasm-schema = { version = "0.13.0" }
