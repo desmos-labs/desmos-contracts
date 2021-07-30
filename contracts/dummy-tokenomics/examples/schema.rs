@@ -14,5 +14,5 @@ fn main() {
     remove_schemas(&out_dir).unwrap();
 
     export_schema(&schema_for!(SudoMsg), &out_dir);
-    export_schema(&schema_for!(ReactionsAmount))
+    export_schema(&schema_for!(ReactionsAmount), &out_dir);
 }
