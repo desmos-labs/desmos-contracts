@@ -1,15 +1,17 @@
-use crate::{
-    error::ContractError,
-    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
-    state::{state_read, state_store, State},
-};
 use cosmwasm_std::{
-    attr, entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    attr, Binary, Deps, DepsMut, entry_point, Env, MessageInfo, Response, StdResult, to_binary,
 };
+
 use desmos::{
     custom_query::{query_post_reports, query_posts},
     query_types::PostsResponse,
     types::Post,
+};
+
+use crate::{
+    error::ContractError,
+    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
+    state::{State, state_read, state_store},
 };
 
 // Note, you can use StdResult in some functions where you do not
@@ -108,14 +110,19 @@ pub fn query_filtered_posts(deps: Deps, reports_limit: u16) -> StdResult<PostsRe
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use cosmwasm_std::testing::{mock_env, mock_info};
+
+    use desmos::{
+        types::Poll,
+        mock::mock_dependencies_with_custom_querier
+    };
+
     use crate::{
         contract::{execute, instantiate, is_under_reports_limit, query_filtered_posts},
-        mock::mock_dependencies_with_custom_querier,
         msg::{ExecuteMsg, InstantiateMsg},
     };
-    use cosmwasm_std::testing::{mock_env, mock_info};
-    use desmos::types::Poll;
+
+    use super::*;
 
     fn setup_test(
         deps: DepsMut,

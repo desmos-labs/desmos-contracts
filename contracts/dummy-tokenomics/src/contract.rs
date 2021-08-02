@@ -4,7 +4,7 @@ use crate::{
     errors::ContractError
 };
 
-use cosmwasm_std::{attr, entry_point, Deps, DepsMut, Env, Response, Coin, BankMsg, CosmosMsg, MessageInfo};
+use cosmwasm_std::{attr, entry_point, Deps, DepsMut, Env, Response, Coin, BankMsg, CosmosMsg, MessageInfo, Uint128};
 
 use desmos::{
     custom_query::{query_posts, query_post_reactions},
@@ -52,11 +52,11 @@ fn execute_tokenomics(
             .len() as u128;
 
         let stored_reactions_amount = reactions_read(deps.storage)
-            .load(post.clone().post_id.as_bytes())?;
+            .load(post.clone().post_id.as_bytes()).unwrap_or(Uint128(0));
 
         let calculated_reward = calculate_rewards(
             deps.as_ref(),
-            stored_reactions_amount,
+            stored_reactions_amount.0,
             actual_reactions_amount,
         )?;
 
@@ -71,7 +71,7 @@ fn execute_tokenomics(
 
         reactions_store(deps.storage).save(
             post.clone().post_id.as_bytes(),
-            &actual_reactions_amount
+            &Uint128(actual_reactions_amount)
         )?;
 
         subspace_id = post.subspace.clone()
@@ -102,4 +102,117 @@ fn calculate_rewards(deps: Deps, stored_reactions_amount: u128, actual_reactions
     let denom = denom_read(deps.storage).load()?;
     let rewards: Vec<Coin> = vec![Coin::new(rewards_amount, denom)];
     Ok(rewards)
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{
+        DepsMut, Env, MessageInfo, Coin, attr,
+        testing::{mock_env, mock_info}, Response, BankMsg, CosmosMsg
+    };
+    use crate::{
+        contract::{instantiate, calculate_rewards, execute_tokenomics},
+        msg::InstantiateMsg,
+        state::denom_read,
+    };
+    use desmos::mock::mock_dependencies_with_custom_querier;
+
+    fn setup_test(
+        deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
+        denom: String,
+    ) {
+        let instantiate_msg = InstantiateMsg{
+            token_denom: denom,
+        };
+        instantiate(deps, env, info, instantiate_msg).unwrap();
+    }
+
+    #[test]
+    fn test_instantiate() {
+        let funds = Coin::new(100_000_000, "udesmos");
+        let mut deps = mock_dependencies_with_custom_querier(&[funds]);
+        let info = mock_info("addr0001", &[]);
+
+        let instantiate_msg = InstantiateMsg{ token_denom: "udesmos".to_string()};
+
+        let res = instantiate(
+            deps.as_mut(),
+            mock_env(),
+            info,
+            instantiate_msg
+        ).unwrap();
+
+        let exp_log = vec![attr("action", "set_token_denom")];
+        assert_eq!(res.attributes, exp_log);
+
+        let denom = denom_read(&deps.storage).load().unwrap();
+        assert_eq!("udesmos".to_string(), denom)
+    }
+
+    #[test]
+    fn test_calculate_rewards() {
+        let funds = Coin::new(100_000_000, "udesmos");
+        let info = mock_info("addr0001", &[]);
+        let mut deps = mock_dependencies_with_custom_querier(&[funds]);
+        setup_test(deps.as_mut(), mock_env(), info, "udesmos".to_string());
+
+        let stored_reactions_amount: u128 = 5;
+        let reactions_amount: u128 = 7;
+
+        let actual_rewards = calculate_rewards(
+            deps.as_ref(),
+            stored_reactions_amount,
+            reactions_amount
+        ).unwrap();
+
+        let exp_rewards = vec![Coin::new(2_000_000, "udesmos")];
+
+        assert_eq!(exp_rewards[0], actual_rewards[0])
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_calculate_rewards_error() {
+        let funds = Coin::new(100_000_000, "udesmos");
+        let deps = mock_dependencies_with_custom_querier(&[funds]);
+
+        let stored_reactions_amount: u128 = 5;
+        let reactions_amount: u128 = 7;
+
+        let _error = calculate_rewards(
+            deps.as_ref(),
+            stored_reactions_amount,
+            reactions_amount
+        ).unwrap();
+    }
+
+    #[test]
+    fn test_execute_tokenomics_successfully() {
+        let funds = Coin::new(100_000_000, "udesmos");
+        let info = mock_info("addr0001", &[]);
+        let mut deps = mock_dependencies_with_custom_querier(&[funds]);
+        setup_test(deps.as_mut(), mock_env(), info, "udesmos".to_string());
+
+        let response = execute_tokenomics(deps.as_mut());
+
+        assert!(response.is_ok());
+
+        let exp_response = Response {
+            messages: vec![CosmosMsg::from(
+                BankMsg::Send {
+                    to_address: "default_creator".to_string(),
+                    amount: vec![Coin::new(1_000_000, "udesmos")],
+                }
+            )],
+            attributes: vec![
+                attr("action", "executed_tokenomics"),
+                attr("subspace_id", "subspace"),
+            ],
+            ..Response::default()
+        };
+
+        assert_eq!(exp_response, response.unwrap())
+    }
 }
