@@ -6,6 +6,8 @@ use desmos::{
     query_types::{DesmosQuery, DesmosQueryWrapper, PostsResponse, ReportsResponse},
     types::{Poll, Post, Report},
 };
+use desmos::types::Reaction;
+use desmos::query_types::ReactionsResponse;
 
 /// Replacement for cosmwasm_std::testing::mock_dependencies
 /// this use our CustomQuerier
@@ -57,6 +59,18 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
             };
             to_binary(&ReportsResponse {
                 reports: vec![report],
+            })
+        }
+        DesmosQuery::Reactions { post_id } => {
+            let reactions = vec![
+                Reaction {
+                    post_id,
+                    short_code: ":heart:".to_string(),
+                    value: "❤️".to_string(),
+                    owner: "user".to_string(),
+                }];
+            to_binary(&ReactionsResponse {
+                reactions,
             })
         }
     };
@@ -133,7 +147,7 @@ mod tests {
                 post_id: "id123".to_string(),
             },
         }
-        .into();
+            .into();
         let wrapper = QuerierWrapper::new(&deps.querier);
         let response: ReportsResponse = wrapper.custom_query(&req).unwrap();
         let expected = vec![Report {

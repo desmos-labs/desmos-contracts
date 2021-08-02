@@ -1,29 +1,19 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
 use cosmwasm_std::Storage;
 use cosmwasm_storage::{
     singleton, singleton_read, ReadonlySingleton, Singleton,
     bucket, bucket_read, ReadonlyBucket, Bucket,
 };
-use desmos::types::Reaction;
 
 pub const POST_REACTIONS_KEY: &[u8] = b"post_reactions";
 pub const TOKEN_DENOM: &[u8] = b"denom";
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq)]
-pub struct ReactionsAmount {
-    pub post_id: String,
-    pub reactions_number: usize,
-}
-
 /// Get a writable reactions amount bucket
-pub fn reactions_store(storage: &mut dyn Storage) -> Bucket<ReactionsAmount> {
+pub fn reactions_store(storage: &mut dyn Storage) -> Bucket<u128> {
     bucket(storage, POST_REACTIONS_KEY)
 }
 
 /// Get a read-only reactions amount bucket
-pub fn reactions_read(storage: &dyn Storage) -> ReadonlyBucket<ReactionsAmount> {
+pub fn reactions_read(storage: &dyn Storage) -> ReadonlyBucket<u128> {
     bucket_read(storage, POST_REACTIONS_KEY)
 }
 
