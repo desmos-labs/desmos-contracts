@@ -1,4 +1,4 @@
-use crate::types::{Post, Report, Reaction};
+use crate::types::{Post, Reaction, Report};
 use cosmwasm_std::CustomQuery;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -46,5 +46,5 @@ pub struct ReportsResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct ReactionsResponse {
-    pub reactions: Vec<Reaction>
+    pub reactions: Vec<Reaction>,
 }

@@ -17,26 +17,26 @@
 //! 4. Anywhere you see query(&deps, ...) you must replace it with query(&mut deps, ...)
 
 use cosmwasm_std::{
-    attr, Coin, ContractResult, Env, from_binary, MessageInfo, Response, SystemResult,
+    attr, from_binary, Coin, ContractResult, Env, MessageInfo, Response, SystemResult,
 };
 use cosmwasm_storage::to_length_prefixed;
 use cosmwasm_vm::{
-    Backend,
-    Instance, Storage, testing::{
-        execute, instantiate, MOCK_CONTRACT_ADDR, mock_env, mock_info, mock_instance_options, MockApi,
-        MockQuerier, MockStorage, query,
+    testing::{
+        execute, instantiate, mock_env, mock_info, mock_instance_options, query, MockApi,
+        MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
     },
+    Backend, Instance, Storage,
 };
 
 use cw_desmos_filter_posts::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::REPORTS_LIMIT_KEY,
 };
+use desmos::mock::custom_query_execute;
 use desmos::{
     query_types::{DesmosQueryWrapper, PostsResponse},
     types::{Poll, Post},
 };
-use desmos::mock::custom_query_execute;
 
 #[cfg(not(tarpaulin_include))]
 const WASM: &[u8] = include_bytes!("filter_posts.wasm");

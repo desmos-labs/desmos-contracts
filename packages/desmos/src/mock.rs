@@ -1,10 +1,12 @@
+use crate::{
+    query_types::{
+        DesmosQuery, DesmosQueryWrapper, PostsResponse, ReactionsResponse, ReportsResponse,
+    },
+    types::{Poll, Post, Reaction, Report},
+};
 use cosmwasm_std::{
     testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
     to_binary, Binary, Coin, ContractResult, OwnedDeps, SystemResult,
-};
-use crate::{
-    types::{Reaction, Post, Poll, Report},
-    query_types::{ReactionsResponse, DesmosQuery, DesmosQueryWrapper, PostsResponse, ReportsResponse}
 };
 
 /// Replacement for cosmwasm_std::testing::mock_dependencies
@@ -60,16 +62,13 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
             })
         }
         DesmosQuery::Reactions { post_id } => {
-            let reactions = vec![
-                Reaction {
-                    post_id,
-                    short_code: ":heart:".to_string(),
-                    value: "❤️".to_string(),
-                    owner: "user".to_string(),
-                }];
-            to_binary(&ReactionsResponse {
-                reactions,
-            })
+            let reactions = vec![Reaction {
+                post_id,
+                short_code: ":heart:".to_string(),
+                value: "❤️".to_string(),
+                owner: "user".to_string(),
+            }];
+            to_binary(&ReactionsResponse { reactions })
         }
     };
     response.into()
@@ -78,9 +77,9 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::{from_binary, QuerierWrapper};
     use crate::query_types::{DesmosRoute, PostsResponse, ReportsResponse};
     use crate::types::Report;
+    use cosmwasm_std::{from_binary, QuerierWrapper};
 
     #[test]
     fn custom_query_execute_posts() {
@@ -145,7 +144,7 @@ mod tests {
                 post_id: "id123".to_string(),
             },
         }
-            .into();
+        .into();
         let wrapper = QuerierWrapper::new(&deps.querier);
         let response: ReportsResponse = wrapper.custom_query(&req).unwrap();
         let expected = vec![Report {

@@ -1,15 +1,15 @@
 use crate::{
-    msg::{SudoMsg, InstantiateMsg},
-    state::{reactions_store, reactions_read, denom_read},
-    errors::ContractError
+    errors::ContractError,
+    msg::{InstantiateMsg, SudoMsg},
+    state::{denom_read, reactions_read, reactions_store},
 };
 
-use cosmwasm_std::{attr, entry_point, Deps, DepsMut, Env, Response, Coin, BankMsg, CosmosMsg, MessageInfo, Uint128};
-
-use desmos::{
-    custom_query::{query_posts, query_post_reactions},
+use cosmwasm_std::{
+    attr, entry_point, BankMsg, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, Uint128,
 };
+
 use crate::state::denom_store;
+use desmos::custom_query::{query_post_reactions, query_posts};
 
 #[entry_point]
 pub fn instantiate(
@@ -30,15 +30,13 @@ pub fn instantiate(
 #[entry_point]
 pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> Result<Response<BankMsg>, ContractError> {
     match msg {
-        SudoMsg::ExecuteTokenomics {} => execute_tokenomics(deps)
+        SudoMsg::ExecuteTokenomics {} => execute_tokenomics(deps),
     }
 }
 
 /// execute_tokenomics takes care of distribute the rewards across all the users whose posts
 /// have received some reaction
-fn execute_tokenomics(
-    deps: DepsMut,
-) -> Result<Response<BankMsg>, ContractError > {
+fn execute_tokenomics(deps: DepsMut) -> Result<Response<BankMsg>, ContractError> {
     let mut msgs: Vec<CosmosMsg<BankMsg>> = Vec::new();
     let mut subspace_id: String = "".to_string();
 
@@ -46,13 +44,13 @@ fn execute_tokenomics(
     let posts = query_posts(&deps.querier)?.posts;
 
     for post in posts.iter() {
-
         let actual_reactions_amount = query_post_reactions(&deps.querier, post.clone().post_id)?
             .reactions
             .len() as u128;
 
         let stored_reactions_amount = reactions_read(deps.storage)
-            .load(post.clone().post_id.as_bytes()).unwrap_or(Uint128(0));
+            .load(post.clone().post_id.as_bytes())
+            .unwrap_or(Uint128(0));
 
         let calculated_reward = calculate_rewards(
             deps.as_ref(),
@@ -60,24 +58,22 @@ fn execute_tokenomics(
             actual_reactions_amount,
         )?;
 
-        let msg = CosmosMsg::from(
-            BankMsg::Send {
-                to_address: post.clone().creator,
-                amount: calculated_reward
-            }
-        );
+        let msg = CosmosMsg::from(BankMsg::Send {
+            to_address: post.clone().creator,
+            amount: calculated_reward,
+        });
 
         msgs.push(msg);
 
         reactions_store(deps.storage).save(
             post.clone().post_id.as_bytes(),
-            &Uint128(actual_reactions_amount)
+            &Uint128(actual_reactions_amount),
         )?;
 
         subspace_id = post.subspace.clone()
     }
 
-    let response = Response{
+    let response = Response {
         messages: msgs,
         attributes: vec![
             attr("action", "executed_tokenomics"),
@@ -91,8 +87,11 @@ fn execute_tokenomics(
 
 /// calculate_rewards calculate the rewards based on the difference between the current post
 /// reactions and those saved inside the contract store
-fn calculate_rewards(deps: Deps, stored_reactions_amount: u128, actual_reactions_amount: u128)
-    -> Result<Vec<Coin>, ContractError> {
+fn calculate_rewards(
+    deps: Deps,
+    stored_reactions_amount: u128,
+    actual_reactions_amount: u128,
+) -> Result<Vec<Coin>, ContractError> {
     let mut rewards_amount: u128 = 0;
     if actual_reactions_amount > stored_reactions_amount {
         let new_reactions = actual_reactions_amount - stored_reactions_amount;
@@ -106,26 +105,20 @@ fn calculate_rewards(deps: Deps, stored_reactions_amount: u128, actual_reactions
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{
-        DepsMut, Env, MessageInfo, Coin, attr,
-        testing::{mock_env, mock_info}, Response, BankMsg, CosmosMsg
-    };
     use crate::{
-        contract::{instantiate, calculate_rewards, execute_tokenomics},
+        contract::{calculate_rewards, execute_tokenomics, instantiate},
         msg::InstantiateMsg,
         state::denom_read,
     };
+    use cosmwasm_std::{
+        attr,
+        testing::{mock_env, mock_info},
+        BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response,
+    };
     use desmos::mock::mock_dependencies_with_custom_querier;
 
-    fn setup_test(
-        deps: DepsMut,
-        env: Env,
-        info: MessageInfo,
-        denom: String,
-    ) {
-        let instantiate_msg = InstantiateMsg{
-            token_denom: denom,
-        };
+    fn setup_test(deps: DepsMut, env: Env, info: MessageInfo, denom: String) {
+        let instantiate_msg = InstantiateMsg { token_denom: denom };
         instantiate(deps, env, info, instantiate_msg).unwrap();
     }
 
@@ -135,14 +128,11 @@ mod tests {
         let mut deps = mock_dependencies_with_custom_querier(&[funds]);
         let info = mock_info("addr0001", &[]);
 
-        let instantiate_msg = InstantiateMsg{ token_denom: "udesmos".to_string()};
+        let instantiate_msg = InstantiateMsg {
+            token_denom: "udesmos".to_string(),
+        };
 
-        let res = instantiate(
-            deps.as_mut(),
-            mock_env(),
-            info,
-            instantiate_msg
-        ).unwrap();
+        let res = instantiate(deps.as_mut(), mock_env(), info, instantiate_msg).unwrap();
 
         let exp_log = vec![attr("action", "set_token_denom")];
         assert_eq!(res.attributes, exp_log);
@@ -161,11 +151,8 @@ mod tests {
         let stored_reactions_amount: u128 = 5;
         let reactions_amount: u128 = 7;
 
-        let actual_rewards = calculate_rewards(
-            deps.as_ref(),
-            stored_reactions_amount,
-            reactions_amount
-        ).unwrap();
+        let actual_rewards =
+            calculate_rewards(deps.as_ref(), stored_reactions_amount, reactions_amount).unwrap();
 
         let exp_rewards = vec![Coin::new(2_000_000, "udesmos")];
 
@@ -181,11 +168,8 @@ mod tests {
         let stored_reactions_amount: u128 = 5;
         let reactions_amount: u128 = 7;
 
-        let _error = calculate_rewards(
-            deps.as_ref(),
-            stored_reactions_amount,
-            reactions_amount
-        ).unwrap();
+        let _error =
+            calculate_rewards(deps.as_ref(), stored_reactions_amount, reactions_amount).unwrap();
     }
 
     #[test]
@@ -200,12 +184,10 @@ mod tests {
         assert!(response.is_ok());
 
         let exp_response = Response {
-            messages: vec![CosmosMsg::from(
-                BankMsg::Send {
-                    to_address: "default_creator".to_string(),
-                    amount: vec![Coin::new(1_000_000, "udesmos")],
-                }
-            )],
+            messages: vec![CosmosMsg::from(BankMsg::Send {
+                to_address: "default_creator".to_string(),
+                amount: vec![Coin::new(1_000_000, "udesmos")],
+            })],
             attributes: vec![
                 attr("action", "executed_tokenomics"),
                 attr("subspace_id", "subspace"),
