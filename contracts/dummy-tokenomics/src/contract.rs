@@ -1,14 +1,11 @@
 use crate::{
     errors::ContractError,
     msg::{InstantiateMsg, SudoMsg},
-    state::{denom_read, reactions_read, reactions_store},
+    state::{denom_store, denom_read, reactions_read, reactions_store},
 };
-
 use cosmwasm_std::{
     attr, entry_point, BankMsg, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, Uint128,
 };
-
-use crate::state::denom_store;
 use desmos::custom_query::{query_post_reactions, query_posts};
 
 #[entry_point]
@@ -46,7 +43,9 @@ fn execute_tokenomics(deps: DepsMut) -> Result<Response<BankMsg>, ContractError>
     for post in posts.iter() {
         let actual_reactions_amount = query_post_reactions(&deps.querier, post.clone().post_id)?
             .reactions
-            .len() as u128;
+            .into_iter()
+            .filter(| reaction | reaction.owner != post.creator)
+            .count() as u128;
 
         let stored_reactions_amount = reactions_read(deps.storage)
             .load(post.clone().post_id.as_bytes())
@@ -58,12 +57,14 @@ fn execute_tokenomics(deps: DepsMut) -> Result<Response<BankMsg>, ContractError>
             actual_reactions_amount,
         )?;
 
-        let msg = CosmosMsg::from(BankMsg::Send {
-            to_address: post.clone().creator,
-            amount: calculated_reward,
-        });
+        if !calculated_reward[0].amount.is_zero() {
+            let msg = CosmosMsg::from(BankMsg::Send {
+                to_address: post.clone().creator,
+                amount: calculated_reward,
+            });
 
-        msgs.push(msg);
+            msgs.push(msg);
+        }
 
         reactions_store(deps.storage).save(
             post.clone().post_id.as_bytes(),
