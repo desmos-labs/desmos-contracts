@@ -1,20 +1,19 @@
-use cosmwasm_std::{attr, BankMsg, Coin, CosmosMsg, Env, MessageInfo, Response, SystemResult, ContractResult};
+use cosmwasm_std::{
+    attr, BankMsg, Coin, ContractResult, CosmosMsg, Env, MessageInfo, Response, SystemResult,
+};
 use cosmwasm_storage::to_length_prefixed;
 use cosmwasm_vm::{
     testing::{
-        sudo, instantiate, mock_env, mock_info, mock_instance_options, MockApi,
-        MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
+        instantiate, mock_env, mock_info, mock_instance_options, sudo, MockApi, MockQuerier,
+        MockStorage, MOCK_CONTRACT_ADDR,
     },
     Backend, Instance, Storage,
 };
-use desmos::{
-    mock::custom_query_execute,
-    query_types::DesmosQueryWrapper
-};
 use cw_desmos_dummy_tokenomics::{
     msg::{InstantiateMsg, SudoMsg},
-    state::{TOKEN_DENOM_KEY}
+    state::TOKEN_DENOM_KEY,
 };
+use desmos::{mock::custom_query_execute, query_types::DesmosQueryWrapper};
 
 #[cfg(not(tarpaulin_include))]
 const WASM: &[u8] = include_bytes!("dummy_tokenomics.wasm");
@@ -24,7 +23,7 @@ fn setup_test(
     deps: &mut Instance<MockApi, MockStorage, MockQuerier<DesmosQueryWrapper>>,
     env: Env,
     info: MessageInfo,
-    denom: String
+    denom: String,
 ) {
     let instantiate_msg = InstantiateMsg { token_denom: denom };
     let _res: Response = instantiate(deps, env.clone(), info, instantiate_msg).unwrap();
@@ -53,8 +52,7 @@ fn test_instantiate() {
     let (instance_options, memory_limit) = mock_instance_options();
     let info = mock_info("addr0001", &[]);
 
-    let mut deps =
-        Instance::from_code(WASM, custom, instance_options, memory_limit).unwrap();
+    let mut deps = Instance::from_code(WASM, custom, instance_options, memory_limit).unwrap();
 
     let instantiate_msg = InstantiateMsg {
         token_denom: "udesmos".to_string(),
@@ -75,7 +73,7 @@ fn test_instantiate() {
         assert_eq!(token_denom, "\"udesmos\"");
         Ok(())
     })
-        .unwrap();
+    .unwrap();
 }
 
 #[test]
@@ -86,8 +84,7 @@ fn test_execute_tokenomics_successfully() {
     let custom = mock_dependencies_with_custom_querier(&[funds]);
     let (instance_options, memory_limit) = mock_instance_options();
 
-    let mut deps =
-        Instance::from_code(WASM, custom, instance_options, memory_limit).unwrap();
+    let mut deps = Instance::from_code(WASM, custom, instance_options, memory_limit).unwrap();
 
     setup_test(&mut deps, mock_env(), info, "udesmos".to_string());
 

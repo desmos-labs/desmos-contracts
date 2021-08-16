@@ -1,7 +1,7 @@
 use crate::{
     errors::ContractError,
     msg::{InstantiateMsg, SudoMsg},
-    state::{denom_store, denom_read, reactions_read, reactions_store},
+    state::{denom_read, denom_store, reactions_read, reactions_store},
 };
 use cosmwasm_std::{
     attr, entry_point, BankMsg, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, Uint128,
@@ -44,7 +44,7 @@ fn execute_tokenomics(deps: DepsMut) -> Result<Response<BankMsg>, ContractError>
         let actual_reactions_amount = query_post_reactions(&deps.querier, post.clone().post_id)?
             .reactions
             .into_iter()
-            .filter(| reaction | reaction.owner != post.creator)
+            .filter(|reaction| reaction.owner != post.creator)
             .count() as u128;
 
         let stored_reactions_amount = reactions_read(deps.storage)
