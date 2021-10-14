@@ -1,10 +1,12 @@
+use crate::{
+    query_types::{
+        DesmosQuery, DesmosQueryWrapper, PostsResponse, ReactionsResponse, ReportsResponse,
+    },
+    types::{Poll, Post, Reaction, Report},
+};
 use cosmwasm_std::{
     testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
     to_binary, Binary, Coin, ContractResult, OwnedDeps, SystemResult,
-};
-use desmos::{
-    query_types::{DesmosQuery, DesmosQueryWrapper, PostsResponse, ReportsResponse},
-    types::{Poll, Post, Report},
 };
 
 /// Replacement for cosmwasm_std::testing::mock_dependencies
@@ -59,6 +61,15 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
                 reports: vec![report],
             })
         }
+        DesmosQuery::Reactions { post_id } => {
+            let reactions = vec![Reaction {
+                post_id,
+                short_code: ":heart:".to_string(),
+                value: "❤️".to_string(),
+                owner: "user".to_string(),
+            }];
+            to_binary(&ReactionsResponse { reactions })
+        }
     };
     response.into()
 }
@@ -66,9 +77,9 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::query_types::{DesmosRoute, PostsResponse, ReportsResponse};
+    use crate::types::Report;
     use cosmwasm_std::{from_binary, QuerierWrapper};
-    use desmos::query_types::{DesmosRoute, PostsResponse};
-    use desmos::types::Report;
 
     #[test]
     fn custom_query_execute_posts() {

@@ -1,4 +1,4 @@
-use crate::types::{Post, Report};
+use crate::types::{Post, Reaction, Report};
 use cosmwasm_std::CustomQuery;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -22,6 +22,7 @@ pub struct DesmosQueryWrapper {
 #[serde(rename_all = "snake_case")]
 pub enum DesmosQuery {
     Posts {},
+    Reactions { post_id: String },
     Reports { post_id: String },
 }
 
@@ -39,4 +40,11 @@ pub struct PostsResponse {
 #[serde(rename_all = "snake_case")]
 pub struct ReportsResponse {
     pub reports: Vec<Report>,
+}
+
+/// ReactionsResponse contains the list of reactions associated to the given post_id
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct ReactionsResponse {
+    pub reactions: Vec<Reaction>,
 }

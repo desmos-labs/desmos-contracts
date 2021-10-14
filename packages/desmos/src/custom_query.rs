@@ -1,5 +1,5 @@
 use crate::query_types::{
-    DesmosQuery, DesmosQueryWrapper, DesmosRoute, PostsResponse, ReportsResponse,
+    DesmosQuery, DesmosQueryWrapper, DesmosRoute, PostsResponse, ReactionsResponse, ReportsResponse,
 };
 use cosmwasm_std::{QuerierWrapper, StdResult};
 
@@ -20,5 +20,18 @@ pub fn query_post_reports(querier: &QuerierWrapper, post_id: String) -> StdResul
     };
 
     let res: ReportsResponse = querier.custom_query(&request.into())?;
+    Ok(res)
+}
+
+pub fn query_post_reactions(
+    querier: &QuerierWrapper,
+    post_id: String,
+) -> StdResult<ReactionsResponse> {
+    let request = DesmosQueryWrapper {
+        route: DesmosRoute::Posts,
+        query_data: DesmosQuery::Reactions { post_id },
+    };
+
+    let res: ReactionsResponse = querier.custom_query(&request.into())?;
     Ok(res)
 }

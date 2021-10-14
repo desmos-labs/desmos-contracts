@@ -27,15 +27,15 @@ use cosmwasm_vm::{
     },
     Backend, Instance, Storage,
 };
+
+use cw_desmos_filter_posts::{
+    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
+    state::REPORTS_LIMIT_KEY,
+};
+use desmos::mock::custom_query_execute;
 use desmos::{
     query_types::{DesmosQueryWrapper, PostsResponse},
     types::{Poll, Post},
-};
-
-use cw_desmos_filter_posts::{
-    mock::custom_query_execute,
-    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
-    state::REPORTS_LIMIT_KEY,
 };
 
 #[cfg(not(tarpaulin_include))]
