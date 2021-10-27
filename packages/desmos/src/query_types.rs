@@ -7,26 +7,28 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum DesmosRoute {
     Posts,
+    Subspaces,
+    Profiles
 }
 
 /// DesmosQueryWrapper is an override of QueryRequest::Custom to access desmos-specific modules
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct DesmosQueryWrapper {
+pub struct DesmosQueryWrapper<'a> {
     pub route: DesmosRoute,
-    pub query_data: DesmosQuery,
+    pub query_data: DesmosQuery<'a>,
 }
+
+impl CustomQuery for DesmosQueryWrapper<'_> {}
 
 /// DesmosQuery represents the available desmos network queries
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum DesmosQuery {
+pub enum DesmosQuery<'a> {
     Posts {},
-    Reactions { post_id: String },
-    Reports { post_id: String },
+    Reactions { post_id: & 'a str },
+    Reports { post_id: & 'a str },
 }
-
-impl CustomQuery for DesmosQueryWrapper {}
 
 /// PostsResponse contains a list of posts
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

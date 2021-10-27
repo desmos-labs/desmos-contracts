@@ -1,4 +1,4 @@
-pub mod custom_query;
+pub mod querier;
 pub mod query_types;
 pub mod types;
 

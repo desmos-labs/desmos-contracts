@@ -3,7 +3,7 @@ use cosmwasm_std::{
 };
 
 use desmos::{
-    custom_query::{query_post_reports, query_posts},
+    querier::{query_post_reports, query_posts},
     query_types::PostsResponse,
     types::Post,
 };

@@ -1,6 +1,4 @@
-use cosmwasm_std::{
-    attr, BankMsg, Coin, ContractResult, CosmosMsg, Env, MessageInfo, Response, SystemResult,
-};
+use cosmwasm_std::{attr, BankMsg, Coin, ContractResult, CosmosMsg, Env, MessageInfo, Response, SystemResult, SubMsg};
 use cosmwasm_storage::to_length_prefixed;
 use cosmwasm_vm::{
     testing::{
@@ -89,7 +87,7 @@ fn test_execute_tokenomics_successfully() {
     setup_test(&mut deps, mock_env(), info, "udesmos".to_string());
 
     let exp_response = Response {
-        messages: vec![CosmosMsg::from(BankMsg::Send {
+        messages: vec![SubMsg::new(BankMsg::Send {
             to_address: "default_creator".to_string(),
             amount: vec![Coin::new(1_000_000, "udesmos")],
         })],
