@@ -96,7 +96,7 @@ fn test_init() {
         assert_eq!(default_limit, "{\"default_reports_limit\":5}");
         Ok(())
     })
-    .unwrap();
+        .unwrap();
 }
 
 #[test]
@@ -111,13 +111,11 @@ fn test_handle() {
 
     setup_test(&mut deps, mock_env(), info.clone(), 3);
 
-    let exp_res = Response {
-        attributes: vec![
+    let exp_res = Response::new()
+        .add_attributes(vec![
             attr("action", "edit_reports_limit"),
             attr("editor", info.sender.clone()),
-        ],
-        ..Response::default()
-    };
+        ]);
 
     let msg = ExecuteMsg::EditReportsLimit { reports_limit: 5 };
     let res: ContractResult<Response> = execute(&mut deps, mock_env(), info.clone(), msg.clone());

@@ -3,10 +3,11 @@ use crate::{
     msg::{InstantiateMsg, SudoMsg},
     state::{denom_read, denom_store, reactions_read, reactions_store},
 };
-use cosmwasm_std::{
-    attr, entry_point, BankMsg, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, Uint128,
+use cosmwasm_std::{attr, entry_point, BankMsg, Coin, Env, MessageInfo, Response, Uint128};
+use desmos::{
+    types::{Deps, DepsMut},
+    querier::DesmosQuerier,
 };
-use desmos::custom_query::{query_post_reactions, query_posts};
 
 #[entry_point]
 pub fn instantiate(
@@ -17,15 +18,13 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     denom_store(deps.storage).save(&msg.token_denom)?;
 
-    let res = Response {
-        attributes: vec![attr("action", "set_token_denom")],
-        ..Response::default()
-    };
+    let res = Response::new()
+        .add_attributes(vec![attr("action", "set_token_denom")]);
     Ok(res)
 }
 
 #[entry_point]
-pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> Result<Response<BankMsg>, ContractError> {
+pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
     match msg {
         SudoMsg::ExecuteTokenomics {} => execute_tokenomics(deps),
     }
@@ -33,15 +32,16 @@ pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> Result<Response<BankMsg>,
 
 /// execute_tokenomics takes care of distribute the rewards across all the users whose posts
 /// have received some reaction
-fn execute_tokenomics(deps: DepsMut) -> Result<Response<BankMsg>, ContractError> {
-    let mut msgs: Vec<CosmosMsg<BankMsg>> = Vec::new();
+fn execute_tokenomics(deps: DepsMut) -> Result<Response, ContractError> {
+    let mut msgs: Vec<BankMsg> = Vec::new();
     let mut subspace_id: String = "".to_string();
 
     // querying posts from Desmos chain
-    let posts = query_posts(&deps.querier)?.posts;
+    let querier = DesmosQuerier::new(&deps.querier);
+    let posts = querier.query_posts()?.posts;
 
     for post in posts.iter() {
-        let actual_reactions_amount = query_post_reactions(&deps.querier, post.clone().post_id)?
+        let actual_reactions_amount = querier.query_post_reactions(post.clone().post_id)?
             .reactions
             .into_iter()
             .filter(|reaction| reaction.owner != post.creator)
@@ -49,39 +49,37 @@ fn execute_tokenomics(deps: DepsMut) -> Result<Response<BankMsg>, ContractError>
 
         let stored_reactions_amount = reactions_read(deps.storage)
             .load(post.clone().post_id.as_bytes())
-            .unwrap_or(Uint128(0));
+            .unwrap_or(Uint128::new(0));
 
         let calculated_reward = calculate_rewards(
             deps.as_ref(),
-            stored_reactions_amount.0,
+            u128::from(stored_reactions_amount),
             actual_reactions_amount,
         )?;
 
         if !calculated_reward[0].amount.is_zero() {
-            let msg = CosmosMsg::from(BankMsg::Send {
+            let msg = BankMsg::Send {
                 to_address: post.clone().creator,
                 amount: calculated_reward,
-            });
+            };
 
             msgs.push(msg);
         }
 
         reactions_store(deps.storage).save(
             post.clone().post_id.as_bytes(),
-            &Uint128(actual_reactions_amount),
+            &Uint128::new(actual_reactions_amount),
         )?;
 
         subspace_id = post.subspace.clone()
     }
 
-    let response = Response {
-        messages: msgs,
-        attributes: vec![
+    let response = Response::new()
+        .add_messages(msgs)
+        .add_attributes(vec![
             attr("action", "executed_tokenomics"),
             attr("subspace_id", subspace_id),
-        ],
-        ..Response::default()
-    };
+        ], );
 
     Ok(response)
 }
@@ -107,15 +105,12 @@ fn calculate_rewards(
 #[cfg(test)]
 mod tests {
     use crate::{
-        contract::{calculate_rewards, execute_tokenomics, instantiate},
+        contract::{calculate_rewards, execute_tokenomics, instantiate, DepsMut},
         msg::InstantiateMsg,
         state::denom_read,
     };
-    use cosmwasm_std::{
-        attr,
-        testing::{mock_env, mock_info},
-        BankMsg, Coin, CosmosMsg, DepsMut, Env, MessageInfo, Response,
-    };
+    use cosmwasm_std::{attr, testing::{mock_env, mock_info}, BankMsg, Coin, Env, MessageInfo,
+                       Response};
     use desmos::mock::mock_dependencies_with_custom_querier;
 
     fn setup_test(deps: DepsMut, env: Env, info: MessageInfo, denom: String) {
@@ -184,17 +179,15 @@ mod tests {
 
         assert!(response.is_ok());
 
-        let exp_response = Response {
-            messages: vec![CosmosMsg::from(BankMsg::Send {
+        let exp_response = Response::new()
+            .add_messages(vec![BankMsg::Send {
                 to_address: "default_creator".to_string(),
                 amount: vec![Coin::new(1_000_000, "udesmos")],
-            })],
-            attributes: vec![
+            }])
+            .add_attributes(vec![
                 attr("action", "executed_tokenomics"),
                 attr("subspace_id", "subspace"),
-            ],
-            ..Response::default()
-        };
+            ]);
 
         assert_eq!(exp_response, response.unwrap())
     }

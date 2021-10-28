@@ -8,20 +8,22 @@ use cosmwasm_std::{
     testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
     to_binary, Binary, Coin, ContractResult, OwnedDeps, SystemResult,
 };
+use std::marker::PhantomData;
 
 /// Replacement for cosmwasm_std::testing::mock_dependencies
 /// this use our CustomQuerier
 pub fn mock_dependencies_with_custom_querier(
     contract_balance: &[Coin],
-) -> OwnedDeps<MockStorage, MockApi, MockQuerier<DesmosQueryWrapper>> {
+) -> OwnedDeps<MockStorage, MockApi, MockQuerier<DesmosQueryWrapper>, DesmosQueryWrapper> {
     let contract_addr = MOCK_CONTRACT_ADDR;
     let custom_querier: MockQuerier<DesmosQueryWrapper> =
         MockQuerier::new(&[(&contract_addr, contract_balance)])
             .with_custom_handler(|query| SystemResult::Ok(custom_query_execute(&query)));
-    OwnedDeps {
+    OwnedDeps::<_, _, _, DesmosQueryWrapper> {
         storage: MockStorage::default(),
         api: MockApi::default(),
         querier: custom_querier,
+        custom_query_type: PhantomData,
     }
 }
 
@@ -31,12 +33,12 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
         DesmosQuery::Posts {} => {
             let post = Post {
                 post_id: "id123".to_string(),
-                parent_id: Some(String::from("id345")),
-                message: String::from("message"),
-                created: String::from("date-time"),
-                last_edited: String::from("date-time"),
-                comments_state: String::from("ALLOWED"),
-                subspace: String::from("subspace"),
+                parent_id: Some("id345".to_string()),
+                message: "message".to_string(),
+                created: "date-time".to_string(),
+                last_edited: "date-time".to_string(),
+                comments_state: "ALLOWED".to_string(),
+                subspace: "subspace".to_string(),
                 additional_attributes: Some(vec![]),
                 attachments: Some(vec![]),
                 poll: Some(Poll {
@@ -46,16 +48,16 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
                     allows_multiple_answers: false,
                     allows_answer_edits: false,
                 }),
-                creator: String::from("default_creator"),
+                creator: "default_creator".to_string(),
             };
             to_binary(&PostsResponse { posts: vec![post] })
         }
         DesmosQuery::Reports { post_id } => {
             let report = Report {
-                post_id,
-                kind: String::from("test"),
-                message: String::from("test"),
-                user: String::from("default_creator"),
+                post_id: post_id.to_string(),
+                kind: "test".to_string(),
+                message: "test".to_string(),
+                user: "default_creator".to_string(),
             };
             to_binary(&ReportsResponse {
                 reports: vec![report],
@@ -63,7 +65,7 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
         }
         DesmosQuery::Reactions { post_id } => {
             let reactions = vec![Reaction {
-                post_id,
+                post_id: post_id.to_string(),
                 short_code: ":heart:".to_string(),
                 value: "❤️".to_string(),
                 owner: "user".to_string(),
@@ -84,13 +86,13 @@ mod tests {
     #[test]
     fn custom_query_execute_posts() {
         let post = Post {
-            post_id: String::from("id123"),
-            parent_id: Some(String::from("id345")),
-            message: String::from("message"),
-            created: String::from("date-time"),
-            last_edited: String::from("date-time"),
-            comments_state: String::from("ALLOWED"),
-            subspace: String::from("subspace"),
+            post_id: "id123".to_string(),
+            parent_id: Some("id345".to_string()),
+            message: "message".to_string(),
+            created: "date-time".to_string(),
+            last_edited: "date-time".to_string(),
+            comments_state: "ALLOWED".to_string(),
+            subspace: "subspace".to_string(),
             additional_attributes: Some(vec![]),
             attachments: Some(vec![]),
             poll: Some(Poll {
@@ -115,10 +117,10 @@ mod tests {
     #[test]
     fn custom_query_execute_reports() {
         let report = Report {
-            post_id: String::from("id123"),
-            kind: String::from("test"),
-            message: String::from("test"),
-            user: String::from("default_creator"),
+            post_id: "id123".to_string(),
+            kind: "test".to_string(),
+            message: "test".to_string(),
+            user: "default_creator".to_string(),
         };
         let expected = ReportsResponse {
             reports: vec![report],
@@ -144,14 +146,14 @@ mod tests {
                 post_id: "id123".to_string(),
             },
         }
-        .into();
-        let wrapper = QuerierWrapper::new(&deps.querier);
-        let response: ReportsResponse = wrapper.custom_query(&req).unwrap();
+            .into();
+        let wrapper: QuerierWrapper<'_, DesmosQueryWrapper> = QuerierWrapper::new(&deps.querier);
+        let response: ReportsResponse = wrapper.query(&req).unwrap();
         let expected = vec![Report {
-            post_id: String::from("id123"),
-            kind: String::from("test"),
-            message: String::from("test"),
-            user: String::from("default_creator"),
+            post_id: "id123".to_string(),
+            kind: "test".to_string(),
+            message: "test".to_string(),
+            user: "default_creator".to_string(),
         }];
         assert_eq!(response.reports, expected);
     }

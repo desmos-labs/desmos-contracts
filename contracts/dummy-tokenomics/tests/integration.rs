@@ -1,6 +1,4 @@
-use cosmwasm_std::{
-    attr, BankMsg, Coin, ContractResult, CosmosMsg, Env, MessageInfo, Response, SystemResult,
-};
+use cosmwasm_std::{attr, BankMsg, Coin, ContractResult, Env, MessageInfo, Response, SystemResult};
 use cosmwasm_storage::to_length_prefixed;
 use cosmwasm_vm::{
     testing::{
@@ -73,7 +71,7 @@ fn test_instantiate() {
         assert_eq!(token_denom, "\"udesmos\"");
         Ok(())
     })
-    .unwrap();
+        .unwrap();
 }
 
 #[test]
@@ -88,17 +86,15 @@ fn test_execute_tokenomics_successfully() {
 
     setup_test(&mut deps, mock_env(), info, "udesmos".to_string());
 
-    let exp_response = Response {
-        messages: vec![CosmosMsg::from(BankMsg::Send {
+    let exp_response = Response::new()
+        .add_messages(vec![BankMsg::Send {
             to_address: "default_creator".to_string(),
             amount: vec![Coin::new(1_000_000, "udesmos")],
-        })],
-        attributes: vec![
+        }])
+        .add_attributes(vec![
             attr("action", "executed_tokenomics"),
             attr("subspace_id", "subspace"),
-        ],
-        ..Response::default()
-    };
+        ]);
 
     let msg = SudoMsg::ExecuteTokenomics {};
     let response: ContractResult<Response> = sudo(&mut deps, mock_env(), msg.clone());
