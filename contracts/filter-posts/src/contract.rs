@@ -1,11 +1,10 @@
 use cosmwasm_std::{
-    attr, entry_point, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    attr, entry_point, to_binary, Binary, Env, MessageInfo, Response, StdResult,
 };
 
 use desmos::{
-    querier::{query_post_reports, query_posts},
     query_types::PostsResponse,
-    types::Post,
+    types::{Deps, DepsMut, Post},
 };
 
 use crate::{
@@ -13,6 +12,7 @@ use crate::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::{state_read, state_store, State},
 };
+use desmos::querier::DesmosQuerier;
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors and declare a custom Error variant for the ones where you will want to make use of it
@@ -29,10 +29,8 @@ pub fn instantiate(
     };
     state_store(deps.storage).save(&state)?;
 
-    let res = Response {
-        attributes: vec![attr("action", "set_default_reports_limit")],
-        ..Response::default()
-    };
+    let res = Response::default()
+        .add_attributes(vec![attr("action", "set_default_reports_limit")]);
     Ok(res)
 }
 
@@ -66,13 +64,11 @@ pub fn handle_report_limit_edit(
         default_reports_limit: report_limit,
     })?;
 
-    let response = Response {
-        attributes: vec![
+    let response = Response::default()
+        .add_attributes(vec![
             attr("action", "edit_reports_limit"),
             attr("editor", info.sender),
-        ],
-        ..Response::default()
-    };
+        ]);
 
     Ok(response)
 }
@@ -88,16 +84,19 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 /// is_under_report_limit checks if the post is has a number of reports that is less than reports_limit
 pub fn is_under_reports_limit(deps: Deps, post: &Post, reports_limit: u16) -> bool {
-    let reports_len = query_post_reports(&deps.querier, post.post_id.clone())
+    let querier = DesmosQuerier::new(&deps.querier);
+    let reports_len = querier.query_post_reports(post.post_id.clone())
         .unwrap()
         .reports
         .len() as u16;
+
     reports_len < reports_limit
 }
 
 /// query_filtered_posts returns a list of filtered posts that has less reports than the reports_limit
 pub fn query_filtered_posts(deps: Deps, reports_limit: u16) -> StdResult<PostsResponse> {
-    let posts = query_posts(&deps.querier)?;
+    let querier = DesmosQuerier::new(&deps.querier);
+    let posts = querier.query_posts()?;
     let filtered_posts = posts
         .posts
         .into_iter()
