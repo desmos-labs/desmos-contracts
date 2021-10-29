@@ -39,7 +39,7 @@ use desmos::{
 };
 
 #[cfg(not(tarpaulin_include))]
-const WASM: &[u8] = include_bytes!("filter_posts.wasm");
+const WASM: &[u8] = include_bytes!("cw_desmos_filter_posts.wasm");
 
 #[cfg(not(tarpaulin_include))]
 fn setup_test(

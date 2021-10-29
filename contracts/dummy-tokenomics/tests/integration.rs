@@ -14,7 +14,7 @@ use cw_desmos_dummy_tokenomics::{
 use desmos::{mock::custom_query_execute, query_types::DesmosQueryWrapper};
 
 #[cfg(not(tarpaulin_include))]
-const WASM: &[u8] = include_bytes!("dummy_tokenomics.wasm");
+const WASM: &[u8] = include_bytes!("cw_desmos_dummy_tokenomics.wasm");
 
 #[cfg(not(tarpaulin_include))]
 fn setup_test(
