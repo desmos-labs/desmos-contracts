@@ -71,7 +71,7 @@ fn test_instantiate() {
         assert_eq!(token_denom, "\"udesmos\"");
         Ok(())
     })
-        .unwrap();
+    .unwrap();
 }
 
 #[test]
