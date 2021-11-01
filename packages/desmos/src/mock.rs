@@ -146,7 +146,7 @@ mod tests {
                 post_id: "id123".to_string(),
             },
         }
-            .into();
+        .into();
         let wrapper: QuerierWrapper<'_, DesmosQueryWrapper> = QuerierWrapper::new(&deps.querier);
         let response: ReportsResponse = wrapper.query(&req).unwrap();
         let expected = vec![Report {

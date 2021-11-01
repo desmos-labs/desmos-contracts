@@ -3,7 +3,6 @@ use crate::query_types::{
 };
 use cosmwasm_std::{QuerierWrapper, StdResult};
 
-
 pub struct DesmosQuerier<'a> {
     querier: &'a QuerierWrapper<'a, DesmosQueryWrapper>,
 }
@@ -23,10 +22,7 @@ impl<'a> DesmosQuerier<'a> {
         Ok(res)
     }
 
-    pub fn query_post_reports(
-        &self,
-        post_id: String,
-    ) -> StdResult<ReportsResponse> {
+    pub fn query_post_reports(&self, post_id: String) -> StdResult<ReportsResponse> {
         let request = DesmosQueryWrapper {
             route: DesmosRoute::Posts,
             query_data: DesmosQuery::Reports { post_id },
@@ -36,10 +32,7 @@ impl<'a> DesmosQuerier<'a> {
         Ok(res)
     }
 
-    pub fn query_post_reactions(
-        &self,
-        post_id: String,
-    ) -> StdResult<ReactionsResponse> {
+    pub fn query_post_reactions(&self, post_id: String) -> StdResult<ReactionsResponse> {
         let request = DesmosQueryWrapper {
             route: DesmosRoute::Posts,
             query_data: DesmosQuery::Reactions { post_id },

@@ -1,6 +1,6 @@
+use crate::query_types::DesmosQueryWrapper;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::query_types::DesmosQueryWrapper;
 
 pub type Deps<'a> = cosmwasm_std::Deps<'a, DesmosQueryWrapper>;
 pub type DepsMut<'a> = cosmwasm_std::DepsMut<'a, DesmosQueryWrapper>;

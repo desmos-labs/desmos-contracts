@@ -1,11 +1,9 @@
-use cosmwasm_std::{
-    attr, entry_point, to_binary, Binary, Env, MessageInfo, Response, StdResult,
-};
+use cosmwasm_std::{attr, entry_point, to_binary, Binary, Env, MessageInfo, Response, StdResult};
 
 use desmos::{
+    querier::DesmosQuerier,
     query_types::PostsResponse,
     types::{Deps, DepsMut, Post},
-    querier::DesmosQuerier,
 };
 
 use crate::{
@@ -29,8 +27,7 @@ pub fn instantiate(
     };
     state_store(deps.storage).save(&state)?;
 
-    let res = Response::new()
-        .add_attributes(vec![attr("action", "set_default_reports_limit")]);
+    let res = Response::new().add_attributes(vec![attr("action", "set_default_reports_limit")]);
     Ok(res)
 }
 
@@ -64,11 +61,10 @@ pub fn handle_report_limit_edit(
         default_reports_limit: report_limit,
     })?;
 
-    let response = Response::new()
-        .add_attributes(vec![
-            attr("action", "edit_reports_limit"),
-            attr("editor", info.sender),
-        ]);
+    let response = Response::new().add_attributes(vec![
+        attr("action", "edit_reports_limit"),
+        attr("editor", info.sender),
+    ]);
 
     Ok(response)
 }
@@ -85,7 +81,8 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 /// is_under_report_limit checks if the post is has a number of reports that is less than reports_limit
 pub fn is_under_reports_limit(deps: Deps, post: &Post, reports_limit: u16) -> bool {
     let querier = DesmosQuerier::new(&deps.querier);
-    let reports_len = querier.query_post_reports(post.post_id.clone())
+    let reports_len = querier
+        .query_post_reports(post.post_id.clone())
         .unwrap()
         .reports
         .len() as u16;
@@ -182,11 +179,10 @@ mod tests {
         let info = mock_info("editor", &[]);
         setup_test(deps.as_mut(), mock_env(), info.clone(), 3);
 
-        let exp_res = Response::new()
-            .add_attributes(vec![
-                attr("action", "edit_reports_limit"),
-                attr("editor", info.sender.clone()),
-            ]);
+        let exp_res = Response::new().add_attributes(vec![
+            attr("action", "edit_reports_limit"),
+            attr("editor", info.sender.clone()),
+        ]);
 
         let msg = ExecuteMsg::EditReportsLimit { reports_limit: 5 };
         let res = execute(deps.as_mut(), mock_env(), info.clone(), msg.clone());
