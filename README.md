@@ -6,10 +6,10 @@ A collection of smart contracts built in [CosmWasm](https://www.cosmwasm.com/) f
 
 | Packages | Tests | Crates.io |
 | ------------- | ------ | ------ |
-| desmos | ![Package-desmos](https://github.com/desmos-labs/desmos-contracts/workflows/Package-desmos/badge.svg)| ![[desmos on crates.io](https://img.shields.io/crates/v/desmos.svg)](https://crates.io/crates/desmos)
+| desmos | ![Package-desmos](https://github.com/desmos-labs/desmos-contracts/workflows/Package-desmos/badge.svg)| [![desmos on crates.io](https://img.shields.io/crates/v/desmos.svg)](https://crates.io/crates/desmos)
 
 
 | Contracts | Tests | Crates.io |
 | ------------- | ------ | ------ |
-| filter-posts | ![Contract-Filter-posts](https://github.com/desmos-labs/desmos-contracts/workflows/Contract-Filter-posts/badge.svg) | ![[cw-desmos-filter-posts on crates.io](https://img.shields.io/crates/v/cw-desmos-filter-posts.svg)](https://crates.io/crates/cw-desmos-filter-posts)
-| dummy-tokenomics | ![[Contract-dummy-tokenomics](https://github.com/desmos-labs/desmos-contracts/actions/workflows/dummy_contracts.yml/badge.svg)](https://github.com/desmos-labs/desmos-contracts/actions/workflows/dummy_contracts.yml) |  |
+| filter-posts | ![Contract-Filter-posts](https://github.com/desmos-labs/desmos-contracts/workflows/Contract-Filter-posts/badge.svg) | [![cw-desmos-filter-posts on crates.io](https://img.shields.io/crates/v/cw-desmos-filter-posts.svg)](https://crates.io/crates/cw-desmos-filter-posts)
+| dummy-tokenomics | ![Contract-dummy-tokenomics](https://github.com/desmos-labs/desmos-contracts/workflows/Contract-dummy-tokenomics/badge.svg) | [![cw-desmos-dummy-tokenomics on crates.io](https://img.shields.io/crates/v/cw-desmos-dummy-tokenomics.svg)](https://crates.io/crates/cw-desmos-dummy-tokenomics)
