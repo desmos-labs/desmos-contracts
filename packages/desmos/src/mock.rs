@@ -17,8 +17,8 @@ pub fn mock_dependencies_with_custom_querier(
 ) -> OwnedDeps<MockStorage, MockApi, MockQuerier<DesmosQueryWrapper>, DesmosQueryWrapper> {
     let contract_addr = MOCK_CONTRACT_ADDR;
     let custom_querier: MockQuerier<DesmosQueryWrapper> =
-        MockQuerier::new(&[(&contract_addr, contract_balance)])
-            .with_custom_handler(|query| SystemResult::Ok(custom_query_execute(&query)));
+        MockQuerier::new(&[(contract_addr, contract_balance)])
+            .with_custom_handler(|query| SystemResult::Ok(custom_query_execute(query)));
     OwnedDeps::<_, _, _, DesmosQueryWrapper> {
         storage: MockStorage::default(),
         api: MockApi::default(),
@@ -54,7 +54,7 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
         }
         DesmosQuery::Reports { post_id } => {
             let report = Report {
-                post_id: post_id.to_string(),
+                post_id,
                 kind: "test".to_string(),
                 message: "test".to_string(),
                 user: "default_creator".to_string(),
@@ -65,7 +65,7 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
         }
         DesmosQuery::Reactions { post_id } => {
             let reactions = vec![Reaction {
-                post_id: post_id.to_string(),
+                post_id,
                 short_code: ":heart:".to_string(),
                 value: "❤️".to_string(),
                 owner: "user".to_string(),
@@ -146,7 +146,7 @@ mod tests {
                 post_id: "id123".to_string(),
             },
         }
-            .into();
+        .into();
         let wrapper: QuerierWrapper<'_, DesmosQueryWrapper> = QuerierWrapper::new(&deps.querier);
         let response: ReportsResponse = wrapper.query(&req).unwrap();
         let expected = vec![Report {

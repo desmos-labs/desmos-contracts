@@ -5,8 +5,8 @@ use crate::{
 };
 use cosmwasm_std::{attr, entry_point, BankMsg, Coin, Env, MessageInfo, Response, Uint128};
 use desmos::{
-    types::{Deps, DepsMut},
     querier::DesmosQuerier,
+    types::{Deps, DepsMut},
 };
 
 #[entry_point]
@@ -18,8 +18,7 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     denom_store(deps.storage).save(&msg.token_denom)?;
 
-    let res = Response::new()
-        .add_attributes(vec![attr("action", "set_token_denom")]);
+    let res = Response::new().add_attributes(vec![attr("action", "set_token_denom")]);
     Ok(res)
 }
 
@@ -41,7 +40,8 @@ fn execute_tokenomics(deps: DepsMut) -> Result<Response, ContractError> {
     let posts = querier.query_posts()?.posts;
 
     for post in posts.iter() {
-        let actual_reactions_amount = querier.query_post_reactions(post.clone().post_id)?
+        let actual_reactions_amount = querier
+            .query_post_reactions(post.clone().post_id)?
             .reactions
             .into_iter()
             .filter(|reaction| reaction.owner != post.creator)
@@ -49,7 +49,7 @@ fn execute_tokenomics(deps: DepsMut) -> Result<Response, ContractError> {
 
         let stored_reactions_amount = reactions_read(deps.storage)
             .load(post.clone().post_id.as_bytes())
-            .unwrap_or(Uint128::new(0));
+            .unwrap_or_else(|_| Uint128::new(0));
 
         let calculated_reward = calculate_rewards(
             deps.as_ref(),
@@ -74,12 +74,10 @@ fn execute_tokenomics(deps: DepsMut) -> Result<Response, ContractError> {
         subspace_id = post.subspace.clone()
     }
 
-    let response = Response::new()
-        .add_messages(msgs)
-        .add_attributes(vec![
-            attr("action", "executed_tokenomics"),
-            attr("subspace_id", subspace_id),
-        ], );
+    let response = Response::new().add_messages(msgs).add_attributes(vec![
+        attr("action", "executed_tokenomics"),
+        attr("subspace_id", subspace_id),
+    ]);
 
     Ok(response)
 }
@@ -109,8 +107,11 @@ mod tests {
         msg::InstantiateMsg,
         state::denom_read,
     };
-    use cosmwasm_std::{attr, testing::{mock_env, mock_info}, BankMsg, Coin, Env, MessageInfo,
-                       Response};
+    use cosmwasm_std::{
+        attr,
+        testing::{mock_env, mock_info},
+        BankMsg, Coin, Env, MessageInfo, Response,
+    };
     use desmos::mock::mock_dependencies_with_custom_querier;
 
     fn setup_test(deps: DepsMut, env: Env, info: MessageInfo, denom: String) {
