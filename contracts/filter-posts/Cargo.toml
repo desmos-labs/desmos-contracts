@@ -28,12 +28,13 @@ library = []
 
 [dependencies]
 desmos = { path = "../../packages/desmos", version = "0.1.3" }
-cosmwasm-std = { version = "1.0.0-beta" }
-cosmwasm-storage = { version = "1.0.0-beta" }
+cosmwasm-std = { version = "1.0.0-beta", features = ["iterator", "staking"] }
+cosmwasm-storage = { version = "1.0.0-beta", features = ["iterator"] }
 schemars = "0.8.1"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.23" }
 
 [dev-dependencies]
-cosmwasm-vm = { version = "1.0.0-beta", default-features = false }
+cosmwasm-vm = { version = "1.0.0-beta", default-features = true }
 cosmwasm-schema = { version = "1.0.0-beta" }
+tempfile = { version = "3.1.0" }
