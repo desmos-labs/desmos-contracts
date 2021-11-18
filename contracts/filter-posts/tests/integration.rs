@@ -32,8 +32,8 @@ use cw_desmos_filter_posts::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::REPORTS_LIMIT_KEY,
 };
-use desmos::mock::custom_query_execute;
-use desmos::{
+use desmos_cw::{
+    mock::custom_query_execute,
     query_types::{DesmosQueryWrapper, PostsResponse},
     types::{Poll, Post},
 };

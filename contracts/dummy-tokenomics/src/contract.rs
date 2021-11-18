@@ -4,7 +4,7 @@ use crate::{
     state::{denom_read, denom_store, reactions_read, reactions_store},
 };
 use cosmwasm_std::{attr, entry_point, BankMsg, Coin, Env, MessageInfo, Response, Uint128};
-use desmos::{
+use desmos_cw::{
     querier::DesmosQuerier,
     types::{Deps, DepsMut},
 };
@@ -112,7 +112,7 @@ mod tests {
         testing::{mock_env, mock_info},
         BankMsg, Coin, Env, MessageInfo, Response,
     };
-    use desmos::mock::mock_dependencies_with_custom_querier;
+    use desmos_cw::mock::mock_dependencies_with_custom_querier;
 
     fn setup_test(deps: DepsMut, env: Env, info: MessageInfo, denom: String) {
         let instantiate_msg = InstantiateMsg { token_denom: denom };
