@@ -1,9 +1,9 @@
 [package]
-name = "desmos"
-version = "0.1.3"
+name = "desmos-cw"
+version = "0.1.4"
 authors = ["bragaz <leo.braga95@gmail.com>"]
 edition = "2018"
-description = "Desmos network types and helpers"
+description = "Desmos network utilities for smart contracts development"
 license = "Apache-2.0"
 repository = "https://github.com/desmos-labs/desmos-contracts"
 homepage = "https://www.desmos.network"
