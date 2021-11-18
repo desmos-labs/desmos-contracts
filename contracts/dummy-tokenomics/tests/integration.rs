@@ -11,7 +11,7 @@ use cw_desmos_dummy_tokenomics::{
     msg::{InstantiateMsg, SudoMsg},
     state::TOKEN_DENOM_KEY,
 };
-use desmos::{mock::custom_query_execute, query_types::DesmosQueryWrapper};
+use desmos_cw::{mock::custom_query_execute, query_types::DesmosQueryWrapper};
 
 #[cfg(not(tarpaulin_include))]
 const WASM: &[u8] = include_bytes!("cw_desmos_dummy_tokenomics.wasm");

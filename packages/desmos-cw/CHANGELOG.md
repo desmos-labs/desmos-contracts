@@ -2,6 +2,9 @@
 Collection of Desmos chain queries, messages and types used by different
 Desmos contracts.
 
+### Version 0.1.4
+- Renamed package from `desmos` to `desmos-cw`
+
 ### Version 0.1.3
 - Updated `cosmwasm` dependencies to `v1.0.0-beta`;
 - Updated custom queries code to fit `v1.0.0-beta` changes;
