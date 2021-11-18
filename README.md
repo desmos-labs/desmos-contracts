@@ -6,7 +6,7 @@ A collection of smart contracts built in [CosmWasm](https://www.cosmwasm.com/) f
 
 | Packages | Tests | Crates.io |
 | ------------- | ------ | ------ |
-| desmos | ![Package-desmos](https://github.com/desmos-labs/desmos-contracts/workflows/Package-desmos/badge.svg)| [![desmos on crates.io](https://img.shields.io/crates/v/desmos.svg)](https://crates.io/crates/desmos)
+| desmos-cw | ![Package-desmos-cw](https://github.com/desmos-labs/desmos-contracts/workflows/Package-desmos/badge.svg)| [![desmos on crates.io](https://img.shields.io/crates/v/desmos_cw.svg)](https://crates.io/crates/desmos_cw)
 
 
 | Contracts | Tests | Crates.io |
