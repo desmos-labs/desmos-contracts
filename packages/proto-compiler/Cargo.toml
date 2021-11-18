@@ -10,7 +10,5 @@ keywords = ["social-network", "blockchain", "smart-contracts"]
 
 [dependencies]
 bytes = { version = "1", default-features = false }
-prost = { version = "0.9.0" }
-
-[build-dependencies]
-prost-build = { version = "0.9.0" }
+prost = { version = "0.9" }
+prost-build = { version = "0.9" }
