@@ -1,5 +1,9 @@
 [workspace]
-members = ["packages/*", "contracts/*"]
+members = [
+  "packages/desmos-cw",
+  "packages/proto-compiler",
+  "contracts/*"
+]
 
 [profile.release.package.desmos]
 codegen-units = 1
