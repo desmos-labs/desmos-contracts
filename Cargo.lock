@@ -436,6 +436,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "desmos-proto"
+version = "0.0.1"
+dependencies = [
+ "prost",
+ "prost-types",
+]
+
+[[package]]
 name = "digest"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -995,7 +1003,6 @@ name = "proto-compiler"
 version = "0.0.1"
 dependencies = [
  "bytes",
- "log",
  "prost",
  "prost-build",
 ]

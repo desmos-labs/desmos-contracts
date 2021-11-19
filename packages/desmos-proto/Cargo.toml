@@ -1,5 +1,5 @@
 [package]
-name = "proto-compiler"
+name = "desmos-proto"
 version = "0.0.1"
 authors = ["Leonardo Bragagnolo <leonardo@forbole.com>"]
 edition = "2021"
@@ -9,6 +9,5 @@ homepage = "https://www.desmos.network"
 keywords = ["social-network", "blockchain", "smart-contracts"]
 
 [dependencies]
-bytes = { version = "1", default-features = false }
 prost = { version = "0.9" }
-prost-build = { version = "0.9" }
+prost-types = { version = "0.9"}
