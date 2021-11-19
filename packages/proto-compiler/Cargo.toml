@@ -12,3 +12,4 @@ keywords = ["social-network", "blockchain", "smart-contracts"]
 bytes = { version = "1", default-features = false }
 prost = { version = "0.9" }
 prost-build = { version = "0.9" }
+log = { version = "0.4.14" }

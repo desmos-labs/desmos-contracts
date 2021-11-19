@@ -995,6 +995,7 @@ name = "proto-compiler"
 version = "0.0.1"
 dependencies = [
  "bytes",
+ "log",
  "prost",
  "prost-build",
 ]
