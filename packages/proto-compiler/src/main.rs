@@ -42,6 +42,9 @@ fn compile_desmos_profiles_proto(out_dir: &Path) {
         desmos_dir.join("proto/desmos/profiles/v1beta1/models_profile.proto"),
         desmos_dir.join("proto/desmos/profiles/v1beta1/models_chain_links.proto"),
         desmos_dir.join("proto/desmos/profiles/v1beta1/models_app_links.proto"),
+        desmos_dir.join("proto/desmos/profiles/v1beta1/models_dtag_requests.proto"),
+        desmos_dir.join("proto/desmos/profiles/v1beta1/models_relationships.proto"),
+        desmos_dir.join("proto/desmos/profiles/v1beta1/")
     ];
 
     // Compile the x/profiles proto files

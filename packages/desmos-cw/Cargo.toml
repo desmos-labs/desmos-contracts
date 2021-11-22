@@ -2,7 +2,7 @@
 name = "desmos-cw"
 version = "0.1.4"
 authors = ["Leonardo Bragagnolo <leonardo@forbole.com>"]
-edition = "2021"
+edition = "2018"
 description = "Desmos network utilities for smart contracts development"
 license = "Apache-2.0"
 repository = "https://github.com/desmos-labs/desmos-contracts"

@@ -2,7 +2,7 @@
 name = "proto-compiler"
 version = "0.0.1"
 authors = ["Leonardo Bragagnolo <leonardo@forbole.com>"]
-edition = "2021"
+edition = "2018"
 license = "Apache-2.0"
 repository = "https://github.com/desmos-labs/desmos-contracts"
 homepage = "https://www.desmos.network"
