@@ -1,57 +1,41 @@
-use std::{path::{Path, PathBuf}, ffi::OsStr, process};
-use core::sync::atomic;
-use prost_build::Config;
+use std::{path::{Path, PathBuf}, ffi::OsStr, process, fs};
 
-/// Directory where the desmos submodule is located
+/// Directory where the desmos submodule and proto files are located
 const DESMOS_DIR: &str = "packages/desmos";
-
+const PROFILES_PROTO_DIR: &str = "proto/desmos/profiles/v1beta1";
 const DESMOS_GENERATED_PROTO_DIR: &str = "packages/desmos-proto/src";
-
-/// Execute a git cmd with the given appended args
-fn run_git_cmd(args: impl IntoIterator<Item = impl AsRef<OsStr>>) {
-    let exit_status = process::Command::new("git")
-        .args(args)
-        .status()
-        .expect("missing exist status");
-
-    if !exit_status.success() {
-       panic!("git exited with error code: {:?}", exit_status.code())
-    }
-}
-
-/// Update the Desmos core submodule with the latest changes of the repository
-fn update_desmos_submodule() {
-    println!("Updating desmos-labs/desmos submodule...");
-
-    run_git_cmd(&["submodule", "update", "--init"]);
-    run_git_cmd(&["-C", DESMOS_DIR, "submodule", "update", "--remote"]);
-    // run_git_cmd(&["-C", DESMOS_DIR, "reset", "--hard", "v1.0.0"]); use this if a specific Desmos version is needed
-}
+const PROFILES_GENERATED_DIR: &str = "profiles";
 
 /// Build all the desmos x/profiles module's proto files
 fn compile_desmos_profiles_proto(out_dir: &Path) {
-    let desmos_dir = Path::new(DESMOS_DIR);
-    let generated_profiles_dir = out_dir.join("profiles");
+    let desmos_submodule_dir = Path::new(DESMOS_DIR);
+    let generated_profiles_dir = out_dir.join(PROFILES_GENERATED_DIR);
 
     let proto_includes_paths = [
-        desmos_dir.join("proto"),
-        desmos_dir.join("third_party/proto")
+        desmos_submodule_dir.join("proto"),
+        desmos_submodule_dir.join("third_party/proto")
     ];
 
+    let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
+
+    let profiles_proto_dir = PathBuf::from(desmos_submodule_dir.join(PROFILES_PROTO_DIR));
+
     let proto_paths = [
-        desmos_dir.join("proto/desmos/profiles/v1beta1/models_profile.proto"),
-        desmos_dir.join("proto/desmos/profiles/v1beta1/models_chain_links.proto"),
-        desmos_dir.join("proto/desmos/profiles/v1beta1/models_app_links.proto"),
-        desmos_dir.join("proto/desmos/profiles/v1beta1/models_dtag_requests.proto"),
-        desmos_dir.join("proto/desmos/profiles/v1beta1/models_relationships.proto"),
-        desmos_dir.join("proto/desmos/profiles/v1beta1/")
+        profiles_proto_dir.join("models_profile.proto"),
+        profiles_proto_dir.join("models_chain_links.proto"),
+        profiles_proto_dir.join("models_app_links.proto"),
+        profiles_proto_dir.join("models_dtag_requests.proto"),
+        profiles_proto_dir.join("models_relationships.proto"),
     ];
 
     // Compile the x/profiles proto files
-    Config::new()
-        .out_dir(generated_profiles_dir)
-        .compile_protos(&proto_paths, &proto_includes_paths)
+    prost_build::Config::new()
+        .btree_map(&["."])
+        .out_dir(generated_profiles_dir.clone())
+        .compile_protos(&proto_paths, &includes)
         .unwrap();
+
+    remove_third_party_files(generated_profiles_dir.as_path());
 
     println!("Proto files compiled correctly!")
 }
@@ -63,6 +47,34 @@ fn main() {
         "Starting the compilation of Desmos .proto files...",
     );
 
-    update_desmos_submodule();
+    update_desmos_submodule(DESMOS_DIR);
     compile_desmos_profiles_proto(&proto_dir);
+}
+
+/// Execute a git cmd with the given appended args
+fn run_git_cmd(args: impl IntoIterator<Item = impl AsRef<OsStr>>) {
+    let exit_status = process::Command::new("git")
+        .args(args)
+        .status()
+        .expect("missing exist status");
+
+    if !exit_status.success() {
+        panic!("git exited with error code: {:?}", exit_status.code())
+    }
+}
+
+/// Update the Desmos core submodule with the latest changes of the repository
+fn update_desmos_submodule(desmos_dir: &str) {
+    println!("Updating desmos-labs/desmos submodule...");
+
+    run_git_cmd(&["submodule", "update", "--init"]);
+    run_git_cmd(&["-C", desmos_dir, "submodule", "update", "--remote"]);
+    // run_git_cmd(&["-C", DESMOS_DIR, "reset", "--hard", "v1.0.0"]); use this if a specific Desmos version is needed
+}
+
+/// Remove the already provided third_party files from the compiled folders
+fn remove_third_party_files(out_dir: &Path) {
+    fs::remove_file(out_dir.join("cosmos_proto.rs"));
+    fs::remove_file(out_dir.join("gogoproto.rs"));
+    fs::remove_file(out_dir.join("google.protobuf.rs"));
 }
