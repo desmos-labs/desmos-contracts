@@ -13,6 +13,7 @@ const DESMOS_GENERATED_PROTO_DIR: &str = "packages/desmos-proto/src";
 const PROFILES_GENERATED_DIR: &str = "profiles";
 
 /// Build all the desmos x/profiles module's proto files
+#[cfg(not(tarpaulin_include))]
 fn compile_desmos_profiles_proto(out_dir: &Path) -> Result<()> {
     let desmos_submodule_dir = Path::new(DESMOS_DIR);
     let generated_profiles_dir = out_dir.join(PROFILES_GENERATED_DIR);
@@ -47,6 +48,7 @@ fn compile_desmos_profiles_proto(out_dir: &Path) -> Result<()> {
     Ok(())
 }
 
+#[cfg(not(tarpaulin_include))]
 fn main() -> Result<()> {
     let proto_dir: PathBuf = DESMOS_GENERATED_PROTO_DIR.parse().unwrap();
 
@@ -58,6 +60,7 @@ fn main() -> Result<()> {
 }
 
 /// Execute a git cmd with the given appended args
+#[cfg(not(tarpaulin_include))]
 fn run_git_cmd(args: impl IntoIterator<Item = impl AsRef<OsStr>>) {
     let exit_status = process::Command::new("git")
         .args(args)
@@ -70,6 +73,7 @@ fn run_git_cmd(args: impl IntoIterator<Item = impl AsRef<OsStr>>) {
 }
 
 /// Update the Desmos core submodule with the latest changes of the repository
+#[cfg(not(tarpaulin_include))]
 fn update_desmos_submodule(desmos_dir: &str) {
     println!("Updating desmos-labs/desmos submodule...");
 
@@ -79,6 +83,7 @@ fn update_desmos_submodule(desmos_dir: &str) {
 }
 
 /// Remove the already provided third_party files from the compiled folders
+#[cfg(not(tarpaulin_include))]
 fn remove_third_party_files(out_dir: &Path) -> Result<()> {
     fs::remove_file(out_dir.join("cosmos_proto.rs"))?;
     fs::remove_file(out_dir.join("gogoproto.rs"))?;
