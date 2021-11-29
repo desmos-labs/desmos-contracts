@@ -1,4 +1,10 @@
-use std::{path::{Path, PathBuf}, ffi::OsStr, process, fs};
+use std::{
+    ffi::OsStr,
+    fs,
+    io::Result,
+    path::{Path, PathBuf},
+    process,
+};
 
 /// Directory where the desmos submodule and proto files are located
 const DESMOS_DIR: &str = "packages/desmos";
@@ -7,18 +13,18 @@ const DESMOS_GENERATED_PROTO_DIR: &str = "packages/desmos-proto/src";
 const PROFILES_GENERATED_DIR: &str = "profiles";
 
 /// Build all the desmos x/profiles module's proto files
-fn compile_desmos_profiles_proto(out_dir: &Path) {
+fn compile_desmos_profiles_proto(out_dir: &Path) -> Result<()> {
     let desmos_submodule_dir = Path::new(DESMOS_DIR);
     let generated_profiles_dir = out_dir.join(PROFILES_GENERATED_DIR);
 
     let proto_includes_paths = [
         desmos_submodule_dir.join("proto"),
-        desmos_submodule_dir.join("third_party/proto")
+        desmos_submodule_dir.join("third_party/proto"),
     ];
 
     let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
 
-    let profiles_proto_dir = PathBuf::from(desmos_submodule_dir.join(PROFILES_PROTO_DIR));
+    let profiles_proto_dir = desmos_submodule_dir.join(PROFILES_PROTO_DIR);
 
     let proto_paths = [
         profiles_proto_dir.join("models_profile.proto"),
@@ -35,20 +41,20 @@ fn compile_desmos_profiles_proto(out_dir: &Path) {
         .compile_protos(&proto_paths, &includes)
         .unwrap();
 
-    remove_third_party_files(generated_profiles_dir.as_path());
+    println!("Proto files compiled correctly!");
 
-    println!("Proto files compiled correctly!")
+    remove_third_party_files(generated_profiles_dir.as_path())?;
+    Ok(())
 }
 
-fn main() {
+fn main() -> Result<()> {
     let proto_dir: PathBuf = DESMOS_GENERATED_PROTO_DIR.parse().unwrap();
 
-    println!(
-        "Starting the compilation of Desmos .proto files...",
-    );
+    println!("Starting the compilation of Desmos .proto files...",);
 
     update_desmos_submodule(DESMOS_DIR);
-    compile_desmos_profiles_proto(&proto_dir);
+    compile_desmos_profiles_proto(&proto_dir)?;
+    Ok(())
 }
 
 /// Execute a git cmd with the given appended args
@@ -73,8 +79,9 @@ fn update_desmos_submodule(desmos_dir: &str) {
 }
 
 /// Remove the already provided third_party files from the compiled folders
-fn remove_third_party_files(out_dir: &Path) {
-    fs::remove_file(out_dir.join("cosmos_proto.rs"));
-    fs::remove_file(out_dir.join("gogoproto.rs"));
-    fs::remove_file(out_dir.join("google.protobuf.rs"));
+fn remove_third_party_files(out_dir: &Path) -> Result<()> {
+    fs::remove_file(out_dir.join("cosmos_proto.rs"))?;
+    fs::remove_file(out_dir.join("gogoproto.rs"))?;
+    fs::remove_file(out_dir.join("google.protobuf.rs"))?;
+    Ok(())
 }
