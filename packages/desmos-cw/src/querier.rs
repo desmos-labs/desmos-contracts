@@ -2,10 +2,9 @@ use crate::{
     query_types::{
         DesmosQuery, DesmosQueryWrapper, PostsResponse, ReactionsResponse, ReportsResponse,
     },
-    types::DesmosRoute
+    types::DesmosRoute,
 };
 use cosmwasm_std::{QuerierWrapper, StdResult};
-
 
 pub struct DesmosQuerier<'a> {
     querier: &'a QuerierWrapper<'a, DesmosQueryWrapper>,

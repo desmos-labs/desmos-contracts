@@ -1,9 +1,7 @@
-use crate::types::{Post, Reaction, Report, DesmosRoute};
+use crate::types::{DesmosRoute, Post, Reaction, Report};
 use cosmwasm_std::CustomQuery;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-
-
 
 /// DesmosQueryWrapper is an override of QueryRequest::Custom to access desmos-specific modules
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

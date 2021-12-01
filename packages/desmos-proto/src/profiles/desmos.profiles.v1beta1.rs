@@ -259,3 +259,16 @@ pub struct UserBlock {
     #[prost(string, tag="4")]
     pub subspace: ::prost::alloc::string::String,
 }
+/// QueryProfileRequest is the request type for the Query/Profile RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryProfileRequest {
+    /// Address or DTag of the user to query the profile for
+    #[prost(string, tag="1")]
+    pub user: ::prost::alloc::string::String,
+}
+/// QueryProfileResponse is the response type for the Query/Profile RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryProfileResponse {
+    #[prost(message, optional, tag="1")]
+    pub profile: ::core::option::Option<::prost_types::Any>,
+}

@@ -6,7 +6,7 @@ use std::{
     process,
 };
 
-/// Directory where the desmos submodule and proto files are located
+/// Directories where the desmos submodule and proto files are located
 const DESMOS_DIR: &str = "packages/desmos";
 const PROFILES_PROTO_DIR: &str = "proto/desmos/profiles/v1beta1";
 const DESMOS_GENERATED_PROTO_DIR: &str = "packages/desmos-proto/src";
@@ -14,6 +14,7 @@ const PROFILES_GENERATED_DIR: &str = "profiles";
 
 /// Build all the desmos x/profiles module's proto files
 #[cfg(not(tarpaulin_include))]
+/// TODO refactor this one
 fn compile_desmos_profiles_proto(out_dir: &Path) -> Result<()> {
     let desmos_submodule_dir = Path::new(DESMOS_DIR);
     let generated_profiles_dir = out_dir.join(PROFILES_GENERATED_DIR);
@@ -33,6 +34,7 @@ fn compile_desmos_profiles_proto(out_dir: &Path) -> Result<()> {
         profiles_proto_dir.join("models_app_links.proto"),
         profiles_proto_dir.join("models_dtag_requests.proto"),
         profiles_proto_dir.join("models_relationships.proto"),
+        profiles_proto_dir.join("query_profile.proto"),
     ];
 
     // Compile the x/profiles proto files

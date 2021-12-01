@@ -1,7 +1,7 @@
+use crate::types::DesmosRoute;
+use cosmwasm_std::{CosmosMsg, CustomMsg};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::{CosmosMsg, CustomMsg};
-use crate::types::DesmosRoute;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -11,11 +11,12 @@ pub struct DesmosMsgWrapper {
 }
 
 impl Into<CosmosMsg<DesmosMsgWrapper>> for DesmosMsgWrapper {
-    fn into(self) -> CosmosMsg<DesmosMsgWrapper> { CosmosMsg::Custom(self) }
+    fn into(self) -> CosmosMsg<DesmosMsgWrapper> {
+        CosmosMsg::Custom(self)
+    }
 }
 
 impl CustomMsg for DesmosMsgWrapper {}
-
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -27,27 +28,27 @@ pub enum DesmosMsg {
         bio: String,
         profile_picture: String,
         cover_picture: String,
-        creator: String
+        creator: String,
     },
     DeleteProfile {
         creator: String,
     },
     RequestDTagTransfer {
-      receiver: String,
-      sender: String,
+        receiver: String,
+        sender: String,
     },
     CancelDTagTransferRequest {
-      receiver: String,
-      sender: String,
+        receiver: String,
+        sender: String,
     },
     AcceptDTagTransferRequest {
-      new_dtag: String,
-      sender: String,
-      receiver: String,
+        new_dtag: String,
+        sender: String,
+        receiver: String,
     },
     RefuseDTagTransferRequest {
-      sender: String,
-      receiver: String,
+        sender: String,
+        receiver: String,
     },
     CreateRelationship {
         sender: String,
