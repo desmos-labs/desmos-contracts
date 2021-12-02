@@ -353,6 +353,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw-desmos-dtag-auctioneer"
+version = "0.0.1"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cosmwasm-vm",
+ "desmos-cw",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "cw-desmos-dummy-tokenomics"
 version = "0.0.3"
 dependencies = [

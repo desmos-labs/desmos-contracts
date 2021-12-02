@@ -1,0 +1,54 @@
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
+use cosmwasm_std::Storage;
+use cosmwasm_storage::{
+    bucket, bucket_read, singleton, singleton_read, Bucket, ReadonlyBucket, ReadonlySingleton,
+    Singleton,
+};
+
+pub static CONTRACT_DTAG_KEY: &[u8] = b"contract_dtag";
+pub static DTAG_REQUESTS_RECORDS_KEY: &[u8] = b"dtag_request_record";
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct State {
+    pub contract_dtag: String,
+}
+
+/// Get a writable state singleton
+pub fn state_store(storage: &mut dyn Storage) -> Singleton<State> {
+    singleton(storage, CONTRACT_DTAG_KEY)
+}
+
+/// Get a read-only state singleton
+pub fn state_read(storage: &dyn Storage) -> ReadonlySingleton<State> {
+    singleton_read(storage, CONTRACT_DTAG_KEY)
+}
+
+/// DtagRequestRecord represents a request made from the bot to a user that wants to sell his dtag
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct DtagRequestRecord {
+    user: String,
+    dtag: String,
+}
+
+impl DtagRequestRecord {
+    pub fn new(user: String, dtag: String) -> Self {
+        Self { user, dtag }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct DtagRequestsRecords {
+    pub dtag_requests_record: Vec<DtagRequestRecord>,
+}
+
+/// Get a writable bucket
+pub fn dtag_requests_records_store(storage: &mut dyn Storage) -> Bucket<DtagRequestsRecords> {
+    bucket(storage, DTAG_REQUESTS_RECORDS_KEY)
+}
+
+/// Get a readable bucket
+pub fn dtag_requests_records_read(storage: &dyn Storage) -> ReadonlyBucket<DtagRequestsRecords> {
+    bucket_read(storage, DTAG_REQUESTS_RECORDS_KEY)
+}
