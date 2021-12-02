@@ -33,20 +33,20 @@ pub enum DesmosMsg {
     DeleteProfile {
         creator: String,
     },
-    RequestDTagTransfer {
+    RequestDtagTransfer {
         receiver: String,
         sender: String,
     },
-    CancelDTagTransferRequest {
+    CancelDtagTransferRequest {
         receiver: String,
         sender: String,
     },
-    AcceptDTagTransferRequest {
+    AcceptDtagTransferRequest {
         new_dtag: String,
         sender: String,
         receiver: String,
     },
-    RefuseDTagTransferRequest {
+    RefuseDtagTransferRequest {
         sender: String,
         receiver: String,
     },
