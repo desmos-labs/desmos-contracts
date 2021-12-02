@@ -1,3 +1,4 @@
+pub mod msg;
 pub mod querier;
 pub mod query_types;
 pub mod types;

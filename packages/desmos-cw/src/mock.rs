@@ -79,8 +79,8 @@ pub fn custom_query_execute(query: &DesmosQueryWrapper) -> ContractResult<Binary
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::query_types::{DesmosRoute, PostsResponse, ReportsResponse};
-    use crate::types::Report;
+    use crate::query_types::{PostsResponse, ReportsResponse};
+    use crate::types::{DesmosRoute, Report};
     use cosmwasm_std::{from_binary, QuerierWrapper};
 
     #[test]

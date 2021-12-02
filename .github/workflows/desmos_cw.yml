@@ -73,7 +73,7 @@ jobs:
       - name: Run cargo fmt
         run: cargo fmt --all -- --check
       - name: Run cargo clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy
 
       # TODO: we should check
       # CHANGES_IN_REPO=$(git status --porcelain)

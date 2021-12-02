@@ -1,5 +1,8 @@
-use crate::query_types::{
-    DesmosQuery, DesmosQueryWrapper, DesmosRoute, PostsResponse, ReactionsResponse, ReportsResponse,
+use crate::{
+    query_types::{
+        DesmosQuery, DesmosQueryWrapper, PostsResponse, ReactionsResponse, ReportsResponse,
+    },
+    types::DesmosRoute,
 };
 use cosmwasm_std::{QuerierWrapper, StdResult};
 
