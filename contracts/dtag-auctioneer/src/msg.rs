@@ -11,5 +11,12 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    AskMeForDtagTransferRequest { user: String },
+    AskMeForDtagTransferRequest {},
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum QueryMsg {
+    /// GetFilteredPosts returns a list of filtered posts where each post has been reported at most (reports_limit - 1) time
+    GetPendingAuctions {},
 }

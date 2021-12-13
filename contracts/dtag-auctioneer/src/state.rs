@@ -25,30 +25,24 @@ pub fn state_read(storage: &dyn Storage) -> ReadonlySingleton<State> {
     singleton_read(storage, CONTRACT_DTAG_KEY)
 }
 
-/// DtagRequestRecord represents a request made from the bot to a user that wants to sell his dtag
+/// DtagRequestRecord represents a request made from the contract to the user that wants to sell his dtag
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct DtagRequestRecord {
-    user: String,
-    dtag: String,
+    user: String
 }
 
 impl DtagRequestRecord {
-    pub fn new(user: String, dtag: String) -> Self {
-        Self { user, dtag }
+    pub fn new(user: String) -> Self {
+        Self { user }
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct DtagRequestsRecords {
-    pub dtag_requests_record: Vec<DtagRequestRecord>,
-}
-
 /// Get a writable bucket
-pub fn dtag_requests_records_store(storage: &mut dyn Storage) -> Bucket<DtagRequestsRecords> {
+pub fn dtag_requests_records_store(storage: &mut dyn Storage) -> Bucket<DtagRequestRecord> {
     bucket(storage, DTAG_REQUESTS_RECORDS_KEY)
 }
 
 /// Get a readable bucket
-pub fn dtag_requests_records_read(storage: &dyn Storage) -> ReadonlyBucket<DtagRequestsRecords> {
+pub fn dtag_requests_records_read(storage: &dyn Storage) -> ReadonlyBucket<DtagRequestRecord> {
     bucket_read(storage, DTAG_REQUESTS_RECORDS_KEY)
 }

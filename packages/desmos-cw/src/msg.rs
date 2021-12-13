@@ -72,3 +72,24 @@ pub enum DesmosMsg {
         subspace: String,
     },
 }
+
+pub fn save_profile(dtag: String) -> CosmosMsg<DesmosMsgWrapper> {
+    DesmosMsgWrapper {
+        route: DesmosRoute::Profiles,
+        msg: DesmosMsg::SaveProfile {
+            dtag,
+            nickname: "".to_string(),
+            bio: "".to_string(),
+            profile_picture: "".to_string(),
+            cover_picture: "".to_string(),
+            creator: "".to_string()
+        }
+    }.into()
+}
+
+pub fn request_dtag_transfer(sender: String, receiver: String) -> CosmosMsg<DesmosMsgWrapper> {
+    DesmosMsgWrapper{
+        route: DesmosRoute::Profiles,
+        msg: DesmosMsg::RequestDtagTransfer { receiver, sender }
+    }.into()
+}

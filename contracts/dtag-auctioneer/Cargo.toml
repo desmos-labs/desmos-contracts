@@ -6,7 +6,7 @@ edition = "2018"
 description = "A cosmwasm contract that allows a user to create an auction to sell his DTag"
 license = "Apache-2.0"
 repository = "https://github.com/desmos-labs/desmos-contracts"
-keywords = ["desmos-network", "social-network", "blockchain", "smart-contracts", "tokenomics"]
+keywords = ["desmos-network", "social-network", "blockchain", "smart-contracts"]
 
 exclude = [
   # Those files are rust-optimizer artifacts.
@@ -25,7 +25,7 @@ crate-type = ["cdylib", "rlib"]
 backtraces = ["cosmwasm-std/backtraces", "cosmwasm-vm/backtraces"]
 
 [dependencies]
-desmos-cw = { path = "../../packages/desmos-cw", version = "0.1.4" }
+desmos-cw = { path = "../../packages/desmos-cw" }
 cosmwasm-std = { version = "1.0.0-beta", features = ["iterator", "staking"] }
 cosmwasm-storage = { version = "1.0.0-beta", features = ["iterator"] }
 schemars = "0.8.1"
