@@ -1,5 +1,9 @@
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-use cw_desmos_dummy_tokenomics::msg::SudoMsg;
+use cw_desmos_dtag_auctioneer::{
+    msg::{
+        InstantiateMsg, ExecuteMsg
+    }
+};
 use std::{env::current_dir, fs::create_dir_all};
 
 fn main() {
@@ -8,5 +12,6 @@ fn main() {
     create_dir_all(&out_dir).unwrap();
     remove_schemas(&out_dir).unwrap();
 
-    export_schema(&schema_for!(), &out_dir);
+    export_schema(&schema_for!(InstantiateMsg), &out_dir);
+    export_schema(&schema_for!(ExecuteMsg), &out_dir);
 }

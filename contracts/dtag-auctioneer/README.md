@@ -1,9 +1,4 @@
-# Filter posts contract
-This contract will filter the posts returning only the posts that has less than `n` reports.
-`n` will be the number of reports that the contract need to exclude a post from the resulting list.
-The parameter can be chosen by the system, or the user that performs the query.
-
-![filter-posts-contract-flow](docs/cw1-filter-flow.png)
+# DTag auctioneer contract
 
 ## Store, instantiate and Interact with the contract on Desmos chain
 ### Store the contract (if not stored before)
@@ -26,14 +21,14 @@ pagination: {}
 ```
 After getting the contract's id you can now instantiate it by doing:
 ```bash
-desmos tx wasm instantiate <code_id> '{"reports_limit": <number>}' --label <contract_name> --from <key_name> --chain-id <chain_id> --amount <amount>
+desmos tx wasm instantiate <code_id> '{"contract_dtag": "your_dtag_here"}' --label <contract_name> --from <key_name> --chain-id <chain_id> --amount <amount>
 ```
 
 ### Interact with the contract
 ```bash
-desmos tx wasm execute <contract_address> '{"edit_reports_limit": { "reports_limit": <number> }}' --from <key_name> --chain-id <chain_id>
+desmos tx wasm execute <contract_address> '{"ask_me_for_dtag_transfer_request": {}}' --from <key_name> --chain-id <chain_id>
 ```
 
 ```bash
-desmos query wasm contract-state smart <contract_address> '{"get_filtered_posts":{"reports_limit": <number>}}' --chain-id <chai_id>
+desmos query wasm contract-state smart <contract_address> '' --chain-id <chai_id>
 ```

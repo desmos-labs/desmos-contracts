@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InstantiateMsg",
+  "type": "object",
+  "required": [
+    "contract_dtag"
+  ],
+  "properties": {
+    "contract_dtag": {
+      "description": "The dtag with which this contract will be initialized, since there will be more than one",
+      "type": "string"
+    }
+  }
+}
