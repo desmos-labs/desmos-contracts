@@ -27,7 +27,7 @@ backtraces = ["cosmwasm-std/backtraces", "cosmwasm-vm/backtraces"]
 library = []
 
 [dependencies]
-desmos-std = { path = "../../packages/desmos-std", version = "0.1.5" }
+desmos-std = { path = "../../packages/desmos-std", version = "0.1.6" }
 cosmwasm-std = { version = "1.0.0-beta", features = ["iterator", "staking"] }
 cosmwasm-storage = { version = "1.0.0-beta", features = ["iterator"] }
 schemars = "0.8.1"
@@ -37,4 +37,3 @@ thiserror = { version = "1.0.23" }
 [dev-dependencies]
 cosmwasm-vm = { version = "1.0.0-beta", default-features = true }
 cosmwasm-schema = { version = "1.0.0-beta" }
-tempfile = { version = "3.1.0" }
