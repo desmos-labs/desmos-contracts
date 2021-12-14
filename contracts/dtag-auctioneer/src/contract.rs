@@ -21,7 +21,7 @@ use crate::{
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     _: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response<DesmosMsgWrapper>> {
@@ -31,7 +31,10 @@ pub fn instantiate(
 
     state_store(deps.storage).save(&state)?;
 
-    let save_profile_msg = msg::save_profile(msg.contract_dtag.clone());
+    let save_profile_msg = msg::save_profile(
+        msg.contract_dtag.clone(),
+        env.contract.address.to_string(),
+    );
 
     let res: Response<DesmosMsgWrapper> = Response::new().
         add_message(save_profile_msg).

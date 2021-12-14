@@ -6,10 +6,11 @@ use desmos_std::{
     query_types::{PostsResponse, ReportsResponse},
     types::{Attachment, Attribute, Poll, Post, ProvidedAnswer, Report},
 };
+use desmos_std::msg::DesmosMsg;
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
-    out_dir.push("packages/desmos/schema");
+    out_dir.push("packages/desmos-std/schema");
     create_dir_all(&out_dir).unwrap();
     remove_schemas(&out_dir).unwrap();
 
@@ -21,4 +22,5 @@ fn main() {
     export_schema(&schema_for!(Report), &out_dir);
     export_schema(&schema_for!(PostsResponse), &out_dir);
     export_schema(&schema_for!(ReportsResponse), &out_dir);
+    export_schema(&schema_for!(DesmosMsg), &out_dir)
 }

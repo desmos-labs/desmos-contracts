@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub struct DesmosMsgWrapper {
     pub route: DesmosRoute,
-    pub msg: DesmosMsg,
+    pub msg_data: DesmosMsg,
 }
 
 impl Into<CosmosMsg<DesmosMsgWrapper>> for DesmosMsgWrapper {
@@ -73,16 +73,16 @@ pub enum DesmosMsg {
     },
 }
 
-pub fn save_profile(dtag: String) -> CosmosMsg<DesmosMsgWrapper> {
+pub fn save_profile(dtag: String, creator: String) -> CosmosMsg<DesmosMsgWrapper> {
     DesmosMsgWrapper {
         route: DesmosRoute::Profiles,
-        msg: DesmosMsg::SaveProfile {
+        msg_data: DesmosMsg::SaveProfile {
             dtag,
             nickname: "".to_string(),
             bio: "".to_string(),
             profile_picture: "".to_string(),
             cover_picture: "".to_string(),
-            creator: "".to_string()
+            creator
         }
     }.into()
 }
@@ -90,6 +90,6 @@ pub fn save_profile(dtag: String) -> CosmosMsg<DesmosMsgWrapper> {
 pub fn request_dtag_transfer(sender: String, receiver: String) -> CosmosMsg<DesmosMsgWrapper> {
     DesmosMsgWrapper{
         route: DesmosRoute::Profiles,
-        msg: DesmosMsg::RequestDtagTransfer { receiver, sender }
+        msg_data: DesmosMsg::RequestDtagTransfer { receiver, sender }
     }.into()
 }

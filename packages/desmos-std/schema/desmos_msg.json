@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DesmosMsg",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "save_profile"
+      ],
+      "properties": {
+        "save_profile": {
+          "type": "object",
+          "required": [
+            "bio",
+            "cover_picture",
+            "creator",
+            "dtag",
+            "nickname",
+            "profile_picture"
+          ],
+          "properties": {
+            "bio": {
+              "type": "string"
+            },
+            "cover_picture": {
+              "type": "string"
+            },
+            "creator": {
+              "type": "string"
+            },
+            "dtag": {
+              "type": "string"
+            },
+            "nickname": {
+              "type": "string"
+            },
+            "profile_picture": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}
