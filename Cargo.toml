@@ -1,9 +1,11 @@
 [workspace]
 members = [
-  "packages/desmos-cw",
+  "packages/desmos-std",
   "packages/proto-compiler",
   "packages/desmos-proto",
-  "contracts/*"
+  "contracts/dtag-auctioneer",
+  "contracts/filter-posts",
+  "contracts/dummy-tokenomics"
 ]
 
 [profile.release.package.desmos]

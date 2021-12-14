@@ -1,6 +1,6 @@
 [package]
-name = "desmos-cw"
-version = "0.1.5"
+name = "desmos-std"
+version = "0.1.6"
 authors = ["Leonardo Bragagnolo <leonardo@forbole.com>"]
 edition = "2018"
 description = "Desmos network utilities for smart contracts development"

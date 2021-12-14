@@ -1,6 +1,6 @@
 use cosmwasm_std::{attr, entry_point, to_binary, Binary, Env, MessageInfo, Response, StdResult};
 
-use desmos_cw::{
+use desmos_std::{
     querier::DesmosQuerier,
     query_types::PostsResponse,
     types::{Deps, DepsMut, Post},
@@ -108,7 +108,7 @@ pub fn query_filtered_posts(deps: Deps, reports_limit: u16) -> StdResult<PostsRe
 mod tests {
     use cosmwasm_std::testing::{mock_env, mock_info};
 
-    use desmos_cw::{mock::mock_dependencies_with_custom_querier, types::Poll};
+    use desmos_std::{mock::mock_dependencies_with_custom_querier, types::Poll};
 
     use crate::{
         contract::{execute, instantiate, is_under_reports_limit, query_filtered_posts},

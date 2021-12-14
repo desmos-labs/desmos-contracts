@@ -1,6 +1,6 @@
 use cosmwasm_std::{attr, entry_point, to_binary, Binary, Env, MessageInfo, Response, StdResult};
 
-use desmos_cw::{
+use desmos_std::{
     querier::DesmosQuerier,
     query_types::PostsResponse,
     types::{Deps, DepsMut, Post},
