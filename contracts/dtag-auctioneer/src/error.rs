@@ -9,5 +9,7 @@ pub enum ContractError {
     #[error("Dtag request already present in store")]
     AlreadyStoredDtagRequest {},
 
+    #[error("Dtag auction record not found")]
+    DtagAuctionRecordNotFound {}
 
 }

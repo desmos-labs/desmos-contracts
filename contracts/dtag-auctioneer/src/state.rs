@@ -8,7 +8,7 @@ use cosmwasm_storage::{
 };
 
 pub static CONTRACT_DTAG_KEY: &[u8] = b"contract_dtag";
-pub static DTAG_REQUESTS_RECORDS_KEY: &[u8] = b"dtag_request_record";
+pub static DTAG_AUCTION_STATUS_KEY: &[u8] = b"dtag_request_record";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct State {
@@ -25,24 +25,36 @@ pub fn state_read(storage: &dyn Storage) -> ReadonlySingleton<State> {
     singleton_read(storage, CONTRACT_DTAG_KEY)
 }
 
-/// DtagRequestRecord represents a request made from the contract to the user that wants to sell his dtag
+/// Auction status represent the different status in which an auction can be
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct DtagRequestRecord {
-    user: String
+#[serde(rename_all = "snake_case")]
+pub enum AuctionStatus {
+    PendingTransferRequest,
+    AcceptedTransferRequest,
+    AuctionStarted,
+    AuctionClosed
 }
 
-impl DtagRequestRecord {
-    pub fn new(user: String) -> Self {
-        Self { user }
+/// DtagAuctionRecord represents an auction and its status
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct DtagAuctionStatus {
+    user: String,
+    pub status: AuctionStatus
+}
+
+impl DtagAuctionStatus {
+    pub fn new(user: String, status: AuctionStatus) -> Self {
+        Self { user, status }
     }
 }
 
 /// Get a writable bucket
-pub fn dtag_requests_records_store(storage: &mut dyn Storage) -> Bucket<DtagRequestRecord> {
-    bucket(storage, DTAG_REQUESTS_RECORDS_KEY)
+pub fn dtag_auction_records_store(storage: &mut dyn Storage) -> Bucket<DtagAuctionStatus> {
+    bucket(storage, DTAG_AUCTION_STATUS_KEY)
 }
 
 /// Get a readable bucket
-pub fn dtag_requests_records_read(storage: &dyn Storage) -> ReadonlyBucket<DtagRequestRecord> {
-    bucket_read(storage, DTAG_REQUESTS_RECORDS_KEY)
+pub fn dtag_requests_records_read(storage: &dyn Storage) -> ReadonlyBucket<DtagAuctionStatus> {
+    bucket_read(storage, DTAG_AUCTION_STATUS_KEY)
 }

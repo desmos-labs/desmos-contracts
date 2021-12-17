@@ -1,3 +1,4 @@
+use std::panic;
 use cosmwasm_std::{attr, entry_point, to_binary, Binary, Env, MessageInfo, Response, StdResult};
 
 use desmos_std::{
@@ -12,8 +13,10 @@ use crate::{
     error::ContractError,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     state::{state_read, state_store, State, dtag_requests_records_read,
-            dtag_requests_records_store, DtagRequestRecord},
+            dtag_auction_records_store, DtagAuctionStatus},
 };
+use crate::msg::SudoMsg;
+use crate::state::AuctionStatus;
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors and declare a custom Error variant for the ones where you will want to make use of it
@@ -72,8 +75,8 @@ pub fn handle_dtag_transfer_request_to_user(
         return Err(ContractError::AlreadyStoredDtagRequest {})
     };
 
-    let record = DtagRequestRecord::new(msg_sender.to_string());
-    dtag_requests_records_store(deps.storage)
+    let record = DtagAuctionStatus::new(msg_sender.to_string());
+    dtag_auction_records_store(deps.storage)
         .save(msg_sender.as_bytes(), &record)?;
 
     let dtag_transfer_req_msg = msg::request_dtag_transfer(
@@ -89,11 +92,20 @@ pub fn handle_dtag_transfer_request_to_user(
     Ok(response)
 }
 
-/*
+
 #[entry_point]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn sudo(deps: Deps, _env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
     match msg {
-        QueryMsg::GetPendingAuctions { } => {}
+        SudoMsg::UpdateDtagAuctionStatus { user, status} =>
+        update_dtag_auction_status(user, status),
     }
 }
-*/
+
+pub fn update_dtag_auction_status(user: String, status: AuctionStatus) -> Result<Response, ContractError::DtagAuctionRecordNotFound> {
+    let dtag_auction_record = dtag_auction_records_store(deps.storage)
+        .update(user.as_bytes(), |opt_record: Option<DtagAuctionStatus> | -> Result<DtagAuctionStatus, ContractError> {
+            let mut record = opt_record.ok_or_else(|| ContractError::DtagAuctionRecordNotFound)?;
+            record.status = status;
+            Ok(record)
+        })?;
+}
