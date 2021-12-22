@@ -1,4 +1,3 @@
-use std::panic;
 use cosmwasm_std::{attr, entry_point, to_binary, Binary, Env, MessageInfo, Response, StdResult};
 
 use desmos_std::{
@@ -75,7 +74,7 @@ pub fn handle_dtag_transfer_request_to_user(
         return Err(ContractError::AlreadyStoredDtagRequest {})
     };
 
-    let record = DtagAuctionStatus::new(msg_sender.to_string());
+    let record = DtagAuctionStatus::new(msg_sender.to_string(), AuctionStatus::PendingTransferRequest);
     dtag_auction_records_store(deps.storage)
         .save(msg_sender.as_bytes(), &record)?;
 
@@ -94,18 +93,27 @@ pub fn handle_dtag_transfer_request_to_user(
 
 
 #[entry_point]
-pub fn sudo(deps: Deps, _env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
+pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
     match msg {
         SudoMsg::UpdateDtagAuctionStatus { user, status} =>
-        update_dtag_auction_status(user, status),
+        update_dtag_auction_status(deps, user, status),
     }
 }
 
-pub fn update_dtag_auction_status(user: String, status: AuctionStatus) -> Result<Response, ContractError::DtagAuctionRecordNotFound> {
+pub fn update_dtag_auction_status(deps: DepsMut, user: String, status: AuctionStatus) -> Result<Response, ContractError> {
     let dtag_auction_record = dtag_auction_records_store(deps.storage)
         .update(user.as_bytes(), |opt_record: Option<DtagAuctionStatus> | -> Result<DtagAuctionStatus, ContractError> {
-            let mut record = opt_record.ok_or_else(|| ContractError::DtagAuctionRecordNotFound)?;
+            let mut record = opt_record.ok_or_else(|| ContractError::DtagAuctionRecordNotFound {})?;
             record.status = status;
             Ok(record)
         })?;
+
+    let response = Response::new()
+        .add_attributes(vec![
+            attr("action", "update_dtag_auction_status"),
+            attr("status", dtag_auction_record.status.to_string()),
+            attr("user", user.clone())
+        ]);
+
+    Ok(response)
 }

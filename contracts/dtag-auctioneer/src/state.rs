@@ -1,3 +1,5 @@
+use std::fmt;
+use std::fmt::{Formatter, write};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -28,11 +30,23 @@ pub fn state_read(storage: &dyn Storage) -> ReadonlySingleton<State> {
 /// Auction status represent the different status in which an auction can be
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+#[serde(untagged)]
 pub enum AuctionStatus {
     PendingTransferRequest,
     AcceptedTransferRequest,
     AuctionStarted,
     AuctionClosed
+}
+
+impl fmt::Display for AuctionStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            AuctionStatus::PendingTransferRequest => write!(f, "PendingTransferRequest"),
+            AuctionStatus::AcceptedTransferRequest => write!(f, "AcceptedTransferRequest"),
+            AuctionStatus::AuctionStarted => write!(f, "AuctionStarted"),
+            AuctionStatus::AuctionClosed => write!(f, "AuctionClosed")
+        }
+    }
 }
 
 /// DtagAuctionRecord represents an auction and its status
@@ -44,10 +58,12 @@ pub struct DtagAuctionStatus {
 }
 
 impl DtagAuctionStatus {
-    pub fn new(user: String, status: AuctionStatus) -> Self {
-        Self { user, status }
+    pub fn new(user: String, status: AuctionStatus) -> DtagAuctionStatus {
+        DtagAuctionStatus{ user, status }
     }
 }
+
+
 
 /// Get a writable bucket
 pub fn dtag_auction_records_store(storage: &mut dyn Storage) -> Bucket<DtagAuctionStatus> {
