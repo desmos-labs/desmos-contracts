@@ -1,6 +1,7 @@
+use cosmwasm_std::{Timestamp, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::state::AuctionStatus;
+use crate::state::RecordStatus;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -13,6 +14,24 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     AskMeForDtagTransferRequest {},
+    CreateAuction{
+        dtag: String,
+        starting_price: Uint64,
+        max_participants: Uint64,
+        end_time: Timestamp,
+        user: String
+    },
+    MakeOffer{
+        amount: Uint64,
+        user: String
+    },
+    RetreatOffer{
+        user: String
+    },
+    CloseAuctionAndSellDTag{
+        user: String
+    }
+
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -20,7 +39,7 @@ pub enum ExecuteMsg {
 pub enum SudoMsg {
     UpdateDtagAuctionStatus {
         user:   String,
-        status: AuctionStatus
+        status: RecordStatus
     },
 }
 
@@ -29,4 +48,7 @@ pub enum SudoMsg {
 pub enum QueryMsg {
     /// GetFilteredPosts returns a list of filtered posts where each post has been reported at most (reports_limit - 1) time
     GetPendingAuctions {},
+    GetAuctionByUser{user: String},
+    GetOffers{},
+    GetBestOffer{},
 }

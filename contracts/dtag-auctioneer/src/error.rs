@@ -6,8 +6,11 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
+    #[error("An auction has already been started by this contract")]
+    PendingAuction{},
+
     #[error("Dtag request already present in store")]
-    AlreadyStoredDtagRequest {},
+    AlreadyExistentDtagRequest {},
 
     #[error("Dtag auction record not found")]
     DtagAuctionRecordNotFound {}
