@@ -1,4 +1,4 @@
-use cosmwasm_std::{attr, entry_point, to_binary, Binary, Env, MessageInfo, Response, StdResult, Uint64, Timestamp, Addr};
+use cosmwasm_std::{attr, entry_point, to_binary, Binary, Env, MessageInfo, Response, StdResult, Uint64, Timestamp, Addr, Order};
 
 use desmos_std::{
     querier::DesmosQuerier,
@@ -11,11 +11,10 @@ use desmos_std::{
 use crate::{
     error::ContractError,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
-    state::{state_read, state_store, State, dtag_requests_records_read,
-            dtag_transfer_records_store, DtagTransferRecord},
+    state::{ContractDTag, DtagTransferRecord},
 };
 use crate::msg::SudoMsg;
-use crate::state::{Auction, auction_read, auction_store, RecordStatus};
+use crate::state::{Auction, AUCTIONS_STORE, AuctionStatus, CONTRACT_DTAG_STORE, DTAG_TRANSFER_RECORD};
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors and declare a custom Error variant for the ones where you will want to make use of it
@@ -27,11 +26,11 @@ pub fn instantiate(
     _: MessageInfo,
     msg: InstantiateMsg,
 ) -> StdResult<Response<DesmosMsgWrapper>> {
-    let state = State {
-        contract_dtag: msg.contract_dtag.clone(),
-    };
+    let dtag = ContractDTag(
+        msg.contract_dtag.clone()
+    );
 
-    state_store(deps.storage).save(&state)?;
+    CONTRACT_DTAG_STORE.save(deps.storage, &dtag)?;
 
     let save_profile_msg = msg::save_profile(
         msg.contract_dtag.clone(),
@@ -84,7 +83,7 @@ pub fn handle_dtag_transfer_request_to_user(
         return Err(ContractError::AlreadyExistentDtagRequest {})
     };
 
-    let record = DtagTransferRecord::new(msg_sender.to_string(), RecordStatus::PendingTransferRequest);
+    let record = DtagTransferRecord::new(msg_sender.to_string(), AuctionStatus::PendingTransferRequest);
     dtag_transfer_records_store(deps.storage)
         .save(msg_sender.as_bytes(), &record)?;
 
@@ -103,8 +102,7 @@ pub fn handle_dtag_transfer_request_to_user(
 
 /// does_dtag_request_exists checks the existence of a dtag transfer request made by the user
 fn does_dtag_request_exists(deps: &DepsMut, user: &str) -> bool {
-    let dtag_request_record = dtag_requests_records_read(deps.storage).load(
-        user.as_bytes());
+    let dtag_request_record = DTAG_TRANSFER_RECORD.load(deps.storage);
 
     if dtag_request_record.is_ok() {
         return true
@@ -124,16 +122,24 @@ pub fn handle_create_auction(
     user: String,
 ) -> Result<Response, ContractError> {
 
-    if auction_read(deps.storage).load().is_ok() {
-        return Err(ContractError::AlreadyExistentDtagRequest {},
+    // check if an auction made by the msg sender already exist
+    let auctions: StdResult<Vec<_, >> = AUCTIONS_STORE.prefix(&info.sender)
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+
+    if auctions.is_ok() {
+        return Err(ContractError::AlreadyExistentAuction {})
     }
+
+    let auctions= AUCTIONS_STORE.sub_prefix(&AuctionStatus::Active);
+
 
     if does_dtag_request_exists(&deps, info.sender.as_str()) {
         return Err(ContractError::AlreadyExistentDtagRequest {})
     }
 
     // save the record of the transfer that the contract will make in order to get the user's DTag before starting the auction
-    let record = DtagTransferRecord::new(info.sender.to_string(), RecordStatus::PendingTransferRequest);
+    let record = DtagTransferRecord::new(info.sender.to_string());
     dtag_transfer_records_store(deps.storage)
         .save(msg_sender.as_bytes(), &record)?;
 
@@ -148,7 +154,6 @@ pub fn handle_create_auction(
 
 }
 
-
 #[entry_point]
 pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
     match msg {
@@ -157,7 +162,7 @@ pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> Result<Response, Contract
     }
 }
 
-pub fn update_dtag_auction_status(deps: DepsMut, user: String, status: RecordStatus) -> Result<Response, ContractError> {
+pub fn update_dtag_auction_status(deps: DepsMut, user: String, status: AuctionStatus) -> Result<Response, ContractError> {
     let dtag_auction_record = dtag_transfer_records_store(deps.storage)
         .update(user.as_bytes(), |opt_record: Option<DtagTransferRecord> | -> Result<DtagTransferRecord, ContractError> {
             let mut record = opt_record.ok_or_else(|| ContractError::DtagAuctionRecordNotFound {})?;

@@ -1,7 +1,7 @@
 use cosmwasm_std::{Timestamp, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::state::RecordStatus;
+use crate::state::AuctionStatus;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -39,7 +39,7 @@ pub enum ExecuteMsg {
 pub enum SudoMsg {
     UpdateDtagAuctionStatus {
         user:   String,
-        status: RecordStatus
+        status: AuctionStatus
     },
 }
 
