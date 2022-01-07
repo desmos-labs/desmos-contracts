@@ -14,7 +14,7 @@ use crate::{
     state::{ContractDTag, DtagTransferRecord},
 };
 use crate::msg::SudoMsg;
-use crate::state::{Auction, AUCTIONS_STORE, AuctionStatus, CONTRACT_DTAG_STORE, DTAG_TRANSFER_RECORD};
+use crate::state::{ACTIVE_AUCTION, Auction, AUCTIONS_STORE, AuctionStatus, CONTRACT_DTAG_STORE, DTAG_TRANSFER_RECORD, Offers};
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors and declare a custom Error variant for the ones where you will want to make use of it
@@ -55,126 +55,121 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response<DesmosMsgWrapper>, ContractError> {
     match msg {
-        ExecuteMsg::AskMeForDtagTransferRequest {} => handle_dtag_transfer_request_to_user(deps, env, info),
         ExecuteMsg::CreateAuction {
             dtag,
             starting_price,
-            max_participants,
-            end_time,
-            user
-        } => handle_create_auction(deps, env, info, dtag, starting_price, max_participants, end_time, user),
-        ExecuteMsg::MakeOffer { amount, user} => {}
-        ExecuteMsg::RetreatOffer { user } => {}
+            max_participants
+        } => handle_create_auction(deps, env, info.sender, dtag, starting_price, max_participants),
+        ExecuteMsg::MakeOffer { amount, user} => handle_make_offer(deps, info.sender, amount),
+        ExecuteMsg::RetreatOffer { user } => handle_retreat_offer(deps, info, amount),
         ExecuteMsg::CloseAuctionAndSellDTag { user } => {}
     }
 }
 
-pub fn handle_dtag_transfer_request_to_user(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo
-) -> Result<Response<DesmosMsgWrapper>, ContractError> {
-    let msg_sender = info.sender;
-    let dtag_request_record = dtag_requests_records_read(deps.storage).load(
-        msg_sender.as_bytes());
-
-    // return error if the dtag request for the msg sender has already been made
-    if dtag_request_record.is_ok() {
-        return Err(ContractError::AlreadyExistentDtagRequest {})
-    };
-
-    let record = DtagTransferRecord::new(msg_sender.to_string(), AuctionStatus::PendingTransferRequest);
-    dtag_transfer_records_store(deps.storage)
-        .save(msg_sender.as_bytes(), &record)?;
-
-    let dtag_transfer_req_msg = msg::request_dtag_transfer(
-        env.contract.address.into_string(), msg_sender.to_string());
-
-    let response = Response::new()
-        .add_message(dtag_transfer_req_msg)
-        .add_attributes(vec![
-            attr("action", "dtag_transfer_request_to_user"),
-            attr("user", msg_sender.clone()),
-        ]);
-
-    Ok(response)
-}
-
-/// does_dtag_request_exists checks the existence of a dtag transfer request made by the user
-fn does_dtag_request_exists(deps: &DepsMut, user: &str) -> bool {
-    let dtag_request_record = DTAG_TRANSFER_RECORD.load(deps.storage);
-
-    if dtag_request_record.is_ok() {
-        return true
-    }
-
-    return false
-}
-
+/// handle_create_auction manage the creation of an auction from the given creator
 pub fn handle_create_auction(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    creator: Addr,
     dtag: String,
     starting_price: Uint64,
     max_participants: Uint64,
-    end_time: Timestamp,
-    user: String,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsgWrapper>, ContractError> {
 
     // check if an auction made by the msg sender already exist
-    let auctions: StdResult<Vec<_, >> = AUCTIONS_STORE.prefix(&info.sender)
-        .range(deps.storage, None, None, Order::Ascending)
-        .collect();
-
-    if auctions.is_ok() {
-        return Err(ContractError::AlreadyExistentAuction {})
+    if AUCTIONS_STORE.has(deps.storage,&creator) {
+        return Err(ContractError::AlreadyExistentAuction {});
     }
 
-    let auctions= AUCTIONS_STORE.sub_prefix(&AuctionStatus::Active);
-
-
-    if does_dtag_request_exists(&deps, info.sender.as_str()) {
-        return Err(ContractError::AlreadyExistentDtagRequest {})
+    // check if the contract already sent a transfer request to the user
+    let dtag_request_record = DTAG_TRANSFER_RECORD.may_load(deps.storage)?;
+    if dtag_request_record.is_some() {
+        return Err(ContractError::AlreadyExistentDtagRequest {});
     }
 
-    // save the record of the transfer that the contract will make in order to get the user's DTag before starting the auction
-    let record = DtagTransferRecord::new(info.sender.to_string());
-    dtag_transfer_records_store(deps.storage)
-        .save(msg_sender.as_bytes(), &record)?;
+    let mut new_auction = Auction::new(
+        dtag,
+        starting_price,
+        max_participants,
+        None,
+        None,
+        AuctionStatus::Inactive,
+        creator.clone()
+    );
 
-    // create the Desmos native message to ask for a DTag transfer
-    let dtag_transfer_req_msg = msg::request_dtag_transfer(
-        env.contract.address.into_string(), info.sender.to_string());
+    AUCTIONS_STORE.save(deps.storage, &creator, &new_auction)?;
 
-    let auction = Auction::new(dtag, starting_price, max_participants,
-                               Option::None, Option::None, user);
+    // prepare standard response
+    let mut res = Response::new()
+        .add_attribute("action", "create_auction")
+        .add_attribute("creator", creator)
+        .add_attribute("dtag", dtag.clone());
 
+    // get the active auction, if it exists
+    let active_auction = ACTIVE_AUCTION.may_load(deps.storage)?;
+    // if an active auction doesn't exist, add to the response a request dtag transfer message for the
+    // current auction
+    if !active_auction.is_some() {
+        // save the transfer request record made by the contract
+        /// TODO is it necessary? what if the transfer tx fails? (It should be reverted by the contract)
+        let record = DtagTransferRecord::new(creator.to_string());
+        DTAG_TRANSFER_RECORD.save(deps.storage, &record);
 
+        // create the Desmos native message to ask for a DTag transfer
+        let dtag_transfer_req_msg = msg::request_dtag_transfer(
+            env.contract.address.into_string(), creator.to_string());
 
+        // add the message to the response, it will be triggered at the end of the execution
+        res.add_message(dtag_transfer_req_msg);
+    }
+
+    Ok(res)
+}
+
+/// handle_make_offer manage the creation and insertion of a new auction offer from a user
+pub fn handle_make_offer(deps: DepsMut, user: Addr, amount: Uint64)
+    -> Result<Response, ContractError> {
+    let auction = ACTIVE_AUCTION.may_load(deps.storage)?;
+    let mut auction = auction.ok_or(ContractError::AuctionNotFound {})?;
+    auction.add_offer(user, amount);
+
+    let res = Response::new()
+        .add_attribute("action", "make_offer")
+        .add_attribute("user", user.clone())
+        .add_attribute("amount", amount.clone())
+        .add_attribute("dtag", auction.dtag);
+
+    Ok(res)
 }
 
 #[entry_point]
-pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
+pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
     match msg {
-        SudoMsg::UpdateDtagAuctionStatus { user, status} =>
-        update_dtag_auction_status(deps, user, status),
+        SudoMsg::ActivateAuctionForUser { creator } =>
+        activate_auction_for_user(deps, env, creator),
     }
 }
 
-pub fn update_dtag_auction_status(deps: DepsMut, user: String, status: AuctionStatus) -> Result<Response, ContractError> {
-    let dtag_auction_record = dtag_transfer_records_store(deps.storage)
-        .update(user.as_bytes(), |opt_record: Option<DtagTransferRecord> | -> Result<DtagTransferRecord, ContractError> {
-            let mut record = opt_record.ok_or_else(|| ContractError::DtagAuctionRecordNotFound {})?;
-            record.status = status;
-            Ok(record)
-        })?;
+pub fn activate_auction_for_user(deps: DepsMut, env: Env, user: Addr) -> Result<Response, ContractError> {
+    let auction = AUCTIONS_STORE.may_load(deps.storage, &user)?;
+    let mut auction = auction.ok_or(ContractError::AuctionNotFound {})?;
+
+    auction.start_time = Some(env.block.time);
+    // the actual end time is 2 days later the auction start. 2 days = 172800
+    auction.end_time = Some(env.block.time.plus_seconds(172800));
+    auction.status = AuctionStatus::Active;
+
+    // save the auction inside the active auction store
+    ACTIVE_AUCTION.save(deps.storage, &auction);
+
+    // remove it from the inactive store
+    AUCTIONS_STORE.remove(deps.storage, &user);
 
     let response = Response::new()
         .add_attributes(vec![
             attr("action", "update_dtag_auction_status"),
-            attr("status", dtag_auction_record.status.to_string()),
-            attr("user", user.clone())
+            attr("status", "Activate"),
+            attr("user", user)
         ]);
 
     Ok(response)

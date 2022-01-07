@@ -1,7 +1,6 @@
-use cosmwasm_std::{Timestamp, Uint64};
+use cosmwasm_std::{Addr, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::state::AuctionStatus;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -13,13 +12,10 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    AskMeForDtagTransferRequest {},
     CreateAuction{
         dtag: String,
         starting_price: Uint64,
         max_participants: Uint64,
-        end_time: Timestamp,
-        user: String
     },
     MakeOffer{
         amount: Uint64,
@@ -37,9 +33,8 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum SudoMsg {
-    UpdateDtagAuctionStatus {
-        user:   String,
-        status: AuctionStatus
+    ActivateAuctionForUser {
+        creator:   Addr,
     },
 }
 

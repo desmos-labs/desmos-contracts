@@ -1,5 +1,6 @@
 use std::fmt;
-use std::fmt::{Formatter, write};
+use std::fmt::{Formatter};
+use std::collections::HashMap;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -7,6 +8,7 @@ use cosmwasm_std::{Addr, Timestamp, Uint64};
 use cw_storage_plus::{Item, Map};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+/// This string wrapper represent the contract genesis DTag
 pub struct ContractDTag(String);
 
 pub const CONTRACT_DTAG_STORE: Item<ContractDTag> = Item::new("contract_dtag");
@@ -30,44 +32,65 @@ impl fmt::Display for AuctionStatus {
         }
     }
 }
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+/// Offer represent an auction offer
+pub struct Offers(HashMap<Addr, Uint64>);
 
+impl Offers {
+    pub fn new() -> Offers {
+        Offers(HashMap::new())
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+/// Auction represent a dtag auction
 pub struct Auction {
-    dTag: String,
-    starting_price: Uint64,
-    max_participants: Uint64,
-    start_time: Option<Timestamp>,
-    end_time: Option<Timestamp>,
-    auction_status: AuctionStatus,
-    user: String,
+    pub dtag: String,
+    pub starting_price: Uint64,
+    pub max_participants: Uint64,
+    pub start_time: Option<Timestamp>,
+    pub end_time: Option<Timestamp>,
+    pub status: AuctionStatus,
+    pub offers: Offers,
+    pub user: Addr,
 }
 
 impl Auction {
     pub fn new(
-        dTag: String,
+        dtag: String,
         starting_price: Uint64,
         max_participants: Uint64,
         start_time: Option<Timestamp>,
         end_time: Option<Timestamp>,
         auction_status: AuctionStatus,
-        user: String,
+        user: Addr,
     ) -> Auction {
         Auction {
-            dTag,
+            dtag,
             starting_price,
             max_participants,
             start_time,
             end_time,
-            auction_status,
+            status: auction_status,
+            offers: Offers::new(),
             user,
         }
     }
+
+    pub fn add_offer(&mut self, user: Addr, amount: Uint64) {
+        self.offers.0.insert(user, amount);
+    }
 }
 
-pub const AUCTIONS_STORE: Map<(&Addr, &AuctionStatus), Auction> = Map::new("auctions");
+pub const AUCTIONS_STORE: Map<&Addr, Auction> = Map::new("auctions");
+pub const ACTIVE_AUCTION: Item<Auction> = Item::new("active_auction");
 
-/// DtagAuctionRecord represents an auction and its status
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+/// DtagTransferRecord represents a dtag transfer record
 pub struct DtagTransferRecord {
     user: String,
 }
