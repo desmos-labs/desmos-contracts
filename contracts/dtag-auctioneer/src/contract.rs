@@ -15,6 +15,7 @@ use crate::{
 };
 use crate::msg::SudoMsg;
 use crate::state::{ACTIVE_AUCTION, Auction, AUCTIONS_STORE, AuctionStatus, CONTRACT_DTAG_STORE, DTAG_TRANSFER_RECORD, Offers};
+use crate::state::AuctionStatus::Active;
 
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors and declare a custom Error variant for the ones where you will want to make use of it
@@ -61,8 +62,8 @@ pub fn execute(
             max_participants
         } => handle_create_auction(deps, env, info.sender, dtag, starting_price, max_participants),
         ExecuteMsg::MakeOffer { amount, user} => handle_make_offer(deps, info.sender, amount),
-        ExecuteMsg::RetreatOffer { user } => handle_retreat_offer(deps, info, amount),
-        ExecuteMsg::CloseAuctionAndSellDTag { user } => {}
+        ExecuteMsg::RetreatOffer { user } => handle_retreat_offer(deps, info.sender),
+        ExecuteMsg::CloseAuctionAndSellDTag { user } => handle_close_auction_and_sell_dtag(deps, info.sender)
     }
 }
 
@@ -140,6 +141,26 @@ pub fn handle_make_offer(deps: DepsMut, user: Addr, amount: Uint64)
         .add_attribute("dtag", auction.dtag);
 
     Ok(res)
+}
+
+/// handle_retreat_offer manage the removal of an existent auction offer from a user
+pub fn handle_retreat_offer(deps: DepsMut, user: Addr) -> Result<Response, ContractError> {
+    let auction = ACTIVE_AUCTION.may_load(deps.storage)?;
+    let mut auction = auction.ok_or(ContractError::AuctionNotFound {})?;
+
+    auction.remove_offer(user).ok_or(ContractError::OfferNotFound {});
+
+    let res = Response::new()
+        .add_attribute("action", "retreat_offer")
+        .add_attribute("user", user.clone())
+        .add_attribute("dtag", auction.dtag);
+
+    Ok(res)
+}
+
+/// handle_close_auction_and_sell_dtag takes care of close the auction and sell the dtag
+pub fn handle_close_auction_and_sell_dtag(deps: DepsMut, user: Addr) -> Result<Response<DesmosMsgWrapper>, ContractError> {
+    Ok()
 }
 
 #[entry_point]

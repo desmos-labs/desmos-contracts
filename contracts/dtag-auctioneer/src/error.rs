@@ -16,6 +16,9 @@ pub enum ContractError {
     AlreadyExistentDtagRequest {},
 
     #[error("Dtag auction record not found")]
-    DtagAuctionRecordNotFound {}
+    DtagAuctionRecordNotFound {},
+
+    #[error("Offer not found")]
+    OfferNotFound{}
 
 }

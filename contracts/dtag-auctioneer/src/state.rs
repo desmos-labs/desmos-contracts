@@ -82,6 +82,10 @@ impl Auction {
     pub fn add_offer(&mut self, user: Addr, amount: Uint64) {
         self.offers.0.insert(user, amount);
     }
+
+    pub fn remove_offer(&mut self, user: Addr) -> Option<Uint64> {
+        self.offers.0.remove(&user)
+    }
 }
 
 pub const AUCTIONS_STORE: Map<&Addr, Auction> = Map::new("auctions");
