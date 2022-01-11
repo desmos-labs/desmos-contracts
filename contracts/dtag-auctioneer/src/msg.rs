@@ -19,15 +19,10 @@ pub enum ExecuteMsg {
     },
     MakeOffer{
         amount: Uint64,
-        user: String
     },
     RetreatOffer{
         user: String
     },
-    CloseAuctionAndSellDTag{
-        user: String
-    }
-
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -36,14 +31,13 @@ pub enum SudoMsg {
     ActivateAuctionForUser {
         creator:   Addr,
     },
+    CompleteAuction {}
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     /// GetFilteredPosts returns a list of filtered posts where each post has been reported at most (reports_limit - 1) time
-    GetPendingAuctions {},
-    GetAuctionByUser{user: String},
-    GetOffers{},
-    GetBestOffer{},
+    GetActiveAuction {},
+    GetAuctionByUser{user: Addr},
 }

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Addr, Timestamp, Uint64};
+use cosmwasm_std::{Addr, Coin, Timestamp, Uint64};
 use cw_storage_plus::{Item, Map};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -35,7 +35,7 @@ impl fmt::Display for AuctionStatus {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 /// Offer represent an auction offer
-pub struct Offers(HashMap<Addr, Uint64>);
+pub struct Offers(HashMap<Addr, Vec<Coin>>);
 
 impl Offers {
     pub fn new() -> Offers {
@@ -79,12 +79,16 @@ impl Auction {
         }
     }
 
-    pub fn add_offer(&mut self, user: Addr, amount: Uint64) {
-        self.offers.0.insert(user, amount);
+    pub fn add_offer(&mut self, user: Addr, offer: Vec<Coin>) {
+        self.offers.0.insert(user, offer);
     }
 
-    pub fn remove_offer(&mut self, user: Addr) -> Option<Uint64> {
+    pub fn remove_offer(&mut self, user: Addr) -> Option<Vec<Coin>> {
         self.offers.0.remove(&user)
+    }
+
+    pub fn get_best_offer(&self) -> Option<(&Addr, &Vec<Coin>)> {
+        self.offers.0.iter().max_by_key(| offer | offer.1[0].amount)
     }
 }
 

@@ -1,4 +1,4 @@
-use cosmwasm_std::{attr, entry_point, to_binary, Binary, Env, MessageInfo, Response, StdResult, Uint64, Timestamp, Addr, Order};
+use cosmwasm_std::{attr, entry_point, to_binary, Binary, Env, MessageInfo, Response, StdResult, Uint64, Timestamp, Addr, Order, Coin, BankMsg};
 
 use desmos_std::{
     querier::DesmosQuerier,
@@ -20,7 +20,7 @@ use crate::state::AuctionStatus::Active;
 // Note, you can use StdResult in some functions where you do not
 // make use of the custom errors and declare a custom Error variant for the ones where you will want to make use of it
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
     env: Env,
@@ -48,7 +48,7 @@ pub fn instantiate(
     Ok(res)
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -61,7 +61,7 @@ pub fn execute(
             starting_price,
             max_participants
         } => handle_create_auction(deps, env, info.sender, dtag, starting_price, max_participants),
-        ExecuteMsg::MakeOffer { amount, user} => handle_make_offer(deps, info.sender, amount),
+        ExecuteMsg::MakeOffer { amount} => handle_make_offer(deps, info.sender, amount),
         ExecuteMsg::RetreatOffer { user } => handle_retreat_offer(deps, info.sender),
         ExecuteMsg::CloseAuctionAndSellDTag { user } => handle_close_auction_and_sell_dtag(deps, info.sender)
     }
@@ -128,7 +128,7 @@ pub fn handle_create_auction(
 }
 
 /// handle_make_offer manage the creation and insertion of a new auction offer from a user
-pub fn handle_make_offer(deps: DepsMut, user: Addr, amount: Uint64)
+pub fn handle_make_offer(deps: DepsMut, user: Addr, amount: Vec<Coin>)
     -> Result<Response, ContractError> {
     let auction = ACTIVE_AUCTION.may_load(deps.storage)?;
     let mut auction = auction.ok_or(ContractError::AuctionNotFound {})?;
@@ -158,17 +158,29 @@ pub fn handle_retreat_offer(deps: DepsMut, user: Addr) -> Result<Response, Contr
     Ok(res)
 }
 
-/// handle_close_auction_and_sell_dtag takes care of close the auction and sell the dtag
-pub fn handle_close_auction_and_sell_dtag(deps: DepsMut, user: Addr) -> Result<Response<DesmosMsgWrapper>, ContractError> {
-    Ok()
-}
-
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
     match msg {
         SudoMsg::ActivateAuctionForUser { creator } =>
         activate_auction_for_user(deps, env, creator),
+        SudoMsg::CompleteAuction { .. } => {}
     }
+}
+
+pub fn complete_auction_and_activate_next_one(deps: DepsMut, env: Env, user: Addr) -> Result<Response, ContractError> {
+    // Get the current active auction if exists, otherwise return error
+    let auction = ACTIVE_AUCTION.may_load(deps.storage)?;
+    let auction = auction.ok_or(ContractError::AuctionNotFound {})?;
+
+    // Fetch the best offer
+    let (_, best_offer) = auction.get_best_offer().ok_or(ContractError::OfferNotFound {})?;
+
+    // Prepare the bank msg with the funds to be sent to the auction creator
+    let deliver_offer_msg = BankMsg::Send {
+        to_address: auction.user.into_string(),
+        amount: best_offer.clone()
+    };
+
 }
 
 pub fn activate_auction_for_user(deps: DepsMut, env: Env, user: Addr) -> Result<Response, ContractError> {
@@ -194,4 +206,32 @@ pub fn activate_auction_for_user(deps: DepsMut, env: Env, user: Addr) -> Result<
         ]);
 
     Ok(response)
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::GetActiveAuction { } => {
+            to_binary(&query_active_auction(deps)?)
+        }
+        QueryMsg::GetAuctionByUser { user } => {}
+    }
+}
+
+pub fn query_active_auction(deps: Deps) -> StdResult<Auction> {
+    let auction = ACTIVE_AUCTION.load(deps.storage);
+    if auction.is_err() {
+        Err(ContractError::AuctionNotFound {})
+    }
+
+    Ok(auction?)
+}
+
+pub fn query_auction_by_user(deps: Deps, user: Addr) -> StdResult<Auction> {
+    let auction = AUCTIONS_STORE.load(deps.storage, &user);
+    if auction.is_err() {
+        Err(ContractError::AuctionNotFound {})
+    }
+
+    Ok(auction?)
 }
