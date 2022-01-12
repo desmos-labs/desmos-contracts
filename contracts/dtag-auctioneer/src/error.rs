@@ -19,6 +19,8 @@ pub enum ContractError {
     DtagAuctionRecordNotFound {},
 
     #[error("Offer not found")]
-    OfferNotFound{}
+    OfferNotFound{},
 
+    #[error("Unknown dtag transfer status")]
+    UnknownDTagTransferStatus{},
 }

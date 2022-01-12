@@ -28,10 +28,13 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum SudoMsg {
-    ActivateAuctionForUser {
-        creator:   Addr,
+    UpdateDTagAuctionStatus {
+        user:   Addr,
+        transfer_status: String
     },
-    CompleteAuction {}
+    CompleteAuction {
+        creator: Addr,
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

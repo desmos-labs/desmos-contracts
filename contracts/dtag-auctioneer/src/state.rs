@@ -1,11 +1,13 @@
 use std::fmt;
 use std::fmt::{Formatter};
+use std::str::FromStr;
 use std::collections::HashMap;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::{Addr, Coin, Timestamp, Uint64};
 use cw_storage_plus::{Item, Map};
+use crate::error::ContractError;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 /// This string wrapper represent the contract genesis DTag
@@ -20,7 +22,6 @@ pub const CONTRACT_DTAG_STORE: Item<ContractDTag> = Item::new("contract_dtag");
 pub enum AuctionStatus {
     Active,
     Inactive,
-    Pending,
 }
 
 impl fmt::Display for AuctionStatus {
@@ -28,10 +29,30 @@ impl fmt::Display for AuctionStatus {
         match self {
             AuctionStatus::Active => write!(f, "Active"),
             AuctionStatus::Inactive => write!(f, "Inactive"),
-            AuctionStatus::Pending => write!(f, "Pending"),
         }
     }
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+#[serde(untagged)]
+pub enum DtagTransferStatus {
+    Accepted,
+    Refused,
+}
+
+impl FromStr for DtagTransferStatus {
+    type Err = ContractError::UnknownDTagTransferStatus;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "accept_dtag_transfer_request" => Ok(DtagTransferStatus::Accepted),
+            "refuse_dtag_transfer_request" => Ok(DtagTransferStatus::Refused),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 /// Offer represent an auction offer
@@ -77,6 +98,13 @@ impl Auction {
             offers: Offers::new(),
             user,
         }
+    }
+
+    pub fn activate(&mut self, time: Timestamp) {
+        self.start_time = Some(time);
+        // the actual end time is 2 days later the auction start. 2 days = 172800
+        self.end_time = Some(time.plus_seconds(172800));
+        self.status = AuctionStatus::Active;
     }
 
     pub fn add_offer(&mut self, user: Addr, offer: Vec<Coin>) {
