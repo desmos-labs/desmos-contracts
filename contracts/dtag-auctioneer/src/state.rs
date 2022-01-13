@@ -1,17 +1,17 @@
-use std::fmt;
-use std::fmt::{Formatter};
-use std::str::FromStr;
-use std::collections::HashMap;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Formatter;
+use std::str::FromStr;
 
-use cosmwasm_std::{Addr, Coin, Timestamp, Uint64};
-use cw_storage_plus::{Item, Map};
 use crate::error::ContractError;
+use cosmwasm_std::{Addr, Coin, Timestamp, Uint128, Uint64};
+use cw_storage_plus::{Item, Map};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 /// This string wrapper represent the contract genesis DTag
-pub struct ContractDTag(String);
+pub struct ContractDTag(pub String);
 
 pub const CONTRACT_DTAG_STORE: Item<ContractDTag> = Item::new("contract_dtag");
 
@@ -42,13 +42,13 @@ pub enum DtagTransferStatus {
 }
 
 impl FromStr for DtagTransferStatus {
-    type Err = ContractError::UnknownDTagTransferStatus;
+    type Err = ContractError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "accept_dtag_transfer_request" => Ok(DtagTransferStatus::Accepted),
             "refuse_dtag_transfer_request" => Ok(DtagTransferStatus::Refused),
-            _ => Err(()),
+            _ => Err(ContractError::UnknownDTagTransferStatus {}),
         }
     }
 }
@@ -64,12 +64,18 @@ impl Offers {
     }
 }
 
+impl Default for Offers {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 /// Auction represent a dtag auction
 pub struct Auction {
     pub dtag: String,
-    pub starting_price: Uint64,
+    pub starting_price: Uint128,
     pub max_participants: Uint64,
     pub start_time: Option<Timestamp>,
     pub end_time: Option<Timestamp>,
@@ -81,7 +87,7 @@ pub struct Auction {
 impl Auction {
     pub fn new(
         dtag: String,
-        starting_price: Uint64,
+        starting_price: Uint128,
         max_participants: Uint64,
         start_time: Option<Timestamp>,
         end_time: Option<Timestamp>,
@@ -116,13 +122,12 @@ impl Auction {
     }
 
     pub fn get_best_offer(&self) -> Option<(&Addr, &Vec<Coin>)> {
-        self.offers.0.iter().max_by_key(| offer | offer.1[0].amount)
+        self.offers.0.iter().max_by_key(|offer| offer.1[0].amount)
     }
 }
 
 pub const AUCTIONS_STORE: Map<&Addr, Auction> = Map::new("auctions");
 pub const ACTIVE_AUCTION: Item<Auction> = Item::new("active_auction");
-
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]

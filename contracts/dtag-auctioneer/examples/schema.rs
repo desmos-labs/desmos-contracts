@@ -1,9 +1,5 @@
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-use cw_desmos_dtag_auctioneer::{
-    msg::{
-        InstantiateMsg, ExecuteMsg
-    }
-};
+use cw_desmos_dtag_auctioneer::msg::{ExecuteMsg, InstantiateMsg};
 use std::{env::current_dir, fs::create_dir_all};
 
 fn main() {

@@ -10,7 +10,7 @@ pub enum ContractError {
     AlreadyExistentAuction {},
 
     #[error("Auction not found")]
-    AuctionNotFound{},
+    AuctionNotFound {},
 
     #[error("Dtag request already present in store")]
     AlreadyExistentDtagRequest {},
@@ -19,8 +19,11 @@ pub enum ContractError {
     DtagAuctionRecordNotFound {},
 
     #[error("Offer not found")]
-    OfferNotFound{},
+    OfferNotFound {},
 
     #[error("Unknown dtag transfer status")]
-    UnknownDTagTransferStatus{},
+    UnknownDTagTransferStatus {},
+
+    #[error("Offer doesn't match the minimum starting price")]
+    MinimumPriceNotReached {},
 }

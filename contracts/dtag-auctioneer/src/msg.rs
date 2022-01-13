@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Uint64};
+use cosmwasm_std::{Addr, Uint128, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -12,29 +12,20 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    CreateAuction{
+    CreateAuction {
         dtag: String,
-        starting_price: Uint64,
+        starting_price: Uint128,
         max_participants: Uint64,
     },
-    MakeOffer{
-        amount: Uint64,
-    },
-    RetreatOffer{
-        user: String
-    },
+    MakeOffer {},
+    RetreatOffer {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum SudoMsg {
-    UpdateDTagAuctionStatus {
-        user:   Addr,
-        transfer_status: String
-    },
-    CompleteAuction {
-        creator: Addr,
-    }
+    UpdateDTagAuctionStatus { user: Addr, transfer_status: String },
+    CompleteAuction {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -42,5 +33,7 @@ pub enum SudoMsg {
 pub enum QueryMsg {
     /// GetFilteredPosts returns a list of filtered posts where each post has been reported at most (reports_limit - 1) time
     GetActiveAuction {},
-    GetAuctionByUser{user: Addr},
+    GetAuctionByUser {
+        user: Addr,
+    },
 }
