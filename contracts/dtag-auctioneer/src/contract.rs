@@ -3,13 +3,11 @@ use cosmwasm_std::{
     Response, StdResult, Uint128, Uint64,
 };
 use std::str::FromStr;
-
 use desmos_std::{
     msg,
     msg::DesmosMsgWrapper,
     types::{Deps, DepsMut},
 };
-
 use crate::{
     error::ContractError,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg},
@@ -164,18 +162,19 @@ pub fn handle_retreat_offer(
     deps: DepsMut,
     user: Addr,
 ) -> Result<Response<DesmosMsgWrapper>, ContractError> {
-    let auction = ACTIVE_AUCTION.may_load(deps.storage)?;
-    let mut auction = auction.ok_or(ContractError::AuctionNotFound {})?;
-
-    let removed = auction
-        .remove_offer(user.clone())
-        .ok_or(ContractError::OfferNotFound {})?;
+    ACTIVE_AUCTION.update(
+        deps.storage,
+        | auction | -> StdResult<_> {
+            let mut auction= auction;
+            auction.remove_offer(user.clone())
+                .ok_or(ContractError::OfferNotFound {});
+            Ok(auction)
+        }
+    )?;
 
     let res = Response::new()
         .add_attribute("action", "retreat_offer")
-        .add_attribute("user", user)
-        .add_attribute("offer", removed[0].amount)
-        .add_attribute("dtag", auction.dtag);
+        .add_attribute("user", user);
 
     Ok(res)
 }
@@ -299,4 +298,71 @@ pub fn query_active_auction(deps: Deps) -> StdResult<Auction> {
 pub fn query_auction_by_user(deps: Deps, user: Addr) -> StdResult<Auction> {
     let auction = AUCTIONS_STORE.load(deps.storage, &user)?;
     Ok(auction)
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::Coin;
+    use cosmwasm_vm::testing::{mock_env, mock_info};
+    use desmos_std::mock::mock_dependencies_with_custom_querier;
+    use super::*;
+
+    /// setup_test is an helper func to instantiate the contract
+    fn setup_test(deps: DepsMut, env: Env, info: MessageInfo, dtag: &str) {
+        let instantiate_msg = InstantiateMsg {
+            contract_dtag: dtag.to_string()
+        };
+        instantiate(deps, env, info, instantiate_msg).unwrap();
+    }
+
+    #[test]
+    fn test_instantiate() {
+        let contract_funds = Coin::new(100_000_000, "udsm");
+        let mut deps = mock_dependencies_with_custom_querier(&[contract_funds]);
+        let info = mock_info("test_addr", &[]);
+
+        let instantiate_msg = InstantiateMsg {
+            contract_dtag: "auctioneer_contract".to_string()
+        };
+
+        let res = instantiate(
+            deps.as_mut(),
+            mock_env(),
+            info,
+            instantiate_msg
+        ).unwrap();
+
+        let exp_response = vec![
+            attr("action", "save_contract_profile"),
+            attr("dtag", "auctioneer_dtag")
+        ];
+
+        let dtag = CONTRACT_DTAG_STORE.load(&deps.storage).unwrap();
+        assert_eq!("auctioneer_contract", dtag.0.as_str())
+    }
+
+    #[test]
+    fn test_handle_dtag_auction() {
+        let contract_funds = Coin::new(100_000_000, "udsm");
+        let mut deps = mock_dependencies_with_custom_querier(&[contract_funds]);
+        let info = mock_info("test_addr", &[]);
+
+        setup_test(deps.as_mut(), env, info, "contract_dtag");
+
+        let res = handle_create_auction(
+            deps.as_mut(),
+            env,
+            info.sender.clone(),
+            "sender_dtag".to_string(),
+            Uint128(100),
+            Uint64(50),
+        );
+
+        let auction = AUCTIONS_STORE.load(&deps.storage, &info.sender).unwrap();
+
+        let dtag_record = DTAG_TRANSFER_RECORD.load(&deps.storage);
+    }
+
+
+
 }
