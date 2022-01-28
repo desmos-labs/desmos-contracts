@@ -6,7 +6,7 @@ use std::fmt::Formatter;
 use std::str::FromStr;
 
 use crate::error::ContractError;
-use cosmwasm_std::{Addr, Coin, Timestamp, Uint128, Uint64};
+use cosmwasm_std::{Addr, Coin, Order, Record, StdError, StdResult, Storage, Timestamp, Uint128, Uint64};
 use cw_storage_plus::{Item, Map};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -18,7 +18,6 @@ pub const CONTRACT_DTAG_STORE: Item<ContractDTag> = Item::new("contract_dtag");
 /// Auction status represent the different status in which an auction can be
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-#[serde(untagged)]
 pub enum AuctionStatus {
     Active,
     Inactive,
@@ -35,7 +34,6 @@ impl fmt::Display for AuctionStatus {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-#[serde(untagged)]
 pub enum DtagTransferStatus {
     Accepted,
     Refused,
@@ -55,23 +53,6 @@ impl FromStr for DtagTransferStatus {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-/// Offer represent an auction offer
-pub struct Offers(HashMap<Addr, Vec<Coin>>);
-
-impl Offers {
-    pub fn new() -> Offers {
-        Offers(HashMap::new())
-    }
-}
-
-impl Default for Offers {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
 /// Auction represent a dtag auction
 pub struct Auction {
     pub dtag: String,
@@ -80,7 +61,6 @@ pub struct Auction {
     pub start_time: Option<Timestamp>,
     pub end_time: Option<Timestamp>,
     pub status: AuctionStatus,
-    pub offers: Offers,
     pub user: Addr,
 }
 
@@ -101,7 +81,6 @@ impl Auction {
             start_time,
             end_time,
             status: auction_status,
-            offers: Offers::new(),
             user,
         }
     }
@@ -113,33 +92,31 @@ impl Auction {
         self.status = AuctionStatus::Active;
     }
 
-    pub fn add_offer(&mut self, user: Addr, offer: Vec<Coin>) {
-        self.offers.0.insert(user, offer);
+    pub fn add_offer(&self, storage: &mut dyn Storage, user: Addr, offer: Vec<Coin>) {
+        AUCTION_OFFERS_STORE.save(storage, &user, &offer);
     }
 
-    pub fn remove_offer(&mut self, user: Addr) -> Option<Vec<Coin>> {
-        self.offers.0.remove(&user)
+    pub fn remove_offer(&self, storage: &mut dyn Storage, user: Addr) {
+        AUCTION_OFFERS_STORE.remove(storage, &user);
     }
 
-    pub fn get_best_offer(&self) -> Option<(&Addr, &Vec<Coin>)> {
-        self.offers.0.iter().max_by_key(|offer| offer.1[0].amount)
+    pub fn get_best_offer(&self, storage: &mut dyn Storage) -> StdResult<(Addr, Vec<Coin>)> {
+        let best_offer = AUCTION_OFFERS_STORE.range(
+            storage,
+            None,
+            None,
+            Order::Ascending
+        )
+            .enumerate()
+            .max_by_key(| (_, item)| item.as_ref().unwrap().1[0].amount).unwrap().1?;
+
+        let key = String::from_utf8(best_offer.0)?;
+
+        Ok((Addr::unchecked(key), best_offer.1))
     }
 }
 
 pub const AUCTIONS_STORE: Map<&Addr, Auction> = Map::new("auctions");
 pub const ACTIVE_AUCTION: Item<Auction> = Item::new("active_auction");
+pub const AUCTION_OFFERS_STORE: Map<&Addr, Vec<Coin>> = Map::new("auctions_offers");
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-/// DtagTransferRecord represents a dtag transfer record
-pub struct DtagTransferRecord {
-    user: String,
-}
-
-impl DtagTransferRecord {
-    pub fn new(user: String) -> DtagTransferRecord {
-        DtagTransferRecord { user }
-    }
-}
-
-pub const DTAG_TRANSFER_RECORD: Item<DtagTransferRecord> = Item::new("dtag_transfer_record");
