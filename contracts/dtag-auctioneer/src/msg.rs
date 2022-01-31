@@ -26,6 +26,7 @@ pub enum ExecuteMsg {
 pub enum SudoMsg {
     UpdateDTagAuctionStatus { user: Addr, transfer_status: String },
     CompleteAuction {},
+    StartNextAuction {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

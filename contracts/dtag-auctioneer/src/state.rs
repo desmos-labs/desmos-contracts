@@ -1,12 +1,11 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
 
 use crate::error::ContractError;
-use cosmwasm_std::{Addr, Coin, Order, Record, StdError, StdResult, Storage, Timestamp, Uint128, Uint64};
+use cosmwasm_std::{Addr, Coin, Order, StdResult, Storage, Timestamp, Uint128, Uint64};
 use cw_storage_plus::{Item, Map};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -92,8 +91,13 @@ impl Auction {
         self.status = AuctionStatus::Active;
     }
 
-    pub fn add_offer(&self, storage: &mut dyn Storage, user: Addr, offer: Vec<Coin>) {
-        AUCTION_OFFERS_STORE.save(storage, &user, &offer);
+    pub fn add_offer(
+        &self,
+        storage: &mut dyn Storage,
+        user: Addr,
+        offer: Vec<Coin>,
+    ) -> StdResult<()> {
+        AUCTION_OFFERS_STORE.save(storage, &user, &offer)
     }
 
     pub fn remove_offer(&self, storage: &mut dyn Storage, user: Addr) {
@@ -101,14 +105,12 @@ impl Auction {
     }
 
     pub fn get_best_offer(&self, storage: &mut dyn Storage) -> StdResult<(Addr, Vec<Coin>)> {
-        let best_offer = AUCTION_OFFERS_STORE.range(
-            storage,
-            None,
-            None,
-            Order::Ascending
-        )
+        let best_offer = AUCTION_OFFERS_STORE
+            .range(storage, None, None, Order::Ascending)
             .enumerate()
-            .max_by_key(| (_, item)| item.as_ref().unwrap().1[0].amount).unwrap().1?;
+            .max_by_key(|(_, item)| item.as_ref().unwrap().1[0].amount)
+            .unwrap()
+            .1?;
 
         let key = String::from_utf8(best_offer.0)?;
 
@@ -119,4 +121,3 @@ impl Auction {
 pub const AUCTIONS_STORE: Map<&Addr, Auction> = Map::new("auctions");
 pub const ACTIVE_AUCTION: Item<Auction> = Item::new("active_auction");
 pub const AUCTION_OFFERS_STORE: Map<&Addr, Vec<Coin>> = Map::new("auctions_offers");
-
