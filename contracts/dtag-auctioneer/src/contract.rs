@@ -132,10 +132,23 @@ pub fn handle_make_offer(
         .may_load(deps.storage)?
         .ok_or(ContractError::AuctionNotFound {})?;
 
+    let offers = auction.count_offers(deps.storage);
+
+    if offers > auction.max_participants.u64() {
+        return Err(ContractError::MaxParticipantsNumberReached {});
+    }
+
     let offer = info.funds;
 
-    if offer[0].amount < auction.starting_price {
+    if offers == 0 && offer[0].amount < auction.starting_price {
         return Err(ContractError::MinimumPriceNotReached {});
+    }
+
+    if offers > 0 {
+        let last_offer = auction.get_last_offer(deps.storage)?;
+        if offer[0].amount < last_offer[0].amount {
+            return Err(ContractError::MinimumPriceNotReached {});
+        }
     }
 
     let _ = auction.add_offer(deps.storage, info.sender.clone(), offer.clone());
@@ -491,7 +504,7 @@ mod tests {
         let res = execute(
             deps.as_mut(),
             env.clone(),
-            mock_info("offerer_addr", &[Coin::new(1000_000_000, "udsm")]),
+            mock_info("offerer_addr", &[Coin::new(1000, "udsm")]),
             msg,
         );
 
@@ -499,7 +512,7 @@ mod tests {
             .load(&deps.storage, &Addr::unchecked("offerer_addr"))
             .unwrap();
 
-        assert_eq!(vec![Coin::new(1000_000_000, "udsm")], offer)
+        assert_eq!(vec![Coin::new(1000, "udsm")], offer)
     }
 
     #[test]
@@ -564,6 +577,82 @@ mod tests {
         .unwrap_err();
 
         assert_eq!(ContractError::MinimumPriceNotReached {}, err)
+    }
+
+    #[test]
+    fn test_handle_make_offer_amount_offer_lower_than_the_last_offer() {
+        let contract_funds = Coin::new(100_000_000, "udsm");
+        let mut deps = mock_dependencies_with_custom_querier(&[contract_funds]);
+        let info = mock_info("test_addr", &[]);
+        let env = mock_env();
+
+        let active_auction = Auction::new(
+            "sender_dtag".to_string(),
+            Uint128::new(100),
+            Uint64::new(50),
+            None,
+            None,
+            AuctionStatus::Inactive,
+            info.sender.clone(),
+        );
+
+        setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
+        save_active_auction(deps.as_mut(), active_auction);
+        add_auction_offer(
+            deps.as_mut(),
+            Addr::unchecked("offerer"),
+            vec![Coin::new(200, "udsm")],
+        );
+
+        let msg = ExecuteMsg::MakeOffer {};
+        let err = execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info("offerer_addr", &[Coin::new(100, "udsm")]),
+            msg,
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::MinimumPriceNotReached {}, err)
+    }
+
+    #[test]
+    fn test_handle_make_offer_max_participants_number_reached() {
+        let contract_funds = Coin::new(100_000_000, "udsm");
+        let mut deps = mock_dependencies_with_custom_querier(&[contract_funds]);
+        let info = mock_info("test_addr", &[]);
+        let env = mock_env();
+
+        let active_auction = Auction::new(
+            "sender_dtag".to_string(),
+            Uint128::new(100),
+            Uint64::new(1),
+            None,
+            None,
+            AuctionStatus::Inactive,
+            info.sender.clone(),
+        );
+
+        let offerers = vec![Addr::unchecked("addr1"), Addr::unchecked("addr2")];
+        let mut amount = 10;
+        for offerer in offerers {
+            add_auction_offer(deps.as_mut(), offerer, vec![Coin::new(amount, "udsm")]);
+            amount += 10
+        }
+
+        setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
+        save_active_auction(deps.as_mut(), active_auction);
+
+        let msg = ExecuteMsg::MakeOffer {};
+        let err = execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info("offerer_addr", &[Coin::new(100, "udsm")]),
+            msg,
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::MaxParticipantsNumberReached {}, err)
     }
 
     #[test]

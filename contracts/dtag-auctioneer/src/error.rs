@@ -26,4 +26,7 @@ pub enum ContractError {
 
     #[error("No pending auctions left")]
     NoPendingAuctionsLeft {},
+
+    #[error("Max participants number reached")]
+    MaxParticipantsNumberReached {},
 }

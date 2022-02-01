@@ -116,6 +116,21 @@ impl Auction {
 
         Ok((Addr::unchecked(key), best_offer.1))
     }
+
+    pub fn count_offers(&self, storage: &mut dyn Storage) -> u64 {
+        AUCTION_OFFERS_STORE
+            .range(storage, None, None, Order::Ascending)
+            .count() as u64
+    }
+
+    pub fn get_last_offer(&self, storage: &mut dyn Storage) -> Result<Vec<Coin>, ContractError> {
+        Ok(AUCTION_OFFERS_STORE
+            .range(storage, None, None, Order::Descending)
+            .last()
+            .ok_or(ContractError::OfferNotFound {})?
+            .unwrap()
+            .1)
+    }
 }
 
 pub const AUCTIONS_STORE: Map<&Addr, Auction> = Map::new("auctions");
