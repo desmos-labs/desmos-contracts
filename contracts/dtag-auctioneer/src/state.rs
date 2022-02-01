@@ -60,7 +60,7 @@ pub struct Auction {
     pub start_time: Option<Timestamp>,
     pub end_time: Option<Timestamp>,
     pub status: AuctionStatus,
-    pub user: Addr,
+    pub creator: Addr,
 }
 
 impl Auction {
@@ -80,7 +80,7 @@ impl Auction {
             start_time,
             end_time,
             status: auction_status,
-            user,
+            creator: user,
         }
     }
 

@@ -9,11 +9,20 @@ pub enum ContractError {
     #[error("An auction has already been started by this contract")]
     AlreadyExistentAuction {},
 
+    #[error("The auction is closed")]
+    AlreadyClosedAuction{},
+
+    #[error("The auction is still active and cant be closed now")]
+    StillActiveAuction{},
+
     #[error("Auction not found")]
     AuctionNotFound {},
 
     #[error("Dtag request already present in store")]
     AlreadyExistentDtagRequest {},
+
+    #[error("User is not the creator of the auction")]
+    InvalidAuctionCreator{},
 
     #[error("Offer not found")]
     OfferNotFound {},

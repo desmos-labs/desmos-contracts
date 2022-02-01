@@ -19,13 +19,13 @@ pub enum ExecuteMsg {
     },
     MakeOffer {},
     RetreatOffer {},
+    CompleteAuction {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum SudoMsg {
     UpdateDTagAuctionStatus { user: Addr, transfer_status: String },
-    CompleteAuction {},
     StartNextAuction {},
 }
 
