@@ -59,6 +59,7 @@ pub struct Auction {
     pub max_participants: Uint64,
     pub start_time: Option<Timestamp>,
     pub end_time: Option<Timestamp>,
+    pub claim_time: Option<Timestamp>,
     pub status: AuctionStatus,
     pub creator: Addr,
 }
@@ -70,6 +71,7 @@ impl Auction {
         max_participants: Uint64,
         start_time: Option<Timestamp>,
         end_time: Option<Timestamp>,
+        claim_time: Option<Timestamp>,
         auction_status: AuctionStatus,
         user: Addr,
     ) -> Auction {
@@ -79,6 +81,7 @@ impl Auction {
             max_participants,
             start_time,
             end_time,
+            claim_time,
             status: auction_status,
             creator: user,
         }
@@ -89,6 +92,10 @@ impl Auction {
         // the actual end time is 2 days later the auction start. 2 days = 172800
         self.end_time = Some(time.plus_seconds(172800));
         self.status = AuctionStatus::Active;
+    }
+
+    pub fn start_claim_time(&mut self) {
+        self.claim_time = Some(self.end_time.unwrap().plus_nanos(86400)) // 1 day to claim dtag
     }
 
     pub fn add_offer(

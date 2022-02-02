@@ -12,6 +12,12 @@ pub enum ContractError {
     #[error("The auction is closed")]
     AlreadyClosedAuction{},
 
+    #[error("Already activated auction by sender")]
+    AlreadyActivatedAuction{},
+
+    #[error("The auction dtag is still in the claiming procedure")]
+    StillInClaimingProcedureAuctionDTag{},
+
     #[error("The auction is still active and cant be closed now")]
     StillActiveAuction{},
 
