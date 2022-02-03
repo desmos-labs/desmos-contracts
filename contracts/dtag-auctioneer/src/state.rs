@@ -98,48 +98,45 @@ impl Auction {
         self.claim_time = Some(self.end_time.unwrap().plus_nanos(86400)) // 1 day to claim dtag
     }
 
-    pub fn add_offer(
-        &self,
-        storage: &mut dyn Storage,
-        user: Addr,
-        offer: Vec<Coin>,
-    ) -> StdResult<()> {
-        AUCTION_OFFERS_STORE.save(storage, &user, &offer)
+    /// add_bid add the bid associated with the given user to the bids store
+    pub fn add_bid(&self, storage: &mut dyn Storage, user: Addr, bid: Vec<Coin>) {
+        AUCTION_BIDS_STORE.save(storage, &user, &bid)?
     }
 
-    pub fn remove_offer(&self, storage: &mut dyn Storage, user: Addr) {
-        AUCTION_OFFERS_STORE.remove(storage, &user);
+    /// remove_bid remove the bid associated with the given user from the bids store
+    pub fn remove_bid(&self, storage: &mut dyn Storage, user: Addr) {
+        AUCTION_BIDS_STORE.remove(storage, &user);
     }
 
     pub fn get_best_offer(&self, storage: &mut dyn Storage) -> StdResult<(Addr, Vec<Coin>)> {
-        let best_offer = AUCTION_OFFERS_STORE
+        let best_offer = AUCTION_BIDS_STORE
             .range(storage, None, None, Order::Ascending)
             .enumerate()
             .max_by_key(|(_, item)| item.as_ref().unwrap().1[0].amount)
             .unwrap()
             .1?;
 
-        let key = String::from_utf8(best_offer.0)?;
-
-        Ok((Addr::unchecked(key), best_offer.1))
+        Ok((Addr::unchecked(best_offer.0), best_offer.1))
     }
 
-    pub fn count_offers(&self, storage: &mut dyn Storage) -> u64 {
-        AUCTION_OFFERS_STORE
+    /// count_bids count the number of bids in the bids store
+    pub fn count_bids(&self, storage: &mut dyn Storage) -> u64 {
+        AUCTION_BIDS_STORE
             .range(storage, None, None, Order::Ascending)
             .count() as u64
     }
 
-    pub fn get_last_offer(&self, storage: &mut dyn Storage) -> Result<Vec<Coin>, ContractError> {
-        Ok(AUCTION_OFFERS_STORE
+
+    pub fn get_last_bid(&self, storage: &mut dyn Storage) -> Vec<Coin> {
+        AUCTION_BIDS_STORE
             .range(storage, None, None, Order::Descending)
             .last()
-            .ok_or(ContractError::OfferNotFound {})?
             .unwrap()
-            .1)
+            .unwrap()
+            .1
     }
 }
 
-pub const AUCTIONS_STORE: Map<&Addr, Auction> = Map::new("auctions");
+pub const INACTIVE_AUCTIONS_STORE: Map<&Addr, Auction> = Map::new("inactive_auctions");
 pub const ACTIVE_AUCTION: Item<Auction> = Item::new("active_auction");
-pub const AUCTION_OFFERS_STORE: Map<&Addr, Vec<Coin>> = Map::new("auctions_offers");
+pub const AUCTION_BIDS_STORE: Map<&Addr, Vec<Coin>> = Map::new("auction_bids");
