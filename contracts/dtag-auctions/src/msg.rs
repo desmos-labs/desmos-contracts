@@ -17,8 +17,8 @@ pub enum ExecuteMsg {
         starting_price: Uint128,
         max_participants: Uint64,
     },
-    MakeOffer {},
-    RetreatOffer {},
+    PlaceBid {},
+    RetreatBid {},
     CompleteAuction {},
     StartAuction {},
 }

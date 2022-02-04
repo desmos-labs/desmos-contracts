@@ -1,7 +1,7 @@
 [workspace]
 members = [
   "packages/desmos-std",
-  "contracts/dtag-auctioneer",
+  "contracts/dtag-auctions",
   "contracts/filter-posts",
   "contracts/dummy-tokenomics"
 ]

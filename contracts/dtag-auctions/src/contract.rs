@@ -3,12 +3,12 @@ use crate::{
     error::ContractError,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg},
     state::{
-        Auction, AuctionStatus, ContractDTag, DtagTransferStatus, ACTIVE_AUCTION, INACTIVE_AUCTIONS_STORE,
+        Auction, ContractDTag, DtagTransferStatus, ACTIVE_AUCTION, INACTIVE_AUCTIONS_STORE,
         CONTRACT_DTAG_STORE,
     },
 };
 use cosmwasm_std::{
-    attr, entry_point, to_binary, Addr, BankMsg, Binary, Env, MessageInfo, Order, Response,
+    attr, entry_point, to_binary, Addr, BankMsg, Binary, Env, MessageInfo, Response,
     StdResult, Uint128, Uint64,
 };
 use desmos_std::{
@@ -43,7 +43,7 @@ pub fn instantiate(
         None,
     );
 
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION);
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let response: Response<DesmosMsgWrapper> = Response::new()
         .add_message(save_profile_msg)
@@ -70,8 +70,8 @@ pub fn execute(
             starting_price,
             max_participants,
         ),
-        ExecuteMsg::MakeOffer {} => execute_make_offer(deps, env, info),
-        ExecuteMsg::RetreatOffer {} => execute_retreat_offer(deps, info.sender),
+        ExecuteMsg::PlaceBid {} => execute_place_bid(deps, env, info),
+        ExecuteMsg::RetreatBid {} => execute_retreat_bid(deps, info.sender),
         ExecuteMsg::CompleteAuction {} => execute_complete_auction(deps, env, info.sender),
         ExecuteMsg::StartAuction {} => execute_start_auction(deps, env, info.sender),
     }
@@ -90,7 +90,7 @@ pub fn execute_create_auction(
 
     // check if an auction made by the msg sender already exist
     if INACTIVE_AUCTIONS_STORE.has(deps.storage, &creator) {
-        return Err(ContractError::AlreadyExistentAuction {});
+        return Err(ContractError::AlreadyExistentAuction { creator });
     }
 
     // create the new auction and set it as inactive
@@ -101,7 +101,6 @@ pub fn execute_create_auction(
         None,
         None,
         None,
-        AuctionStatus::Inactive,
         creator.clone(),
     );
 
@@ -131,10 +130,9 @@ pub fn execute_create_auction(
     Ok(response)
 }
 
-/// execute_make_offer manage the creation and insertion of a user's bid to the current
+/// execute_place_bid manage the creation and insertion of a user's bid to the current
 /// active auction, if it exists.
-/// TODO this should be refactored
-pub fn execute_make_offer(
+pub fn execute_place_bid(
     deps: DepsMut,
     env:  Env,
     info: MessageInfo,
@@ -147,34 +145,37 @@ pub fn execute_make_offer(
 
     // if the auction reached its end, return error
     if env.block.time > auction.end_time.unwrap() {
-        return Err(ContractError::AlreadyClosedAuction {})
+        return Err(ContractError::AlreadyFinishedAuction {})
     }
 
     // count the number of auction's bids
     let bids_number = auction.count_bids(deps.storage);
 
     // if the bids number reached its limit, return error
-    if bids_number == auction.max_participants.u64() {
-        return Err(ContractError::MaxParticipantsNumberReached {});
+    let max_participants = auction.max_participants.u64();
+    if bids_number == max_participants {
+        return Err(ContractError::MaxParticipantsNumberReached { max_participants });
     }
 
     // Save the bidder bid amount, if exists. Return error otherwise
     let bid_amount = info.funds[0].amount;
 
     // if this the first bid and it not reach the starting price, return error
-    if bids_number == 0 && bid_amount < auction.starting_price {
-        return Err(ContractError::MinimumPriceNotReached {});
+    let min_bid_amount = auction.starting_price;
+    if bids_number == 0 && bid_amount < min_bid_amount {
+        return Err(ContractError::MinimumBidAmountNotSatisfied { min_amount: min_bid_amount });
     }
 
-    let last_bid_made = auction.get_last_bid(deps.storage)[0].amount;
-
     // if this is not the first bid, and its amount is lower than the last bid made, return error
-    if bids_number > 0 && bid_amount < last_bid_made {
-        return Err(ContractError::MinimumPriceNotReached {});
+    if bids_number > 0 {
+        let last_bid_made_amount = auction.get_best_bid_amount(deps.storage)?;
+        if bid_amount < last_bid_made_amount {
+            return Err(ContractError::MinimumBidAmountNotSatisfied { min_amount: last_bid_made_amount });
+        }
     }
 
     // insert the bid inside the AUCTION_BIDS_STORE
-    auction.add_bid(deps.storage, info.sender.clone(), info.funds.clone());
+    auction.add_bid(deps.storage, &info.sender, info.funds);
 
     let res = Response::new()
         .add_attribute("action", "make_bid")
@@ -185,8 +186,8 @@ pub fn execute_make_offer(
     Ok(res)
 }
 
-/// handle_retreat_offer manage the removal of an existent auction offer from a user
-pub fn execute_retreat_offer(
+/// execute_retreat_bid manage the removal of an existent auction bid from a user
+pub fn execute_retreat_bid(
     deps: DepsMut,
     user: Addr,
 ) -> Result<Response<DesmosMsgWrapper>, ContractError> {
@@ -194,7 +195,7 @@ pub fn execute_retreat_offer(
         .may_load(deps.storage)?
         .ok_or(ContractError::AuctionNotFound {})?;
 
-    auction.remove_bid(deps.storage, user.clone());
+    auction.remove_bid(deps.storage, &user);
 
     let res = Response::new()
         .add_attribute("action", "retreat_offer")
@@ -203,8 +204,10 @@ pub fn execute_retreat_offer(
     Ok(res)
 }
 
-/// complete_auction takes care of closing the auction when it reaches the ending time
-/// and consequently start the next one
+/// complete_auction takes care of:
+/// 1. Close the auction when it reaches the ending time
+/// 2. Start the claiming period for the DTag
+/// 3. Remove the auction from the INACTIVE_AUCTIONS_STORE
 pub fn execute_complete_auction(
     deps: DepsMut,
     env: Env,
@@ -217,32 +220,32 @@ pub fn execute_complete_auction(
 
     // Check if the sender is the actual auction creator
     if sender != auction.creator {
-        return Err(ContractError::InvalidAuctionCreator {})
+        return Err(ContractError::InvalidAuctionCreator { user: sender, creator: auction.creator })
     }
 
     // Check if the auction is already closed
     if env.block.time > auction.end_time.unwrap() {
-        return Err(ContractError::AlreadyClosedAuction {})
+        return Err(ContractError::AlreadyFinishedAuction {})
     }
 
     // Check if the auction is still active
-    // TODO we need to think about this better.
+    // TODO Should we make it possible for the creator to shut down the auction before the end time?
     if env.block.time < auction.end_time.unwrap() {
         return Err(ContractError::StillActiveAuction {})
     }
 
-    // Get the best offer
-    let (offerer, best_offer) = auction.get_best_offer(deps.storage)?;
+    // Get the best bid made
+    let (bidder, best_bid_amount) = auction.get_last_bid(deps.storage)?;
 
     // Prepare the bank msg with the funds to be sent to the auction creator
-    let deliver_offer_msg = BankMsg::Send {
-        to_address: auction.creator.clone().into_string(),
-        amount: best_offer,
+    let deliver_best_bid_amount_msg = BankMsg::Send {
+        to_address: sender.into_string(),
+        amount: best_bid_amount,
     };
 
     // Prepare the dtag transfer request message for the winner
     let dtag_transfer_request_msg =
-        msg::request_dtag_transfer(offerer.to_string(), env.contract.address.to_string());
+        msg::request_dtag_transfer(env.contract.address.to_string(), bidder.to_string());
 
     // remove it from the inactive store (applies either if the auction has been activated or not)
     INACTIVE_AUCTIONS_STORE.remove(deps.storage, &auction.creator.clone());
@@ -251,73 +254,20 @@ pub fn execute_complete_auction(
     ACTIVE_AUCTION.update(deps.storage, | mut auction | -> StdResult<Auction> {
         auction.start_claim_time();
         Ok(auction)
-    });
+    })?;
 
     let response = Response::new()
-        .add_message(deliver_offer_msg)
+        .add_message(deliver_best_bid_amount_msg)
         .add_message(dtag_transfer_request_msg)
         .add_attribute("action", "complete_auction")
         .add_attribute("user", auction.creator.clone())
         .add_attribute("dtag", auction.dtag)
-        .add_attribute("winner", offerer);
+        .add_attribute("winner", bidder);
 
     Ok(response)
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn sudo(
-    deps: DepsMut,
-    env: Env,
-    msg: SudoMsg,
-) -> Result<Response<DesmosMsgWrapper>, ContractError> {
-    match msg {
-        SudoMsg::UpdateDTagAuctionStatus {
-            user,
-            transfer_status,
-        } => {
-            let dtag_transfer_status = DtagTransferStatus::from_str(transfer_status.as_str())?;
-            update_dtag_auction_status(deps, env, user, dtag_transfer_status)
-        }
-    }
-}
-
-/// update_dtag_auction_status updates the status of an inactive auction created by the user with the given dtag_transfer_status
-/// if the status == Accepted, then the auction will be activated, otherwise it will be deleted.
-pub fn update_dtag_auction_status(
-    deps: DepsMut,
-    env: Env,
-    user: Addr,
-    dtag_transfer_status: DtagTransferStatus,
-) -> Result<Response<DesmosMsgWrapper>, ContractError> {
-    let mut auction = INACTIVE_AUCTIONS_STORE
-        .may_load(deps.storage, &user)?
-        .ok_or(ContractError::AuctionNotFound {})?;
-    let mut status_attr: &str = "Deleted";
-
-    // if the DTag transfer has been accepted by the user who created the auction
-    if dtag_transfer_status == DtagTransferStatus::Accepted {
-        // activate the auction
-        auction.activate(env.block.time);
-        // save the auction inside the active auction store
-        ACTIVE_AUCTION.save(deps.storage, &auction)?;
-        status_attr = "Activated"
-    }
-
-    if dtag_transfer_status == DtagTransferStatus::Refused {
-        // delete the auction
-        INACTIVE_AUCTIONS_STORE.remove(deps.storage, &user)
-    }
-
-    let response = Response::new().add_attributes(vec![
-        attr("action", "update_dtag_auction_status"),
-        attr("status", status_attr),
-        attr("user", user),
-    ]);
-
-    Ok(response)
-}
-
-/// start_auction_activation_process manage to activate a new auction from the inactive ones
+/// start_auction manage to activate the auction of the given user
 fn execute_start_auction(
     deps: DepsMut,
     env: Env,
@@ -334,7 +284,7 @@ fn execute_start_auction(
 
     // Check that the DTag of the active auction is not in the claiming status
     if active_auction.creator != sender && env.block.time < active_auction.claim_time.unwrap() {
-        return Err(ContractError::StillInClaimingProcedureAuctionDTag {});
+        return Err(ContractError::StillInClaimingPeriodAuctionDTag {});
     }
 
     // Get the sender auction to start
@@ -360,6 +310,64 @@ fn execute_start_auction(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
+pub fn sudo(
+    deps: DepsMut,
+    env: Env,
+    msg: SudoMsg,
+) -> Result<Response<DesmosMsgWrapper>, ContractError> {
+    match msg {
+        SudoMsg::UpdateDTagAuctionStatus {
+            user,
+            transfer_status,
+        } => {
+            let dtag_transfer_status = DtagTransferStatus::from_str(transfer_status.as_str())?;
+            update_dtag_auction_status(deps, env, user, dtag_transfer_status)
+        }
+    }
+}
+
+/// update_dtag_auction_status updates the status of an inactive auction created by the given user
+/// with the given dtag_transfer_status. If the status == Accepted,
+/// then the auction will be activated, otherwise it will be deleted.
+pub fn update_dtag_auction_status(
+    deps: DepsMut,
+    env: Env,
+    user: Addr,
+    dtag_transfer_status: DtagTransferStatus,
+) -> Result<Response<DesmosMsgWrapper>, ContractError> {
+
+    // get the auction created by the user
+    let mut auction = INACTIVE_AUCTIONS_STORE
+        .may_load(deps.storage, &user)?
+        .ok_or(ContractError::AuctionNotFound {})?;
+
+    let mut status_attr: &str = "Deleted";
+
+    // if the DTag transfer has been accepted by the user who created the auction
+    if dtag_transfer_status == DtagTransferStatus::Accepted {
+        // activate the auction
+        auction.activate(env.block.time);
+        // save the auction inside the active auction store
+        ACTIVE_AUCTION.save(deps.storage, &auction)?;
+        status_attr = "Activated"
+    }
+
+    if dtag_transfer_status == DtagTransferStatus::Refused {
+        // if the user refused the transfer request, delete the auction
+        INACTIVE_AUCTIONS_STORE.remove(deps.storage, &user)
+    }
+
+    let response = Response::new().add_attributes(vec![
+        attr("action", "update_dtag_auction_status"),
+        attr("status", status_attr),
+        attr("user", user),
+        attr("dtag", auction.dtag)
+    ]);
+
+    Ok(response)
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::GetActiveAuction {} => to_binary(&query_active_auction(deps)?),
@@ -382,15 +390,17 @@ pub fn query_auction_by_user(deps: Deps, user: Addr) -> StdResult<Auction> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::error::ContractError::AuctionNotFound;
-    use crate::state::AUCTION_BIDS_STORE;
-    use cosmwasm_std::OverflowOperation::Add;
-    use cosmwasm_std::WasmMsg::Execute;
-    use cosmwasm_std::{from_binary, Coin, Timestamp};
+    use crate::{
+        state::AUCTION_BIDS_STORE
+    };
+    use cosmwasm_std::{
+        from_binary, Coin, Timestamp,
+    };
     use cosmwasm_vm::testing::{mock_env, mock_info};
     use desmos_std::mock::mock_dependencies_with_custom_querier;
 
-    /// setup_test is an helper func to instantiate the contract
+    /// Helper functions
+
     fn setup_test(deps: DepsMut, env: Env, info: MessageInfo, dtag: &str) {
         let instantiate_msg = InstantiateMsg {
             contract_dtag: dtag.to_string(),
@@ -399,15 +409,15 @@ mod tests {
     }
 
     fn save_auction(deps: DepsMut, creator: Addr, auction: Auction) {
-        INACTIVE_AUCTIONS_STORE.save(deps.storage, &creator, &auction);
+        let _res = INACTIVE_AUCTIONS_STORE.save(deps.storage, &creator, &auction);
     }
 
     fn save_active_auction(deps: DepsMut, auction: Auction) {
-        ACTIVE_AUCTION.save(deps.storage, &auction);
+        let _res = ACTIVE_AUCTION.save(deps.storage, &auction);
     }
 
-    fn add_auction_offer(deps: DepsMut, offerer_addr: Addr, offer: Vec<Coin>) {
-        AUCTION_BIDS_STORE.save(deps.storage, &offerer_addr, &offer);
+    fn add_auction_bid(deps: DepsMut, auction: &Auction, bidder: Addr, bid: Vec<Coin>) {
+        auction.add_bid(deps.storage, &bidder, bid)
     }
 
     #[test]
@@ -424,11 +434,12 @@ mod tests {
 
         let exp_response = vec![
             attr("action", "save_contract_profile"),
-            attr("dtag", "auctioneer_dtag"),
+            attr("dtag", "auctioneer_contract"),
         ];
 
         let dtag = CONTRACT_DTAG_STORE.load(&deps.storage).unwrap();
-        assert_eq!("auctioneer_contract", dtag.0.as_str())
+        assert_eq!("auctioneer_contract", dtag.0.as_str());
+        assert_eq!(exp_response, res.attributes)
     }
 
     #[test]
@@ -446,7 +457,7 @@ mod tests {
             max_participants: Uint64::new(50),
         };
 
-        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+        let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
         let auction = INACTIVE_AUCTIONS_STORE.load(&deps.storage, &info.sender).unwrap();
 
@@ -457,7 +468,6 @@ mod tests {
             None,
             None,
             None,
-            AuctionStatus::Inactive,
             info.sender.clone(),
         );
 
@@ -478,7 +488,7 @@ mod tests {
             None,
             None,
             None,
-            AuctionStatus::Inactive,
+
             info.sender.clone(),
         );
 
@@ -493,7 +503,7 @@ mod tests {
 
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
-        assert_eq!(ContractError::AlreadyExistentAuction {}, res.unwrap_err())
+        assert_eq!(ContractError::AlreadyExistentAuction { creator: info.sender }, res.unwrap_err())
     }
 
     #[test]
@@ -510,7 +520,7 @@ mod tests {
             None,
             None,
             None,
-            AuctionStatus::Inactive,
+
             info.sender.clone(),
         );
 
@@ -534,7 +544,7 @@ mod tests {
     }
 
     #[test]
-    fn test_execute_make_offer() {
+    fn test_execute_place_bid() {
         let contract_funds = Coin::new(100_000_000, "udsm");
         let mut deps = mock_dependencies_with_custom_querier(&[contract_funds]);
         let info = mock_info("test_addr", &[]);
@@ -547,27 +557,27 @@ mod tests {
             None,
             Some(Timestamp::from_seconds(10000000000)),
             None,
-            AuctionStatus::Inactive,
+
             info.sender.clone(),
         );
 
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
         save_active_auction(deps.as_mut(), active_auction);
 
-        let msg = ExecuteMsg::MakeOffer {};
+        let msg = ExecuteMsg::PlaceBid {};
 
-        let res = execute(
+        let _res = execute(
             deps.as_mut(),
             env.clone(),
-            mock_info("offerer_addr", &[Coin::new(1000, "udsm")]),
+            mock_info("bidder_addr", &[Coin::new(1000, "udsm")]),
             msg,
         );
 
-        let offer = AUCTION_BIDS_STORE
-            .load(&deps.storage, &Addr::unchecked("offerer_addr"))
+        let bid = AUCTION_BIDS_STORE
+            .load(&deps.storage, &Addr::unchecked("bidder_addr"))
             .unwrap();
 
-        assert_eq!(vec![Coin::new(1000, "udsm")], offer)
+        assert_eq!(vec![Coin::new(1000, "udsm")], bid)
     }
 
     #[test]
@@ -577,20 +587,9 @@ mod tests {
         let info = mock_info("test_addr", &[]);
         let env = mock_env();
 
-        let active_auction = Auction::new(
-            "sender_dtag".to_string(),
-            Uint128::new(100),
-            Uint64::new(50),
-            None,
-            Some(Timestamp::from_seconds(10000000000)),
-            None,
-            AuctionStatus::Inactive,
-            info.sender.clone(),
-        );
-
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
 
-        let msg = ExecuteMsg::MakeOffer {};
+        let msg = ExecuteMsg::PlaceBid {};
 
         let err = execute(
             deps.as_mut(),
@@ -617,14 +616,13 @@ mod tests {
             None,
             Some(Timestamp::from_seconds(10000000000)),
             None,
-            AuctionStatus::Inactive,
             info.sender.clone(),
         );
 
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
         save_active_auction(deps.as_mut(), active_auction);
 
-        let msg = ExecuteMsg::MakeOffer {};
+        let msg = ExecuteMsg::PlaceBid {};
         let err = execute(
             deps.as_mut(),
             env.clone(),
@@ -633,7 +631,7 @@ mod tests {
         )
         .unwrap_err();
 
-        assert_eq!(ContractError::MinimumPriceNotReached {}, err)
+        assert_eq!(ContractError::MinimumBidAmountNotSatisfied { min_amount: Uint128::new(100) }, err)
     }
 
     #[test]
@@ -650,19 +648,19 @@ mod tests {
             None,
             Some(Timestamp::from_seconds(10000000000)),
             None,
-            AuctionStatus::Inactive,
             info.sender.clone(),
         );
 
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
-        save_active_auction(deps.as_mut(), active_auction);
-        add_auction_offer(
+        save_active_auction(deps.as_mut(), active_auction.clone());
+        add_auction_bid(
             deps.as_mut(),
-            Addr::unchecked("offerer"),
+            &active_auction,
+            Addr::unchecked("bidder"),
             vec![Coin::new(200, "udsm")],
         );
 
-        let msg = ExecuteMsg::MakeOffer {};
+        let msg = ExecuteMsg::PlaceBid {};
         let err = execute(
             deps.as_mut(),
             env.clone(),
@@ -671,7 +669,7 @@ mod tests {
         )
         .unwrap_err();
 
-        assert_eq!(ContractError::MinimumPriceNotReached {}, err)
+        assert_eq!(ContractError::MinimumBidAmountNotSatisfied { min_amount: Uint128::new(200) }, err)
     }
 
     #[test]
@@ -688,21 +686,21 @@ mod tests {
             None,
             Some(Timestamp::from_seconds(10000000000)),
             None,
-            AuctionStatus::Inactive,
             info.sender.clone(),
         );
 
-        let offerers = vec![Addr::unchecked("addr1"), Addr::unchecked("addr2")];
-        let mut amount = 10;
-        for offerer in offerers {
-            add_auction_offer(deps.as_mut(), offerer, vec![Coin::new(amount, "udsm")]);
-            amount += 10
-        }
+        let bidder = Addr::unchecked("addr1");
+        add_auction_bid(
+            deps.as_mut(),
+            &active_auction,
+            bidder,
+            vec![Coin::new(10, "udsm")]
+        );
 
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
         save_active_auction(deps.as_mut(), active_auction);
 
-        let msg = ExecuteMsg::MakeOffer {};
+        let msg = ExecuteMsg::PlaceBid {};
         let err = execute(
             deps.as_mut(),
             env.clone(),
@@ -711,7 +709,7 @@ mod tests {
         )
         .unwrap_err();
 
-        assert_eq!(ContractError::MaxParticipantsNumberReached {}, err)
+        assert_eq!(ContractError::MaxParticipantsNumberReached { max_participants: 1 }, err)
     }
 
     #[test]
@@ -732,20 +730,20 @@ mod tests {
             None,
             None,
             None,
-            AuctionStatus::Inactive,
             info.sender.clone(),
         );
 
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
-        save_active_auction(deps.as_mut(), active_auction);
+        save_active_auction(deps.as_mut(), active_auction.clone());
 
-        add_auction_offer(
+        add_auction_bid(
             deps.as_mut(),
+            &active_auction,
             offerer_addr.clone(),
             vec![Coin::new(1000, "udsm")],
         );
 
-        let msg = ExecuteMsg::RetreatOffer {};
+        let msg = ExecuteMsg::RetreatBid {};
         let response = execute(
             deps.as_mut(),
             env.clone(),
@@ -766,11 +764,10 @@ mod tests {
         let mut deps = mock_dependencies_with_custom_querier(&[contract_funds]);
         let info = mock_info("test_addr", &[]);
         let env = mock_env();
-        let offerer_addr = Addr::unchecked("offerer_addr");
 
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
 
-        let msg = ExecuteMsg::RetreatOffer {};
+        let msg = ExecuteMsg::RetreatBid {};
 
         let response = execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap_err();
 
@@ -797,7 +794,6 @@ mod tests {
             None,
             Some(env.block.time),
             None,
-            AuctionStatus::Inactive,
             info.sender.clone(),
         );
 
@@ -808,11 +804,11 @@ mod tests {
             .add_attribute("winner", offerers_addresses[2].clone());
 
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
-        save_active_auction(deps.as_mut(), active_auction);
+        save_active_auction(deps.as_mut(), active_auction.clone());
 
         for addr in offerers_addresses {
             amount += 10;
-            add_auction_offer(deps.as_mut(), addr, vec![Coin::new(amount, "udsm")]);
+            add_auction_bid(deps.as_mut(), &active_auction, addr, vec![Coin::new(amount, "udsm")]);
         }
 
         let execute_msg = ExecuteMsg::CompleteAuction {};
@@ -862,7 +858,6 @@ mod tests {
             None,
             None,
             Some(Timestamp::from_seconds(0)),
-            AuctionStatus::Inactive,
             users[2].clone(),
         );
 
@@ -876,7 +871,7 @@ mod tests {
                 None,
                 None,
                 None,
-                AuctionStatus::Inactive,
+
                 users[0].clone(),
             ),
             Auction::new(
@@ -886,7 +881,6 @@ mod tests {
                 None,
                 None,
                 None,
-                AuctionStatus::Inactive,
                 users[1].clone(),
             ),
         ];
@@ -926,7 +920,6 @@ mod tests {
             None,
             None,
             Some(Timestamp::from_seconds(0)),
-            AuctionStatus::Active,
             info.sender.clone(),
         );
 
@@ -958,7 +951,6 @@ mod tests {
             None,
             None,
             Some(Timestamp::from_seconds(env.block.time.seconds() + 50)),
-            AuctionStatus::Active,
             Addr::unchecked("usr_addr"),
         );
 
@@ -972,7 +964,7 @@ mod tests {
             execute_msg
         ).unwrap_err();
 
-        assert_eq!(ContractError::StillInClaimingProcedureAuctionDTag {}, error)
+        assert_eq!(ContractError::StillInClaimingPeriodAuctionDTag {}, error)
     }
 
     #[test]
@@ -990,7 +982,6 @@ mod tests {
             None,
             None,
             Some(Timestamp::from_seconds(env.block.time.seconds() - 50)),
-            AuctionStatus::Active,
             Addr::unchecked("usr_addr"),
         );
 
@@ -1021,12 +1012,11 @@ mod tests {
             None,
             None,
             None,
-            AuctionStatus::Inactive,
             info.sender.clone(),
         );
 
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
-        save_auction(deps.as_mut(), info.sender.clone(), auction);
+        save_auction(deps.as_mut(), info.sender.clone(), auction.clone());
 
         let sudo_msg = SudoMsg::UpdateDTagAuctionStatus {
             user: info.sender.clone(),
@@ -1039,6 +1029,7 @@ mod tests {
             attr("action", "update_dtag_auction_status"),
             attr("status", "Activated"),
             attr("user", info.sender.clone()),
+            attr("dtag", auction.dtag.clone())
         ]);
 
         assert_eq!(exp_response, response);
@@ -1061,12 +1052,11 @@ mod tests {
             None,
             None,
             None,
-            AuctionStatus::Inactive,
             info.sender.clone(),
         );
 
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
-        save_auction(deps.as_mut(), info.sender.clone(), auction);
+        save_auction(deps.as_mut(), info.sender.clone(), auction.clone());
 
         let sudo_msg = SudoMsg::UpdateDTagAuctionStatus {
             user: info.sender.clone(),
@@ -1079,6 +1069,7 @@ mod tests {
             attr("action", "update_dtag_auction_status"),
             attr("status", "Deleted"),
             attr("user", info.sender.clone()),
+            attr("dtag", auction.dtag)
         ]);
 
         assert_eq!(exp_response, response);
@@ -1093,17 +1084,6 @@ mod tests {
         let mut deps = mock_dependencies_with_custom_querier(&[contract_funds]);
         let info = mock_info("test_addr", &[]);
         let env = mock_env();
-
-        let auction = Auction::new(
-            "sender_dtag".to_string(),
-            Uint128::new(100),
-            Uint64::new(50),
-            None,
-            None,
-            None,
-            AuctionStatus::Inactive,
-            info.sender.clone(),
-        );
 
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
 
@@ -1131,7 +1111,6 @@ mod tests {
             None,
             None,
             None,
-            AuctionStatus::Inactive,
             info.sender.clone(),
         );
 
@@ -1159,7 +1138,6 @@ mod tests {
             None,
             None,
             None,
-            AuctionStatus::Inactive,
             info.sender.clone(),
         );
 
