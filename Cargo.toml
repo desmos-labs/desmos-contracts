@@ -1,12 +1,9 @@
 [workspace]
 members = [
-  "packages/desmos-cw",
-  "packages/proto-compiler",
-  "packages/desmos-proto",
-  "contracts/*"
+  "packages/desmos-std",
 ]
 
-[profile.release.package.desmos]
+[profile.release.package.desmos-std]
 codegen-units = 1
 incremental = false
 

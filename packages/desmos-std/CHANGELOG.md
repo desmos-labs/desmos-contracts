@@ -2,6 +2,9 @@
 Collection of Desmos chain queries, messages and types used by different
 Desmos contracts.
 
+### Version 0.1.6
+- Renamed package from `desmos-cw` to `desmos-std`
+
 ### Version 0.1.4
 - Renamed package from `desmos` to `desmos-cw`
 
