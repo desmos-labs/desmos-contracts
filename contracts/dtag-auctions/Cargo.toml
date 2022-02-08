@@ -1,9 +1,9 @@
 [package]
-name = "cw-desmos-dtag-auctioneer"
-version = "0.0.1"
+name = "cw-desmos-dtag-auctions"
+version = "0.1.0"
 authors = ["Leonardo Bragagnolo <leonardo@forbole.com>"]
 edition = "2018"
-description = "A cosmwasm contract that allows a user to create an auction to sell his DTag"
+description = "A cosmwasm contract that allows users to create auctions to sell their DTags"
 license = "Apache-2.0"
 repository = "https://github.com/desmos-labs/desmos-contracts"
 keywords = ["desmos-network", "social-network", "blockchain", "smart-contracts"]

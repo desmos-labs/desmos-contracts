@@ -378,6 +378,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 /// query_active_auction return the current active auction
 pub fn query_active_auction(deps: Deps) -> StdResult<Auction> {
     let auction = ACTIVE_AUCTION.load(deps.storage)?;
+    //let bids = auction.get
+
+
     Ok(auction)
 }
 

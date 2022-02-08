@@ -1,0 +1,8 @@
+instantiate: {"contract_dtag":"auctioneer-contract"}
+execute: [
+  {"create_auction":{"dtag":"goldrake","max_participants":"3","starting_price":"10"}}
+  {"place_bid":{}}
+  {"retreat_bid":{}}
+  {"complete_auction":{}}
+  {"start_auction":{}}
+]

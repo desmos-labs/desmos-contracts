@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-use cosmwasm_std::{Addr, Coin, Order, Storage, Timestamp, Uint128, Uint64};
+use cosmwasm_std::{Addr, Coin, Order, StdResult, Storage, Timestamp, Uint128, Uint64};
 use cw_storage_plus::{Item, Map};
 
 use crate::error::ContractError;
@@ -98,7 +98,7 @@ impl Auction {
             .count() as u64
     }
 
-    /// get_last_bid return the last (and best) bid made to the auction
+    /// get_last_bid returns the last (and best) bid made to the auction
     pub fn get_last_bid(&self, storage: &mut dyn Storage) -> Result<(Addr, Vec<Coin>), ContractError> {
         let result = AUCTION_BIDS_STORE
             .range(storage, None, None, Order::Ascending)
@@ -107,7 +107,24 @@ impl Auction {
         Ok(result)
     }
 
+    /// get_best_bid_amount returns the best bid amount (in our case it matches the last bid amount)
     pub fn get_best_bid_amount(&self, storage: &mut dyn Storage) -> Result<Uint128, ContractError> {
         Ok(self.get_last_bid(storage)?.1[0].amount)
     }
+
+    /// get_all_bids returns all the bids made to the active auction
+    pub fn get_all_bids(&self, storage: &mut dyn Storage) -> Result<Vec<(Addr, Vec<Coin>)>, ContractError> {
+        let result: StdResult<Vec<_>> = AUCTION_BIDS_STORE
+            .range(storage, None, None, Order::Ascending)
+            .collect();
+        Ok(result.unwrap())
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+/// AuctionResponse represents the response for queries
+pub struct AuctionResponse {
+    pub auction: Auction,
+    pub bids: Vec<(Addr, Vec<Coin>)>
 }
