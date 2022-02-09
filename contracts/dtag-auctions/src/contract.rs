@@ -3,14 +3,11 @@ use crate::{
     error::ContractError,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg},
     state::{
-        Auction, ContractDTag, DtagTransferStatus, ACTIVE_AUCTION, INACTIVE_AUCTIONS_STORE,
+        Auction, AuctionResponse, ContractDTag, DtagTransferStatus, ACTIVE_AUCTION, INACTIVE_AUCTIONS_STORE,
         CONTRACT_DTAG_STORE,
     },
 };
-use cosmwasm_std::{
-    attr, entry_point, to_binary, Addr, BankMsg, Binary, Env, MessageInfo, Response,
-    StdResult, Uint128, Uint64,
-};
+use cosmwasm_std::{attr, entry_point, to_binary, Addr, BankMsg, Binary, Env, MessageInfo, Response, StdResult, Uint128, Uint64, Order};
 use desmos_std::{
     msg,
     msg::DesmosMsgWrapper,
@@ -316,7 +313,7 @@ pub fn sudo(
     msg: SudoMsg,
 ) -> Result<Response<DesmosMsgWrapper>, ContractError> {
     match msg {
-        SudoMsg::UpdateDTagAuctionStatus {
+        SudoMsg::UpdateDtagAuctionStatus {
             user,
             transfer_status,
         } => {
@@ -372,23 +369,41 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::GetActiveAuction {} => to_binary(&query_active_auction(deps)?),
         QueryMsg::GetAuctionByUser { user } => to_binary(&query_auction_by_user(deps, user)?),
+        QueryMsg::GetInactiveAuctions {} => to_binary(&query_inactive_auctions(deps)?),
     }
 }
 
-/// query_active_auction return the current active auction
-pub fn query_active_auction(deps: Deps) -> StdResult<Auction> {
+/// query_active_auction returns the current active auction
+pub fn query_active_auction(deps: Deps) -> StdResult<AuctionResponse> {
     let auction = ACTIVE_AUCTION.load(deps.storage)?;
-    //let bids = auction.get
+    let bids = auction.get_all_bids(deps.storage).unwrap_or(vec![]);
 
-
-    Ok(auction)
+    Ok(AuctionResponse{
+        auction,
+        bids
+    })
 }
 
-/// query_auction_by_user return the auction associated with the given user, if exists
+/// query_auction_by_user returns the auction associated with the given user, if exists
 pub fn query_auction_by_user(deps: Deps, user: Addr) -> StdResult<Auction> {
     let auction = INACTIVE_AUCTIONS_STORE.load(deps.storage, &user)?;
     Ok(auction)
 }
+
+// query_inactive_auctions returns the inactive auctions
+pub fn query_inactive_auctions(deps: Deps) -> StdResult<Vec<Auction>> {
+    let result : StdResult<Vec<_>> = INACTIVE_AUCTIONS_STORE
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+
+    let auctions = result.unwrap_or(vec![])
+        .into_iter()
+        .map(| (_, auction) | {auction})
+        .collect();
+
+    Ok(auctions)
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -401,6 +416,7 @@ mod tests {
     };
     use cosmwasm_vm::testing::{mock_env, mock_info};
     use desmos_std::mock::mock_dependencies_with_custom_querier;
+    use crate::error::ContractError::AuctionNotFound;
 
     /// Helper functions
 
@@ -1021,7 +1037,7 @@ mod tests {
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
         save_auction(deps.as_mut(), info.sender.clone(), auction.clone());
 
-        let sudo_msg = SudoMsg::UpdateDTagAuctionStatus {
+        let sudo_msg = SudoMsg::UpdateDtagAuctionStatus {
             user: info.sender.clone(),
             transfer_status: "accept_dtag_transfer_request".to_string(),
         };
@@ -1061,7 +1077,7 @@ mod tests {
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
         save_auction(deps.as_mut(), info.sender.clone(), auction.clone());
 
-        let sudo_msg = SudoMsg::UpdateDTagAuctionStatus {
+        let sudo_msg = SudoMsg::UpdateDtagAuctionStatus {
             user: info.sender.clone(),
             transfer_status: "refuse_dtag_transfer_request".to_string(),
         };
@@ -1090,7 +1106,7 @@ mod tests {
 
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
 
-        let sudo_msg = SudoMsg::UpdateDTagAuctionStatus {
+        let sudo_msg = SudoMsg::UpdateDtagAuctionStatus {
             user: info.sender.clone(),
             transfer_status: "accept_dtag_transfer_request".to_string(),
         };
@@ -1117,14 +1133,16 @@ mod tests {
             info.sender.clone(),
         );
 
+        let exp_response = AuctionResponse { auction: active_auction.clone(), bids: vec![] };
+
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
         save_active_auction(deps.as_mut(), active_auction.clone());
 
         let msg = QueryMsg::GetActiveAuction {};
 
-        let result: Auction = from_binary(&query(deps.as_ref(), env, msg).unwrap()).unwrap();
+        let result: AuctionResponse = from_binary(&query(deps.as_ref(), env, msg).unwrap()).unwrap();
 
-        assert_eq!(active_auction, result)
+        assert_eq!(exp_response, result)
     }
 
     #[test]
@@ -1153,5 +1171,31 @@ mod tests {
         let result: Auction = from_binary(&query(deps.as_ref(), env, msg).unwrap()).unwrap();
 
         assert_eq!(auction, result)
+    }
+
+    #[test]
+    fn test_query_inactive_auctions() {
+        let contract_funds = Coin::new(100_000_000, "udsm");
+        let mut deps = mock_dependencies_with_custom_querier(&[contract_funds]);
+        let info = mock_info("test_addr", &[]);
+        let env = mock_env();
+
+        let auction = Auction::new(
+            "sender_dtag".to_string(),
+            Uint128::new(100),
+            Uint64::new(50),
+            None,
+            None,
+            None,
+            info.sender.clone(),
+        );
+
+        setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
+        save_auction(deps.as_mut(), info.sender.clone(), auction.clone());
+
+        let query_msg = QueryMsg::GetInactiveAuctions {};
+        let response: Vec<Auction> =  from_binary(&query(deps.as_ref(), env, query_msg).unwrap()).unwrap();
+
+        assert_eq!(auction, response[0])
     }
 }

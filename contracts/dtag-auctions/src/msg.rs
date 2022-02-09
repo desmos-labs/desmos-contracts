@@ -26,7 +26,7 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum SudoMsg {
-    UpdateDTagAuctionStatus { user: Addr, transfer_status: String },
+    UpdateDtagAuctionStatus { user: Addr, transfer_status: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -37,4 +37,5 @@ pub enum QueryMsg {
     GetAuctionByUser {
         user: Addr,
     },
+    GetInactiveAuctions {},
 }

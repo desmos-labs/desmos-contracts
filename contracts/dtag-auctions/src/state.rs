@@ -113,7 +113,7 @@ impl Auction {
     }
 
     /// get_all_bids returns all the bids made to the active auction
-    pub fn get_all_bids(&self, storage: &mut dyn Storage) -> Result<Vec<(Addr, Vec<Coin>)>, ContractError> {
+    pub fn get_all_bids(&self, storage: &dyn Storage) -> Result<Vec<(Addr, Vec<Coin>)>, ContractError> {
         let result: StdResult<Vec<_>> = AUCTION_BIDS_STORE
             .range(storage, None, None, Order::Ascending)
             .collect();
