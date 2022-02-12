@@ -145,6 +145,16 @@ pub fn execute_place_bid(
         return Err(ContractError::AlreadyFinishedAuction {})
     }
 
+    // if the user has already made a bid, update it
+    if auction.update_bid(deps.storage, &info.sender, info.funds.clone()).is_ok() {
+        return Ok(Response::new()
+            .add_attribute("action", "update_bid")
+            .add_attribute("user", info.sender)
+            .add_attribute("bid_amount", info.funds[0].amount)
+            .add_attribute("dtag", auction.dtag)
+        )
+    }
+
     // count the number of auction's bids
     let bids_number = auction.count_bids(deps.storage);
 
@@ -166,7 +176,7 @@ pub fn execute_place_bid(
     // if this is not the first bid, and its amount is lower than the last bid made, return error
     if bids_number > 0 {
         let last_bid_made_amount = auction.get_best_bid_amount(deps.storage)?;
-        if bid_amount < last_bid_made_amount {
+        if bid_amount <= last_bid_made_amount {
             return Err(ContractError::MinimumBidAmountNotSatisfied { min_amount: last_bid_made_amount });
         }
     }
@@ -227,12 +237,12 @@ pub fn execute_complete_auction(
 
     // Check if the auction is still active
     // TODO Should we make it possible for the creator to shut down the auction before the end time?
-    if env.block.time < auction.end_time.unwrap() {
-        return Err(ContractError::StillActiveAuction {})
-    }
+    //if env.block.time < auction.end_time.unwrap() {
+    //    return Err(ContractError::StillActiveAuction {})
+   // }
 
     // Get the best bid made
-    let (bidder, best_bid_amount) = auction.get_last_bid(deps.storage)?;
+    let (bidder, best_bid_amount) = auction.get_best_bid(deps.storage)?;
 
     // Prepare the bank msg with the funds to be sent to the auction creator
     let deliver_best_bid_amount_msg = BankMsg::Send {
@@ -416,7 +426,6 @@ mod tests {
     };
     use cosmwasm_vm::testing::{mock_env, mock_info};
     use desmos_std::mock::mock_dependencies_with_custom_querier;
-    use crate::error::ContractError::AuctionNotFound;
 
     /// Helper functions
 
@@ -1039,7 +1048,7 @@ mod tests {
 
         let sudo_msg = SudoMsg::UpdateDtagAuctionStatus {
             user: info.sender.clone(),
-            transfer_status: "accept_dtag_transfer_request".to_string(),
+            transfer_status: "dtag_transfer_accept".to_string(),
         };
 
         let response = sudo(deps.as_mut(), env.clone(), sudo_msg).unwrap();
@@ -1079,7 +1088,7 @@ mod tests {
 
         let sudo_msg = SudoMsg::UpdateDtagAuctionStatus {
             user: info.sender.clone(),
-            transfer_status: "refuse_dtag_transfer_request".to_string(),
+            transfer_status: "dtag_transfer_refuse".to_string(),
         };
 
         let response = sudo(deps.as_mut(), env.clone(), sudo_msg).unwrap();
@@ -1108,7 +1117,7 @@ mod tests {
 
         let sudo_msg = SudoMsg::UpdateDtagAuctionStatus {
             user: info.sender.clone(),
-            transfer_status: "accept_dtag_transfer_request".to_string(),
+            transfer_status: "dtag_transfer_accept".to_string(),
         };
 
         let err = sudo(deps.as_mut(), env, sudo_msg).unwrap_err();

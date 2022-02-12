@@ -28,8 +28,8 @@ impl FromStr for DtagTransferStatus {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "accept_dtag_transfer_request" => Ok(DtagTransferStatus::Accepted),
-            "refuse_dtag_transfer_request" => Ok(DtagTransferStatus::Refused),
+            "dtag_transfer_accept" => Ok(DtagTransferStatus::Accepted),
+            "dtag_transfer_refuse" => Ok(DtagTransferStatus::Refused),
             _ => Err(ContractError::UnknownDTagTransferStatus { status: String::from(s) }),
         }
     }
@@ -91,6 +91,20 @@ impl Auction {
         AUCTION_BIDS_STORE.remove(storage, user);
     }
 
+    /// update_bid update a bid made by the given user with the given bid
+    pub fn update_bid(&self, storage: &mut dyn Storage, user: &Addr, bid: Vec<Coin>) -> Result<Vec<Coin>, ContractError> {
+        AUCTION_BIDS_STORE.update(storage, user, | last_bid | match last_bid {
+            None => Err(ContractError::BidNotFound { bidder: user.clone() }),
+            Some(last_bid) => {
+                let last_bid_amount = last_bid[0].amount;
+                if  last_bid_amount >= bid[0].amount {
+                    return Err(ContractError::MinimumBidAmountNotSatisfied { min_amount: last_bid_amount });
+                }
+                Ok(bid)
+            }
+        })
+    }
+
     /// count_bids count the number of bids in the bids store
     pub fn count_bids(&self, storage: &mut dyn Storage) -> u64 {
         AUCTION_BIDS_STORE
@@ -98,18 +112,25 @@ impl Auction {
             .count() as u64
     }
 
-    /// get_last_bid returns the last (and best) bid made to the auction
-    pub fn get_last_bid(&self, storage: &mut dyn Storage) -> Result<(Addr, Vec<Coin>), ContractError> {
+    /// get_best_bid returns the best bid made to the auction
+    pub fn get_best_bid(&self, storage: &mut dyn Storage) -> Result<(Addr, Vec<Coin>), ContractError> {
+        let default = (Addr::unchecked(""), vec![Coin::new(0, "")]);
         let result = AUCTION_BIDS_STORE
             .range(storage, None, None, Order::Ascending)
-            .last()
-            .unwrap()?;
-        Ok(result)
+            .max_by_key(|res| {
+                let (_, bid) = res.as_ref().unwrap_or(&default);
+                bid[0].amount
+            }).unwrap_or(StdResult::Ok(default.clone()));
+
+        match result {
+            Ok(best_bid) => Ok(best_bid),
+            Err(_) => Err(ContractError::BidNotFound { bidder: Addr::unchecked("") })
+        }
     }
 
     /// get_best_bid_amount returns the best bid amount (in our case it matches the last bid amount)
     pub fn get_best_bid_amount(&self, storage: &mut dyn Storage) -> Result<Uint128, ContractError> {
-        Ok(self.get_last_bid(storage)?.1[0].amount)
+        Ok(self.get_best_bid(storage)?.1[0].amount)
     }
 
     /// get_all_bids returns all the bids made to the active auction
