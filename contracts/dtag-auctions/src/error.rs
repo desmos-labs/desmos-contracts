@@ -12,8 +12,8 @@ pub enum ContractError {
     #[error("An auction has already been started by this user")]
     AlreadyExistentAuction {creator: Addr},
 
-    #[error("The auction is already finished")]
-    AlreadyFinishedAuction {},
+    #[error("The auction is expired")]
+    ExpiredAuction {},
 
     #[error("The auction has already been activated")]
     AlreadyActivatedAuction{},

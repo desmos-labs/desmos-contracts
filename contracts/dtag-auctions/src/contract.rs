@@ -142,7 +142,7 @@ pub fn execute_place_bid(
 
     // if the auction reached its end, return error
     if env.block.time > auction.end_time.unwrap() {
-        return Err(ContractError::AlreadyFinishedAuction {})
+        return Err(ContractError::ExpiredAuction {})
     }
 
     // if the user has already made a bid, update it
@@ -232,7 +232,7 @@ pub fn execute_complete_auction(
 
     // Check if the auction is already closed
     if env.block.time > auction.end_time.unwrap() {
-        return Err(ContractError::AlreadyFinishedAuction {})
+        return Err(ContractError::ExpiredAuction {})
     }
 
     // Check if the auction is still active
@@ -609,7 +609,40 @@ mod tests {
     }
 
     #[test]
-    fn test_execute_make_offer_no_active_auction() {
+    fn test_execute_place_bid_expired_time() {
+        let contract_funds = Coin::new(100_000_000, "udsm");
+        let mut deps = mock_dependencies_with_custom_querier(&[contract_funds]);
+        let info = mock_info("test_addr", &[]);
+        let env = mock_env();
+
+        let active_auction = Auction::new(
+            "sender_dtag".to_string(),
+            Uint128::new(100),
+            Uint64::new(50),
+            None,
+            Some(env.block.time.minus_seconds(1500)),
+            None,
+
+            info.sender.clone(),
+        );
+
+        setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
+        save_active_auction(deps.as_mut(), active_auction);
+
+        let msg = ExecuteMsg::PlaceBid {};
+
+        let res = execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info("bidder_addr", &[Coin::new(1000, "udsm")]),
+            msg,
+        ).unwrap_err();
+
+        assert_eq!(ContractError::ExpiredAuction {}, res)
+    }
+
+    #[test]
+    fn test_execute_place_bid_no_active_auction() {
         let contract_funds = Coin::new(100_000_000, "udsm");
         let mut deps = mock_dependencies_with_custom_querier(&[contract_funds]);
         let info = mock_info("test_addr", &[]);
@@ -631,7 +664,7 @@ mod tests {
     }
 
     #[test]
-    fn test_execute_make_offer_amount_offer_lower_than_minimum() {
+    fn test_execute_place_bid_amount_offer_lower_than_minimum() {
         let contract_funds = Coin::new(100_000_000, "udsm");
         let mut deps = mock_dependencies_with_custom_querier(&[contract_funds]);
         let info = mock_info("test_addr", &[]);
@@ -663,7 +696,7 @@ mod tests {
     }
 
     #[test]
-    fn test_execute_make_offer_amount_offer_lower_than_the_last_offer() {
+    fn test_execute_place_bid_amount_bid_lower_than_the_last_bid() {
         let contract_funds = Coin::new(100_000_000, "udsm");
         let mut deps = mock_dependencies_with_custom_querier(&[contract_funds]);
         let info = mock_info("test_addr", &[]);
@@ -701,7 +734,7 @@ mod tests {
     }
 
     #[test]
-    fn test_execute_make_offer_max_participants_number_reached() {
+    fn test_execute_place_bid_max_participants_number_reached() {
         let contract_funds = Coin::new(100_000_000, "udsm");
         let mut deps = mock_dependencies_with_custom_querier(&[contract_funds]);
         let info = mock_info("test_addr", &[]);
@@ -741,7 +774,7 @@ mod tests {
     }
 
     #[test]
-    fn test_execute_retreat_offer() {
+    fn test_execute_retreat_bid() {
         let contract_funds = Coin::new(100_000_000, "udsm");
         let mut deps = mock_dependencies_with_custom_querier(&[contract_funds]);
         let info = mock_info("test_addr", &[]);
@@ -787,7 +820,7 @@ mod tests {
     }
 
     #[test]
-    fn test_execute_retreat_offer_no_active_auction() {
+    fn test_execute_retreat_bid_no_active_auction() {
         let contract_funds = Coin::new(100_000_000, "udsm");
         let mut deps = mock_dependencies_with_custom_querier(&[contract_funds]);
         let info = mock_info("test_addr", &[]);
