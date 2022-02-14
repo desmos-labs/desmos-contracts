@@ -1,3 +1,0 @@
-[submodule "packages/desmos"]
-	path = packages/desmos
-	url = https://github.com/desmos-labs/desmos
