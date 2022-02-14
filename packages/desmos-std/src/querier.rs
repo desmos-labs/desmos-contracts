@@ -12,4 +12,42 @@ impl<'a> DesmosQuerier<'a> {
     pub fn new(querier: &'a QuerierWrapper<'a, DesmosQueryWrapper>) -> Self {
         DesmosQuerier { querier }
     }
+
+    pub fn query_profile(&self, user: String) ->
+}
+
+impl<'a> DesmosQuerier<'a> {
+    pub fn new(querier: &'a QuerierWrapper<'a, DesmosQueryWrapper>) -> Self {
+        DesmosQuerier { querier }
+    }
+
+    pub fn query_posts(&self) -> StdResult<PostsResponse> {
+        let request = DesmosQueryWrapper {
+            route: DesmosRoute::Posts,
+            query_data: DesmosQuery::Posts {},
+        };
+
+        let res: PostsResponse = self.querier.query(&request.into())?;
+        Ok(res)
+    }
+
+    pub fn query_post_reports(&self, post_id: String) -> StdResult<ReportsResponse> {
+        let request = DesmosQueryWrapper {
+            route: DesmosRoute::Posts,
+            query_data: DesmosQuery::Reports { post_id },
+        };
+
+        let res: ReportsResponse = self.querier.query(&request.into())?;
+        Ok(res)
+    }
+
+    pub fn query_post_reactions(&self, post_id: String) -> StdResult<ReactionsResponse> {
+        let request = DesmosQueryWrapper {
+            route: DesmosRoute::Posts,
+            query_data: DesmosQuery::Reactions { post_id },
+        };
+
+        let res: ReactionsResponse = self.querier.query(&request.into())?;
+        Ok(res)
+    }
 }
