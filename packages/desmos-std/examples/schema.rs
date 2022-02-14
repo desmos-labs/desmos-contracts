@@ -9,7 +9,6 @@ fn main() {
     remove_schemas(&out_dir).unwrap();
 
     /*
-    export_schema(&schema_for!(Attribute), &out_dir);
-
-     */
+    export_schema(&schema_for!(Object), &out_dir);
+    */
 }
