@@ -1,5 +1,5 @@
 use crate::types::{DesmosRoute, PageRequest};
-use cosmwasm_std::CustomQuery;
+use cosmwasm_std::{Addr, CustomQuery};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -17,38 +17,38 @@ impl CustomQuery for DesmosQueryWrapper {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum DesmosQuery {
-    QueryProfileRequest {
-        user: String
+    Profile {
+        user: Addr
     },
     IncomingDtagTransferRequests {
-        receiver: String,
+        receiver: Addr,
         pagination: Option<PageRequest>
     },
     Relationships {
-        user: String,
+        user: Addr,
         subspace_id: String,
         pagination: Option<PageRequest>
     },
     Blocks {
-        user: String,
+        user: Addr,
         subspace_id: String,
         pagination: Option<PageRequest>
     },
     ChainLinks {
-        user: String,
+        user: Addr,
         pagination: Option<PageRequest>
     },
     UserChainLink {
-        user: String,
+        user: Addr,
         chain_name: String,
         target: String,
     },
     AppLinks {
-        user: String,
+        user: Addr,
         pagination: Option<PageRequest>
     },
     UserAppLinks {
-        user: String,
+        user: Addr,
         application: String,
         username: String
     },

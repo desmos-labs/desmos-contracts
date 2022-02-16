@@ -1,29 +1,29 @@
-use cosmwasm_std::{Addr, Timestamp};
+use cosmwasm_std::{Addr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct Profile {
-    account: Addr,
+    //account: Addr,
     dtag: String,
-    nickname: Option<String>,
-    bio: Option<String>,
-    pictures: Option<Pictures>,
-    creation_date: Timestamp
+    nickname: String,
+    bio: String,
+    pictures: Pictures,
+    creation_date: String
 }
 
 impl Profile {
     pub fn new(
-        account: Addr,
+        //account: Addr,
         dtag: String,
-        nickname: Option<String>,
-        bio: Option<String>,
-        pictures: Option<Pictures>,
-        creation_date: Timestamp
+        nickname: String,
+        bio: String,
+        pictures: Pictures,
+        creation_date: String
     ) -> Self {
         Profile{
-            account,
+            //account,
             dtag,
             nickname,
             bio,
@@ -36,12 +36,12 @@ impl Profile {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct Pictures {
-    profile: Option<String>,
-    cover: Option<String>
+    profile: String,
+    cover: String
 }
 
 impl Pictures {
-    pub fn new(profile: Option<String>, cover: Option<String>) -> Self {
+    pub fn new(profile: String, cover: String) -> Self {
         Pictures{ profile, cover }
     }
 }
