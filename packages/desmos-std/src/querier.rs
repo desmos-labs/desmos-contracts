@@ -1,8 +1,10 @@
 use crate::{
-    query_types::{DesmosQuery, DesmosQueryWrapper},
+    queries::{DesmosQueryWrapper},
     types::DesmosRoute,
 };
 use cosmwasm_std::{QuerierWrapper, StdResult};
+use crate::profiles::models_profile::QueryProfileResponse;
+use crate::queries::DesmosQuery::QueryProfileRequest;
 
 pub struct DesmosQuerier<'a> {
     querier: &'a QuerierWrapper<'a, DesmosQueryWrapper>,
@@ -13,41 +15,13 @@ impl<'a> DesmosQuerier<'a> {
         DesmosQuerier { querier }
     }
 
-    pub fn query_profile(&self, user: String) ->
-}
-
-impl<'a> DesmosQuerier<'a> {
-    pub fn new(querier: &'a QuerierWrapper<'a, DesmosQueryWrapper>) -> Self {
-        DesmosQuerier { querier }
-    }
-
-    pub fn query_posts(&self) -> StdResult<PostsResponse> {
-        let request = DesmosQueryWrapper {
-            route: DesmosRoute::Posts,
-            query_data: DesmosQuery::Posts {},
+    pub fn query_profile(&self, user: String) -> StdResult<QueryProfileResponse> {
+        let request = DesmosQueryWrapper{
+            route: DesmosRoute::Profiles,
+            query_data: QueryProfileRequest { user }
         };
 
-        let res: PostsResponse = self.querier.query(&request.into())?;
-        Ok(res)
-    }
-
-    pub fn query_post_reports(&self, post_id: String) -> StdResult<ReportsResponse> {
-        let request = DesmosQueryWrapper {
-            route: DesmosRoute::Posts,
-            query_data: DesmosQuery::Reports { post_id },
-        };
-
-        let res: ReportsResponse = self.querier.query(&request.into())?;
-        Ok(res)
-    }
-
-    pub fn query_post_reactions(&self, post_id: String) -> StdResult<ReactionsResponse> {
-        let request = DesmosQueryWrapper {
-            route: DesmosRoute::Posts,
-            query_data: DesmosQuery::Reactions { post_id },
-        };
-
-        let res: ReactionsResponse = self.querier.query(&request.into())?;
+        let res: QueryProfileResponse = self.querier.query(&request.into())?;
         Ok(res)
     }
 }

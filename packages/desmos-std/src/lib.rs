@@ -1,6 +1,6 @@
 pub mod msg;
 pub mod querier;
-pub mod query_types;
+pub mod queries;
 pub mod types;
 pub mod profiles;
 

@@ -1,5 +1,4 @@
-use std::io::Bytes;
-use crate::query_types::DesmosQueryWrapper;
+use crate::queries::DesmosQueryWrapper;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -16,7 +15,7 @@ pub enum DesmosRoute {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PageRequest {
-    key: [u8],
+    key: Vec<u8>,
     offset: u64,
     limit: u64,
     count_total: bool,
