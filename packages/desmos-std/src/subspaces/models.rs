@@ -25,4 +25,16 @@ pub struct UserGroup {
     pub permissions : u32
 }
 
-// TODO: PermissionDetail
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct UserPermission {
+    pub user : String
+    pub permission : u32
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct GroupPermission {
+    pub group_id : u32
+    pub permission : u32
+}
