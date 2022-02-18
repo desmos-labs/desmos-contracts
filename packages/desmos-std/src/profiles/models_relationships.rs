@@ -1,6 +1,6 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::types::{PageResponse};
+//use crate::types::{PageResponse};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -14,6 +14,6 @@ pub struct Relationship {
 #[serde(rename_all = "snake_case")]
 pub struct QueryRelationshipsResponse {
     pub relationships: Vec<Relationship>,
-    pub pagination: Box<PageResponse>
+    //pub pagination: PageResponse
 }
 

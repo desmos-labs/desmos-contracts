@@ -6,11 +6,11 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub struct Profile {
     //account: Addr,
-    dtag: String,
-    nickname: String,
-    bio: String,
-    pictures: Pictures,
-    creation_date: String
+    pub dtag: String,
+    pub nickname: String,
+    pub bio: String,
+    pub pictures: Pictures,
+    pub creation_date: String
 }
 
 impl Profile {
@@ -36,8 +36,8 @@ impl Profile {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct Pictures {
-    profile: String,
-    cover: String
+    pub profile: String,
+    pub cover: String
 }
 
 impl Pictures {
@@ -49,5 +49,5 @@ impl Pictures {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QueryProfileResponse {
-    profile: Profile
+    pub profile: Profile
 }

@@ -26,12 +26,12 @@ pub enum DesmosQuery {
     },
     Relationships {
         user: Addr,
-        subspace_id: String,
+        subspace_id: u64,
         pagination: Option<PageRequest>
     },
     Blocks {
         user: Addr,
-        subspace_id: String,
+        subspace_id: u64,
         pagination: Option<PageRequest>
     },
     ChainLinks {
