@@ -1,9 +1,9 @@
-use crate::queries::DesmosQueryWrapper;
+use crate::query::DesmosQueryRouter;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub type Deps<'a> = cosmwasm_std::Deps<'a, DesmosQueryWrapper>;
-pub type DepsMut<'a> = cosmwasm_std::DepsMut<'a, DesmosQueryWrapper>;
+pub type Deps<'a> = cosmwasm_std::Deps<'a, DesmosQueryRouter>;
+pub type DepsMut<'a> = cosmwasm_std::DepsMut<'a, DesmosQueryRouter>;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -26,5 +26,5 @@ pub struct PageRequest {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct PageResponse {
     next_key: Vec<u8>,
-    total: u64,
+    total: String,
 }

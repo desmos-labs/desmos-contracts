@@ -27,8 +27,8 @@ pub struct AppLinkState(i32);
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct OracleRequest {
-    pub id: u64,
-    pub oracle_script_id: u64,
+    pub id: String,
+    pub oracle_script_id: String,
     pub call_data: CallData,
     pub client_id: String
 }
