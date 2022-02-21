@@ -7,7 +7,7 @@ use crate::types::{PageResponse};
 pub struct ApplicationLink {
     pub user: String,
     pub data: Data,
-    pub state: AppLinkState,
+    pub state: String,
     pub oracle_request: OracleRequest,
     pub result: AppLinkResult,
     pub creation_time: String,
@@ -19,10 +19,6 @@ pub struct Data {
     pub application: String,
     pub username: String
 }
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct AppLinkState(i32);
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]

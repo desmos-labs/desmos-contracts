@@ -1,11 +1,12 @@
 use cosmwasm_std::{Addr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use crate::profiles::models_common::PubKey;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct Profile {
-    //account: Addr,
+    pub account: Account,
     pub dtag: String,
     pub nickname: String,
     pub bio: String,
@@ -15,7 +16,7 @@ pub struct Profile {
 
 impl Profile {
     pub fn new(
-        //account: Addr,
+        account: Account,
         dtag: String,
         nickname: String,
         bio: String,
@@ -23,7 +24,7 @@ impl Profile {
         creation_date: String
     ) -> Self {
         Profile{
-            //account,
+            account,
             dtag,
             nickname,
             bio,
@@ -31,6 +32,17 @@ impl Profile {
             creation_date
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct Account {
+    #[serde(rename = "@type")]
+    pub proto_type: String,
+    pub address: Addr,
+    pub pub_key: PubKey,
+    pub account_number: String,
+    pub sequence: String
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
