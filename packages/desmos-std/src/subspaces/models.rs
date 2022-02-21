@@ -1,17 +1,18 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::Timestamp;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct Subspace {
     pub id : u64,
     pub name : String,
-    pub description : String,
+
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub description : Option<String>,
     pub treasury : String,
     pub owner : String,
     pub creator : String,
-    pub creation_time : Timestamp
+    pub creation_time : String
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
