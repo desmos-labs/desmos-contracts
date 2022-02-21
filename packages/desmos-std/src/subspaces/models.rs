@@ -7,9 +7,12 @@ pub struct Subspace {
     pub id : u64,
     pub name : String,
 
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub description : Option<String>,
+    #[serde(skip_serializing)]
+    pub description : String,
+
+    #[serde(skip_serializing)]
     pub treasury : String,
+
     pub owner : String,
     pub creator : String,
     pub creation_time : String
