@@ -4,4 +4,4 @@ pub mod models_relationships;
 pub mod models_chain_links;
 pub mod models_app_links;
 pub mod models_blocks;
-mod models_common;
+pub mod models_common;

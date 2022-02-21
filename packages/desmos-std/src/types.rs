@@ -12,8 +12,8 @@ pub enum DesmosRoute {
     Profiles,
 }
 
-#[serde(rename_all = "snake_case")]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct PageRequest {
     key: Vec<u8>,
     offset: u64,
@@ -22,8 +22,9 @@ pub struct PageRequest {
     reverse: bool,
 }
 
-#[serde(rename_all = "snake_case")]
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct PageResponse {
     next_key: Vec<u8>,
     total: String,

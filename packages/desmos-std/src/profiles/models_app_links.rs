@@ -1,3 +1,4 @@
+use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use crate::types::{PageResponse};
@@ -5,7 +6,7 @@ use crate::types::{PageResponse};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct ApplicationLink {
-    pub user: String,
+    pub user: Addr,
     pub data: Data,
     pub state: String,
     pub oracle_request: OracleRequest,
