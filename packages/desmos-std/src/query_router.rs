@@ -1,7 +1,10 @@
 use crate::{
-    query::{DesmosQueryRouter, DesmosQuery, SubspacesQuery},
+    query::{DesmosQueryRouter, DesmosQuery},
     types::{DesmosRoute, PageRequest},
-    subspaces::query::{QuerySubspacesResponse, QuerySubspaceResponse}
+    subspaces::{
+        query::{QuerySubspacesResponse, QuerySubspaceResponse},
+        router::SubspacesRoutes
+    }
 };
 use cosmwasm_std::{QuerierWrapper, StdResult};
 
@@ -25,7 +28,7 @@ impl <'a> SubspacesQuerier for DesmosQuerier<'a> {
         let request = DesmosQueryRouter {
             route: DesmosRoute::Subspaces,
             query_data: DesmosQuery::Subspaces(
-                SubspacesQuery::Subspaces{
+                SubspacesRoutes::Subspaces{
                 pagination: pagination
             })
         };
@@ -37,7 +40,7 @@ impl <'a> SubspacesQuerier for DesmosQuerier<'a> {
         let request = DesmosQueryRouter {
             route: DesmosRoute::Subspaces,
             query_data: DesmosQuery::Subspaces(
-                SubspacesQuery::Subspace{
+                SubspacesRoutes::Subspace{
                 subspace_id : subspace_id
             })
         };
