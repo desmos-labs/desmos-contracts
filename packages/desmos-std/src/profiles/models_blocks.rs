@@ -16,5 +16,5 @@ pub struct UserBlock {
 #[serde(rename_all = "snake_case")]
 pub struct QueryBlocksResponse {
     pub blocks: Vec<UserBlock>,
-    //pub pagination: PageResponse
+    pub pagination: PageResponse
 }

@@ -10,8 +10,8 @@ use crate::profiles::{
 };
 
 /**
-This file contains some useful mocks of the common Desmos types ready made to be used
-in your tests
+This file contains some useful mocks of the Desmos x/profiles modules types ready made to be used
+in any test
 **/
 
 pub fn get_mock_profile() -> Profile {

@@ -53,7 +53,7 @@ pub enum AppLinkResult {
 #[serde(rename_all = "snake_case")]
 pub struct QueryApplicationLinksResponse {
     pub links: Vec<ApplicationLink>,
-    //pub pagination: PageResponse
+    pub pagination: PageResponse
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

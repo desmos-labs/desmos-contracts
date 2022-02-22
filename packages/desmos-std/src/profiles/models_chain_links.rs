@@ -52,7 +52,7 @@ pub struct ChainConfig {
 #[serde(rename_all = "snake_case")]
 pub struct QueryChainLinksResponse {
     pub links: Vec<ChainLink>,
-    //pub pagination: PageResponse
+    pub pagination: PageResponse
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
