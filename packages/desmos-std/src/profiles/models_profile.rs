@@ -1,7 +1,7 @@
-use cosmwasm_std::{Addr};
+use crate::profiles::models_common::PubKey;
+use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::profiles::models_common::PubKey;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -11,7 +11,7 @@ pub struct Profile {
     pub nickname: String,
     pub bio: String,
     pub pictures: Pictures,
-    pub creation_date: String
+    pub creation_date: String,
 }
 
 impl Profile {
@@ -21,15 +21,15 @@ impl Profile {
         nickname: String,
         bio: String,
         pictures: Pictures,
-        creation_date: String
+        creation_date: String,
     ) -> Self {
-        Profile{
+        Profile {
             account,
             dtag,
             nickname,
             bio,
             pictures,
-            creation_date
+            creation_date,
         }
     }
 }
@@ -42,24 +42,24 @@ pub struct Account {
     pub address: Addr,
     pub pub_key: PubKey,
     pub account_number: String,
-    pub sequence: String
+    pub sequence: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct Pictures {
     pub profile: String,
-    pub cover: String
+    pub cover: String,
 }
 
 impl Pictures {
     pub fn new(profile: String, cover: String) -> Self {
-        Pictures{ profile, cover }
+        Pictures { profile, cover }
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QueryProfileResponse {
-    pub profile: Profile
+    pub profile: Profile,
 }

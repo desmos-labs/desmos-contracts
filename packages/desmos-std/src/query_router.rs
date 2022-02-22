@@ -1,10 +1,7 @@
-use cosmwasm_std::{CustomQuery};
+use crate::{profiles::query_routes::ProfilesRoutes, types::DesmosRoute};
+use cosmwasm_std::CustomQuery;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::{
-    profiles::query_routes::ProfilesRoutes,
-    types::DesmosRoute
-};
 
 /// DesmosQueryRouter is an override of QueryRequest::Custom to access desmos-specific modules
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -20,5 +17,5 @@ impl CustomQuery for DesmosQueryRouter {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum DesmosQuery {
-    Profiles(ProfilesRoutes)
+    Profiles(ProfilesRoutes),
 }

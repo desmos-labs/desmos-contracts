@@ -1,7 +1,7 @@
+use crate::types::PageResponse;
 use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::types::{PageResponse};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -15,5 +15,5 @@ pub struct DtagTransferRequest {
 #[serde(rename_all = "snake_case")]
 pub struct QueryIncomingDtagTransferRequestResponse {
     pub requests: Vec<DtagTransferRequest>,
-    pub pagination: PageResponse
+    pub pagination: PageResponse,
 }

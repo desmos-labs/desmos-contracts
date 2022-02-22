@@ -1,9 +1,13 @@
+use crate::profiles::msg_routes::ProfilesMsgs;
+use crate::profiles::msg_routes::ProfilesMsgs::{
+    AcceptDtagTransferRequest, BlockUser, CancelDtagTransferRequest, CreateRelationship,
+    DeleteProfile, DeleteRelationship, RefuseDtagTransferRequest, RequestDtagTransfer, SaveProfile,
+    UnblockUser,
+};
 use crate::types::DesmosRoute;
 use cosmwasm_std::{Addr, CosmosMsg, CustomMsg};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::profiles::msg_routes::ProfilesMsgs;
-use crate::profiles::msg_routes::ProfilesMsgs::{AcceptDtagTransferRequest, BlockUser, CancelDtagTransferRequest, CreateRelationship, DeleteProfile, DeleteRelationship, RefuseDtagTransferRequest, RequestDtagTransfer, SaveProfile, UnblockUser};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -24,7 +28,7 @@ impl CustomMsg for DesmosMsgRouter {}
 #[serde(rename_all = "snake_case")]
 #[non_exhaustive] // missing chain-links and app-links messages (not necessary to me)
 pub enum DesmosMsg {
-    Profiles(ProfilesMsgs)
+    Profiles(ProfilesMsgs),
 }
 
 pub fn save_profile(
@@ -51,69 +55,116 @@ pub fn save_profile(
             cover_picture,
             creator,
         }),
-    }.into()
+    }
+    .into()
 }
 
-pub fn delete_profile(creator: Addr ) -> CosmosMsg<DesmosMsgRouter> {
+pub fn delete_profile(creator: Addr) -> CosmosMsg<DesmosMsgRouter> {
     DesmosMsgRouter {
         route: DesmosRoute::Profiles,
-        msg_data: DesmosMsg::Profiles(DeleteProfile { creator })
-    }.into()
+        msg_data: DesmosMsg::Profiles(DeleteProfile { creator }),
+    }
+    .into()
 }
 
 pub fn request_dtag_transfer(sender: Addr, receiver: Addr) -> CosmosMsg<DesmosMsgRouter> {
     DesmosMsgRouter {
         route: DesmosRoute::Profiles,
         msg_data: DesmosMsg::Profiles(RequestDtagTransfer { receiver, sender }),
-    }.into()
+    }
+    .into()
 }
 
-pub fn accept_dtag_transfer_request(new_dtag: String, sender: Addr, receiver: Addr)
-                                    -> CosmosMsg<DesmosMsgRouter> {
+pub fn accept_dtag_transfer_request(
+    new_dtag: String,
+    sender: Addr,
+    receiver: Addr,
+) -> CosmosMsg<DesmosMsgRouter> {
     DesmosMsgRouter {
         route: DesmosRoute::Profiles,
-        msg_data: DesmosMsg::Profiles(AcceptDtagTransferRequest { new_dtag, sender, receiver })
-    }.into()
+        msg_data: DesmosMsg::Profiles(AcceptDtagTransferRequest {
+            new_dtag,
+            sender,
+            receiver,
+        }),
+    }
+    .into()
 }
 
 pub fn refuse_dtag_transfer_request(sender: Addr, receiver: Addr) -> CosmosMsg<DesmosMsgRouter> {
     DesmosMsgRouter {
         route: DesmosRoute::Profiles,
-        msg_data: DesmosMsg::Profiles(RefuseDtagTransferRequest { sender, receiver })
-    }.into()
+        msg_data: DesmosMsg::Profiles(RefuseDtagTransferRequest { sender, receiver }),
+    }
+    .into()
 }
 
 pub fn cancel_dtag_transfer_request(receiver: Addr, sender: Addr) -> CosmosMsg<DesmosMsgRouter> {
     DesmosMsgRouter {
         route: DesmosRoute::Profiles,
-        msg_data: DesmosMsg::Profiles(CancelDtagTransferRequest { receiver, sender })
-    }.into()
+        msg_data: DesmosMsg::Profiles(CancelDtagTransferRequest { receiver, sender }),
+    }
+    .into()
 }
 
-pub fn create_relationship(sender: Addr, receiver: Addr, subspace: String) -> CosmosMsg<DesmosMsgRouter> {
+pub fn create_relationship(
+    sender: Addr,
+    receiver: Addr,
+    subspace: String,
+) -> CosmosMsg<DesmosMsgRouter> {
     DesmosMsgRouter {
         route: DesmosRoute::Profiles,
-        msg_data: DesmosMsg::Profiles(CreateRelationship { sender, receiver, subspace })
-    }.into()
+        msg_data: DesmosMsg::Profiles(CreateRelationship {
+            sender,
+            receiver,
+            subspace,
+        }),
+    }
+    .into()
 }
 
-pub fn delete_relationship(user: Addr, counterparty: Addr, subspace: String) -> CosmosMsg<DesmosMsgRouter> {
+pub fn delete_relationship(
+    user: Addr,
+    counterparty: Addr,
+    subspace: String,
+) -> CosmosMsg<DesmosMsgRouter> {
     DesmosMsgRouter {
         route: DesmosRoute::Profiles,
-        msg_data: DesmosMsg::Profiles(DeleteRelationship { user, counterparty, subspace })
-    }.into()
+        msg_data: DesmosMsg::Profiles(DeleteRelationship {
+            user,
+            counterparty,
+            subspace,
+        }),
+    }
+    .into()
 }
 
-pub fn block_user(blocker: Addr, blocked: Addr, reason: String, subspace: String) -> CosmosMsg<DesmosMsgRouter> {
+pub fn block_user(
+    blocker: Addr,
+    blocked: Addr,
+    reason: String,
+    subspace: String,
+) -> CosmosMsg<DesmosMsgRouter> {
     DesmosMsgRouter {
         route: DesmosRoute::Profiles,
-        msg_data: DesmosMsg::Profiles(BlockUser { blocker, blocked, reason, subspace })
-    }.into()
+        msg_data: DesmosMsg::Profiles(BlockUser {
+            blocker,
+            blocked,
+            reason,
+            subspace,
+        }),
+    }
+    .into()
 }
 
 pub fn unblock_user(blocker: Addr, blocked: Addr, subspace: String) -> CosmosMsg<DesmosMsgRouter> {
     DesmosMsgRouter {
         route: DesmosRoute::Profiles,
-        msg_data: DesmosMsg::Profiles(UnblockUser { blocker, blocked, subspace })
-    }.into()
+        msg_data: DesmosMsg::Profiles(UnblockUser {
+            blocker,
+            blocked,
+            subspace,
+        }),
+    }
+    .into()
 }

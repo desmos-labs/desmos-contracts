@@ -22,7 +22,6 @@ pub struct PageRequest {
     reverse: bool,
 }
 
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PageResponse {

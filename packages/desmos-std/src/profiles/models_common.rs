@@ -6,5 +6,5 @@ use serde::{Deserialize, Serialize};
 pub struct PubKey {
     #[serde(rename = "@type")]
     pub proto_type: String,
-    pub key: String
+    pub key: String,
 }

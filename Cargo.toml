@@ -1,7 +1,6 @@
 [workspace]
 members = [
   "packages/desmos-std",
-  "contracts/dtag-auctions"
 ]
 
 [profile.release.package.desmos-std]
