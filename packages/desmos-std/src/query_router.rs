@@ -3,7 +3,7 @@ use crate::{
     types::{DesmosRoute, PageRequest},
     subspaces::{
         query::{QuerySubspacesResponse, QuerySubspaceResponse},
-        router::SubspacesRoutes
+        routes::SubspacesRoutes
     }
 };
 use cosmwasm_std::{QuerierWrapper, StdResult};

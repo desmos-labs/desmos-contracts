@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     types::{DesmosRoute},
-    subspaces::router::SubspacesRoutes
+    subspaces::routes::SubspacesRoutes
 };
 
 /// DesmosQueryRouter is an override of QueryRequest::Custom to access desmos-specific modules
