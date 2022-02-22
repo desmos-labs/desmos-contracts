@@ -23,7 +23,8 @@ pub enum SubspacesRoutes {
     },
     UserGroupMembers {
         subspace_id : u64,
-        group_id : u32
+        group_id : u32,
+        pagination : Option<PageRequest>
     },
     UserPermissions {
         subspace_id : u64,
