@@ -1,12 +1,9 @@
 [workspace]
 members = [
   "packages/desmos-std",
-  "contracts/dtag-auctions",
-  "contracts/filter-posts",
-  "contracts/dummy-tokenomics"
 ]
 
-[profile.release.package.desmos]
+[profile.release.package.desmos-std]
 codegen-units = 1
 incremental = false
 

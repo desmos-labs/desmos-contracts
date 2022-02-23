@@ -21,7 +21,7 @@ impl CustomMsg for DesmosMsgWrapper {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-#[non_exhaustive]
+#[non_exhaustive] // missing chain-links and app-links messages
 pub enum DesmosMsg {
     SaveProfile {
         dtag: String,
@@ -38,10 +38,6 @@ pub enum DesmosMsg {
         receiver: String,
         sender: String,
     },
-    CancelDtagTransferRequest {
-        receiver: String,
-        sender: String,
-    },
     AcceptDtagTransferRequest {
         new_dtag: String,
         sender: String,
@@ -51,12 +47,16 @@ pub enum DesmosMsg {
         sender: String,
         receiver: String,
     },
+    CancelDtagTransferRequest {
+        receiver: String,
+        sender: String,
+    },
     CreateRelationship {
         sender: String,
         receiver: String,
         subspace: String,
     },
-    DeleteRelationships {
+    DeleteRelationship {
         user: String,
         counterparty: String,
         subspace: String,

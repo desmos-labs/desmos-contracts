@@ -1,4 +1,4 @@
-name: Contract-dummy-tokenomics
+name: Package-desmos
 # Based on https://github.com/actions-rs/example/blob/master/.github/workflows/quickstart.yml
 
 on:
@@ -7,7 +7,7 @@ on:
 defaults:
   run:
     shell: bash
-    working-directory: contracts/dummy-tokenomics
+    working-directory: packages/desmos-std
 
 jobs:
   test:
@@ -25,14 +25,11 @@ jobs:
           override: true
       - name: Compile WASM contract
         run: cargo wasm --locked
+
         env:
           RUSTFLAGS: "-C link-arg=-s"
       - name: Unit tests
         run: cargo unit-test --locked
-        env:
-          RUST_BACKTRACE: 1
-      - name: Integration tests
-        run: cargo integration-test --locked
         env:
           RUST_BACKTRACE: 1
   coverage:
@@ -75,6 +72,7 @@ jobs:
 
       - name: Run cargo fmt
         run: cargo fmt --all -- --check
+
       - name: Run cargo clippy
         run: cargo clippy
 

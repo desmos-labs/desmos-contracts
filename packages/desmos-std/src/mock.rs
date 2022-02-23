@@ -1,3 +1,5 @@
+/*
+// TODO use this as an example to build mocks for custom queries of modules. Then progressively delete it
 use crate::{
     query_types::{
         DesmosQuery, DesmosQueryWrapper, PostsResponse, ReactionsResponse, ReportsResponse,
@@ -158,3 +160,4 @@ mod tests {
         assert_eq!(response.reports, expected);
     }
 }
+*/
