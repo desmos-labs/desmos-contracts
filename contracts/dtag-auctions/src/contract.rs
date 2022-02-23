@@ -1,19 +1,12 @@
 use std::str::FromStr;
-use crate::{
-    error::ContractError,
-    msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg},
-    state::{
-        Auction, AuctionResponse, ContractDTag, DtagTransferStatus, ACTIVE_AUCTION, INACTIVE_AUCTIONS_STORE,
-        CONTRACT_DTAG_STORE,
-    },
-};
+use crate::{error::ContractError, msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg}, state::{
+    Auction, AuctionResponse, ContractDTag, DtagTransferStatus, ACTIVE_AUCTION, INACTIVE_AUCTIONS_STORE,
+    CONTRACT_DTAG_STORE,
+}};
 use cosmwasm_std::{attr, entry_point, to_binary, Addr, BankMsg, Binary, Env, MessageInfo, Response, StdResult, Uint128, Uint64, Order};
-use desmos_std::{
-    msg,
-    msg::DesmosMsgWrapper,
-    types::{Deps, DepsMut},
-};
+use desmos_std::{msg_router, msg_router::DesmosMsgRouter, types::{Deps, DepsMut}};
 use cw2::set_contract_version;
+use desmos_std::profiles::msg_router::ProfilesMsgRouter;
 
 const CONTRACT_NAME: &str = "crates.io:desmos-dtag-auctioneer";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -27,13 +20,13 @@ pub fn instantiate(
     env: Env,
     _: MessageInfo,
     msg: InstantiateMsg,
-) -> Result<Response<DesmosMsgWrapper>, ContractError> {
+) -> Result<Response<DesmosMsgRouter>, ContractError> {
 
     CONTRACT_DTAG_STORE.save(deps.storage, &ContractDTag(msg.contract_dtag.clone()))?;
 
-    let save_profile_msg = msg::save_profile(
+    let save_profile_msg = msg_router::DesmosMsgRouter::save_profile(
         msg.contract_dtag.clone(),
-        env.contract.address.to_string(),
+        env.contract.address,
         Some("DTag auctioneer contract".to_string()),
         Some("Use me to put your precious DTag on sale to best bidder!".to_string()),
         None,
@@ -42,7 +35,7 @@ pub fn instantiate(
 
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    let response: Response<DesmosMsgWrapper> = Response::new()
+    let response: Response<DesmosMsgRouter> = Response::new()
         .add_message(save_profile_msg)
         .add_attribute("action", "save_contract_profile")
         .add_attribute("dtag", msg.contract_dtag);
@@ -56,7 +49,7 @@ pub fn execute(
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response<DesmosMsgWrapper>, ContractError> {
+) -> Result<Response<DesmosMsgRouter>, ContractError> {
     match msg {
         ExecuteMsg::CreateAuction { dtag, starting_price, max_participants}
         => execute_create_auction(
@@ -83,7 +76,7 @@ pub fn execute_create_auction(
     dtag: String,
     starting_price: Uint128,
     max_participants: Uint64,
-) -> Result<Response<DesmosMsgWrapper>, ContractError> {
+) -> Result<Response<DesmosMsgRouter>, ContractError> {
 
     // check if an auction made by the msg sender already exist
     if INACTIVE_AUCTIONS_STORE.has(deps.storage, &creator) {
@@ -118,7 +111,10 @@ pub fn execute_create_auction(
     if active_auction.is_none() {
         // create the Desmos native message MsgRequestDTagTransfer
         let dtag_transfer_req_msg =
-            msg::request_dtag_transfer(env.contract.address.into_string(), creator.to_string());
+            msg_router::DesmosMsgRouter::request_dtag_transfer(
+                env.contract.address,
+                creator
+            );
 
         // append the message to the response, it will be triggered at the end of the contract execution
         response = response.add_message(dtag_transfer_req_msg);
@@ -133,7 +129,7 @@ pub fn execute_place_bid(
     deps: DepsMut,
     env:  Env,
     info: MessageInfo,
-) -> Result<Response<DesmosMsgWrapper>, ContractError> {
+) -> Result<Response<DesmosMsgRouter>, ContractError> {
 
     // Get the active auction or return an error if it not exists
     let auction = ACTIVE_AUCTION
@@ -197,7 +193,7 @@ pub fn execute_place_bid(
 pub fn execute_retreat_bid(
     deps: DepsMut,
     user: Addr,
-) -> Result<Response<DesmosMsgWrapper>, ContractError> {
+) -> Result<Response<DesmosMsgRouter>, ContractError> {
     let auction = ACTIVE_AUCTION
         .may_load(deps.storage)?
         .ok_or(ContractError::AuctionNotFound {})?;
@@ -219,7 +215,7 @@ pub fn execute_complete_auction(
     deps: DepsMut,
     env: Env,
     sender: Addr,
-) -> Result<Response<DesmosMsgWrapper>, ContractError> {
+) -> Result<Response<DesmosMsgRouter>, ContractError> {
     // Get the current active auction if exists, otherwise return error
     let auction = ACTIVE_AUCTION
         .may_load(deps.storage)?
@@ -252,7 +248,10 @@ pub fn execute_complete_auction(
 
     // Prepare the dtag transfer request message for the winner
     let dtag_transfer_request_msg =
-        msg::request_dtag_transfer(env.contract.address.to_string(), bidder.to_string());
+        msg_router::DesmosMsgRouter::request_dtag_transfer(
+            env.contract.address,
+            bidder.clone()
+        );
 
     // remove it from the inactive store (applies either if the auction has been activated or not)
     INACTIVE_AUCTIONS_STORE.remove(deps.storage, &auction.creator.clone());
@@ -267,7 +266,7 @@ pub fn execute_complete_auction(
         .add_message(deliver_best_bid_amount_msg)
         .add_message(dtag_transfer_request_msg)
         .add_attribute("action", "complete_auction")
-        .add_attribute("user", auction.creator.clone())
+        .add_attribute("user", auction.creator)
         .add_attribute("dtag", auction.dtag)
         .add_attribute("winner", bidder);
 
@@ -279,7 +278,7 @@ fn execute_start_auction(
     deps: DepsMut,
     env: Env,
     sender: Addr,
-) -> Result<Response<DesmosMsgWrapper>, ContractError> {
+) -> Result<Response<DesmosMsgRouter>, ContractError> {
 
     // Get the current active auction
     let active_auction = ACTIVE_AUCTION.load(deps.storage)?;
@@ -299,9 +298,9 @@ fn execute_start_auction(
     match sender_auction_res {
         Ok(auction) => {
             // Prepare the request for the next active auction
-            let transfer_req_msg = msg::request_dtag_transfer(
-                env.contract.address.into_string(),
-                sender.to_string(),
+            let transfer_req_msg = msg_router::DesmosMsgRouter::request_dtag_transfer(
+                env.contract.address,
+                sender,
             );
 
             let response = Response::new()
@@ -321,7 +320,7 @@ pub fn sudo(
     deps: DepsMut,
     env: Env,
     msg: SudoMsg,
-) -> Result<Response<DesmosMsgWrapper>, ContractError> {
+) -> Result<Response<DesmosMsgRouter>, ContractError> {
     match msg {
         SudoMsg::UpdateDtagAuctionStatus {
             user,
@@ -341,7 +340,7 @@ pub fn update_dtag_auction_status(
     env: Env,
     user: Addr,
     dtag_transfer_status: DtagTransferStatus,
-) -> Result<Response<DesmosMsgWrapper>, ContractError> {
+) -> Result<Response<DesmosMsgRouter>, ContractError> {
 
     // get the auction created by the user
     let mut auction = INACTIVE_AUCTIONS_STORE
@@ -425,7 +424,7 @@ mod tests {
         from_binary, Coin, Timestamp,
     };
     use cosmwasm_vm::testing::{mock_env, mock_info};
-    use desmos_std::mock::mock_dependencies_with_custom_querier;
+    use desmos_std::query_mocks::mock_dependencies_with_custom_querier;
 
     /// Helper functions
 
@@ -858,7 +857,7 @@ mod tests {
             info.sender.clone(),
         );
 
-        let exp_response: Response<DesmosMsgWrapper> = Response::new()
+        let exp_response: Response<DesmosMsgRouter> = Response::new()
             .add_attribute("action", "complete_auction")
             .add_attribute("user", info.sender.clone())
             .add_attribute("dtag", active_auction.dtag.clone())
@@ -946,7 +945,7 @@ mod tests {
             ),
         ];
 
-        let exp_response: Response<DesmosMsgWrapper> = Response::new()
+        let exp_response: Response<DesmosMsgRouter> = Response::new()
             .add_attribute("action", "start_auction")
             .add_attribute("user", auctions[0].creator.clone())
             .add_attribute("dtag", auctions[0].dtag.clone());
