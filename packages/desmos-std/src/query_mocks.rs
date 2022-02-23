@@ -113,7 +113,7 @@ mod tests {
                 user: profile.account.address.clone(),
             }),
         };
-        let bz = custom_query_execute(&desmos_query_router).unwrap();
+        let bz = DesmosQueryRouter::custom_query_execute(&desmos_query_router).unwrap();
         let response: QueryProfileResponse = from_binary(&bz).unwrap();
         assert_eq!(response, QueryProfileResponse { profile })
     }
@@ -128,7 +128,7 @@ mod tests {
                 pagination: None,
             }),
         };
-        let bz = custom_query_execute(&desmos_query_router).unwrap();
+        let bz = DesmosQueryRouter::custom_query_execute(&desmos_query_router).unwrap();
         let response: QueryIncomingDtagTransferRequestResponse = from_binary(&bz).unwrap();
         assert_eq!(
             response,
@@ -150,7 +150,7 @@ mod tests {
                 pagination: None,
             }),
         };
-        let bz = custom_query_execute(&desmos_query_router).unwrap();
+        let bz = DesmosQueryRouter::custom_query_execute(&desmos_query_router).unwrap();
         let response: QueryRelationshipsResponse = from_binary(&bz).unwrap();
         assert_eq!(
             response,
@@ -172,7 +172,7 @@ mod tests {
                 pagination: None,
             }),
         };
-        let bz = custom_query_execute(&desmos_query_router).unwrap();
+        let bz = DesmosQueryRouter::custom_query_execute(&desmos_query_router).unwrap();
         let response: QueryBlocksResponse = from_binary(&bz).unwrap();
         assert_eq!(
             response,
@@ -193,7 +193,7 @@ mod tests {
                 pagination: None,
             }),
         };
-        let bz = custom_query_execute(&desmos_query_router).unwrap();
+        let bz = DesmosQueryRouter::custom_query_execute(&desmos_query_router).unwrap();
         let response: QueryChainLinksResponse = from_binary(&bz).unwrap();
         assert_eq!(
             response,
@@ -215,7 +215,7 @@ mod tests {
                 target: user_chain_link.address.value.clone(),
             }),
         };
-        let bz = custom_query_execute(&desmos_query_router).unwrap();
+        let bz = DesmosQueryRouter::custom_query_execute(&desmos_query_router).unwrap();
         let response: QueryUserChainLinkResponse = from_binary(&bz).unwrap();
         assert_eq!(
             response,
@@ -235,7 +235,7 @@ mod tests {
                 pagination: None,
             }),
         };
-        let bz = custom_query_execute(&desmos_query_router).unwrap();
+        let bz = DesmosQueryRouter::custom_query_execute(&desmos_query_router).unwrap();
         let response: QueryApplicationLinksResponse = from_binary(&bz).unwrap();
         assert_eq!(
             response,
@@ -257,7 +257,7 @@ mod tests {
                 username: app_link.data.username.clone(),
             }),
         };
-        let bz = custom_query_execute(&desmos_query_router).unwrap();
+        let bz = DesmosQueryRouter::custom_query_execute(&desmos_query_router).unwrap();
         let response: QueryUserApplicationLinkResponse = from_binary(&bz).unwrap();
         assert_eq!(
             response,
@@ -274,7 +274,7 @@ mod tests {
                 client_id: app_link.oracle_request.client_id.clone(),
             }),
         };
-        let bz = custom_query_execute(&desmos_query_router).unwrap();
+        let bz = DesmosQueryRouter::custom_query_execute(&desmos_query_router).unwrap();
         let response: QueryApplicationLinkByClientIDResponse = from_binary(&bz).unwrap();
         assert_eq!(
             response,
