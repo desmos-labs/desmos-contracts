@@ -102,5 +102,112 @@ impl SubspacesMsgRouter<DesmosMsgRouter> for DesmosMsgRouter {
         .into()
     }
 
-  
+    fn edit_user_group(
+        &self,
+        subspace_id: u64,
+        group_id: u32,
+        name: String,
+        description: String,
+        signer: Addr,
+    ) -> CosmosMsg<DesmosMsgRouter>{
+        DesmosMsgRouter {
+            route: DesmosRoute::Subspaces,
+            msg_data: DesmosMsg::Subspaces(SubspacesMsgs::EditUserGroup {
+                subspace_id,
+                group_id,
+                name,
+                description,
+                signer,
+            }),
+        }
+        .into()
+    }
+
+    fn set_user_group_permissions(
+        &self,
+        subspace_id: u64,
+        group_id: u32,
+        permissions: u32,
+        signer: Addr,
+    ) -> CosmosMsg<DesmosMsgRouter>{
+        DesmosMsgRouter {
+            route: DesmosRoute::Subspaces,
+            msg_data: DesmosMsg::Subspaces(SubspacesMsgs::SetUserGroupPermissions {
+                subspace_id,
+                group_id,
+                permissions,
+                signer,
+            }),
+        }
+        .into()
+    }
+
+    fn delete_user_group(&self, subspace_id: u64, group_id: u32, signer: Addr) -> CosmosMsg<DesmosMsgRouter>{
+        DesmosMsgRouter {
+            route: DesmosRoute::Subspaces,
+            msg_data: DesmosMsg::Subspaces(SubspacesMsgs::DeleteUserGroup {
+                subspace_id,
+                group_id,
+                signer,
+            }),
+        }
+        .into()
+    }
+
+    fn add_user_to_user_group(
+        &self,
+        subspace_id: u64,
+        group_id: u32,
+        user: Addr,
+        signer: Addr,
+    ) -> CosmosMsg<DesmosMsgRouter>{
+        DesmosMsgRouter {
+            route: DesmosRoute::Subspaces,
+            msg_data: DesmosMsg::Subspaces(SubspacesMsgs::AddUserToUserGroup {
+                subspace_id,
+                group_id,
+                user,
+                signer,
+            }),
+        }
+        .into()
+    }
+
+    fn remove_user_from_user_group(
+        &self,
+        subspace_id: u64,
+        group_id: u32,
+        user: Addr,
+        signer: Addr,
+    ) -> CosmosMsg<DesmosMsgRouter>{
+        DesmosMsgRouter {
+            route: DesmosRoute::Subspaces,
+            msg_data: DesmosMsg::Subspaces(SubspacesMsgs::RemoveUserFromUserGroup {
+                subspace_id,
+                group_id,
+                user,
+                signer,
+            }),
+        }
+        .into()
+    }
+
+    fn set_user_permissions(
+        &self,
+        subspace_id: u64,
+        user: Addr,
+        permissions: u32,
+        signer: Addr,
+    ) -> CosmosMsg<DesmosMsgRouter> {
+        DesmosMsgRouter {
+            route: DesmosRoute::Subspaces,
+            msg_data: DesmosMsg::Subspaces(SubspacesMsgs::SetUserPermissions {
+                subspace_id,
+                user,
+                permissions,
+                signer,
+            }),
+        }
+        .into()
+    }
 }
