@@ -53,7 +53,7 @@ pub fn get_mock_relationship() -> Relationship {
     Relationship {
         creator: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
         recipient: Addr::unchecked("desmos1rfv0f7mx7w9d3jv3h803u38vqym9ygg344asm3"),
-        subspace: "1".to_string(),
+        subspace_id: "1".to_string(),
     }
 }
 
@@ -62,7 +62,7 @@ pub fn get_mock_user_block() -> UserBlock {
         blocker: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
         blocked: Addr::unchecked("desmos1rfv0f7mx7w9d3jv3h803u38vqym9ygg344asm3"),
         reason: "test".to_string(),
-        subspace: "1".to_string(),
+        subspace_id: "1".to_string(),
     }
 }
 

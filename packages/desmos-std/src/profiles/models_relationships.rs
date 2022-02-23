@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct Relationship {
     pub creator: Addr,
     pub recipient: Addr,
-    pub subspace: String,
+    pub subspace_id: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

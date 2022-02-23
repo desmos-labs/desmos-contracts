@@ -9,7 +9,7 @@ pub struct UserBlock {
     pub blocker: Addr,
     pub blocked: Addr,
     pub reason: String,
-    pub subspace: String,
+    pub subspace_id: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
