@@ -13,6 +13,7 @@ pub struct DesmosMsgRouter {
     pub msg_data: DesmosMsg,
 }
 
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum DesmosMsg {
@@ -27,7 +28,14 @@ impl Into<CosmosMsg<DesmosMsgRouter>> for DesmosMsgRouter {
 
 impl CustomMsg for DesmosMsgRouter {}
 
-impl SubspacesMsgRouter<DesmosMsgRouter> for DesmosMsgRouter {
+pub struct DesmosMsgRouterBuilder {}
+impl DesmosMsgRouterBuilder{
+    pub fn new() -> Self {
+        DesmosMsgRouterBuilder{}
+    }
+}
+
+impl SubspacesMsgRouter<DesmosMsgRouter> for DesmosMsgRouterBuilder {
     fn create_subspace(
         &self,
         name: String,
