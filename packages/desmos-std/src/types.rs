@@ -26,6 +26,7 @@ pub struct PageRequest {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PageResponse {
-    next_key: Vec<u8>,
-    total: String,
+    next_key: Option<String>,
+    #[serde(default)]
+    total: u64,
 }

@@ -7,7 +7,7 @@ use crate::types::{PageResponse};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QuerySubspacesResponse {
-    pub subspaces : Vec<Subspace>,
+    pub subspaces : Option<Vec<Subspace>>,
     pub pagination: PageResponse
 }
 
@@ -20,7 +20,7 @@ pub struct QuerySubspaceResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QueryUserGroupsResponse {
-    pub groups : Vec<UserGroup>,
+    pub groups : Option<Vec<UserGroup>>,
     pub pagination: PageResponse
 }
 
@@ -33,7 +33,7 @@ pub struct QueryUserGroupResponse{
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QueryUserGroupMembersResponse {
-    pub members : Vec<String>,
+    pub members : Option<Vec<String>>,
     pub pagination : PageResponse
 }
 
@@ -41,5 +41,5 @@ pub struct QueryUserGroupMembersResponse {
 #[serde(rename_all = "snake_case")]
 pub struct QueryUserPermissionsResponse {
     pub permissions : u32,
-    pub details : Vec<PermissionDetail>
+    pub details : Option<Vec<PermissionDetail>>
 }
