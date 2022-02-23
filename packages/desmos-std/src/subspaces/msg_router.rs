@@ -10,11 +10,14 @@ pub trait SubspacesMsgRouter<T> {
         creator: Addr,
     ) -> CosmosMsg<T>;
 
-    fn edit_subspace(&self,name: String,
+    fn edit_subspace(
+        &self,
+        name: String,
         description: String,
         treasury: Addr,
         owner: Addr,
-        signer: Addr,) -> CosmosMsg<T>;
+        signer: Addr,
+    ) -> CosmosMsg<T>;
 
     fn delete_subspace(&self, subspace_id: u64, signer: Addr) -> CosmosMsg<T>;
 
