@@ -2,10 +2,7 @@ use cosmwasm_std::CustomQuery;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    types::{DesmosRoute},
-    subspaces::query_routes::SubspacesRoutes
-};
+use crate::{subspaces::query_routes::SubspacesRoutes, types::DesmosRoute};
 
 /// DesmosQueryRouter is an override of QueryRequest::Custom to access desmos-specific modules
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -21,7 +18,5 @@ impl CustomQuery for DesmosQueryRouter {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum DesmosQuery {
-    Subspaces(SubspacesRoutes)
+    Subspaces(SubspacesRoutes),
 }
-
-

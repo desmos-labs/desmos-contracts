@@ -1,45 +1,45 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::subspaces::models::{Subspace, UserGroup, PermissionDetail};
-use crate::types::{PageResponse};
+use crate::subspaces::models::{PermissionDetail, Subspace, UserGroup};
+use crate::types::PageResponse;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QuerySubspacesResponse {
-    pub subspaces : Option<Vec<Subspace>>,
-    pub pagination: PageResponse
+    pub subspaces: Option<Vec<Subspace>>,
+    pub pagination: PageResponse,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QuerySubspaceResponse {
-    pub subspace : Subspace
+    pub subspace: Subspace,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QueryUserGroupsResponse {
-    pub groups : Option<Vec<UserGroup>>,
-    pub pagination: PageResponse
+    pub groups: Option<Vec<UserGroup>>,
+    pub pagination: PageResponse,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct QueryUserGroupResponse{
-    pub group : UserGroup
+pub struct QueryUserGroupResponse {
+    pub group: UserGroup,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QueryUserGroupMembersResponse {
-    pub members : Option<Vec<String>>,
-    pub pagination : PageResponse
+    pub members: Option<Vec<String>>,
+    pub pagination: PageResponse,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QueryUserPermissionsResponse {
-    pub permissions : u32,
-    pub details : Option<Vec<PermissionDetail>>
+    pub permissions: u32,
+    pub details: Option<Vec<PermissionDetail>>,
 }
