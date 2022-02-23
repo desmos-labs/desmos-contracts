@@ -2,7 +2,7 @@ use crate::{
     profiles::{
         mocks::{
             get_mock_application_link, get_mock_chain_link, get_mock_dtag_transfer_request,
-            get_mock_profile, get_mock_relationship, get_mock_user_block,
+            get_mock_profile, get_mock_relationship, get_mock_user_block, MockQueriesProfiles,
         },
         models_app_links::{
             QueryApplicationLinkByClientIDResponse, QueryApplicationLinksResponse,
@@ -33,8 +33,9 @@ pub fn mock_dependencies_with_custom_querier(
 ) -> OwnedDeps<MockStorage, MockApi, MockQuerier<DesmosQueryRouter>, DesmosQueryRouter> {
     let contract_addr = MOCK_CONTRACT_ADDR;
     let custom_querier: MockQuerier<DesmosQueryRouter> =
-        MockQuerier::new(&[(contract_addr, contract_balance)])
-            .with_custom_handler(|query| SystemResult::Ok(custom_query_execute(query)));
+        MockQuerier::new(&[(contract_addr, contract_balance)]).with_custom_handler(|query| {
+            SystemResult::Ok(DesmosQueryRouter::custom_query_execute(query))
+        });
     OwnedDeps::<_, _, _, DesmosQueryRouter> {
         storage: MockStorage::default(),
         api: MockApi::default(),
@@ -43,57 +44,58 @@ pub fn mock_dependencies_with_custom_querier(
     }
 }
 
-/// custom_query_execute returns mock responses to custom queries
-pub fn custom_query_execute(query: &DesmosQueryRouter) -> ContractResult<Binary> {
-    let response = match query.query_data {
-        DesmosQuery::Profiles(Profile { .. }) => {
-            let profile = get_mock_profile();
-            to_binary(&QueryProfileResponse { profile })
-        }
-        DesmosQuery::Profiles(IncomingDtagTransferRequests { .. }) => {
-            let dtag_transfer_request = get_mock_dtag_transfer_request();
-            to_binary(&QueryIncomingDtagTransferRequestResponse {
-                requests: vec![dtag_transfer_request],
+impl MockQueriesProfiles<DesmosQueryRouter> for DesmosQueryRouter {
+    fn custom_query_execute(query: &DesmosQueryRouter) -> ContractResult<Binary> {
+        let response = match query.query_data {
+            DesmosQuery::Profiles(Profile { .. }) => {
+                let profile = get_mock_profile();
+                to_binary(&QueryProfileResponse { profile })
+            }
+            DesmosQuery::Profiles(IncomingDtagTransferRequests { .. }) => {
+                let dtag_transfer_request = get_mock_dtag_transfer_request();
+                to_binary(&QueryIncomingDtagTransferRequestResponse {
+                    requests: vec![dtag_transfer_request],
+                    pagination: Default::default(),
+                })
+            }
+            DesmosQuery::Profiles(Relationships { .. }) => {
+                let relationship = get_mock_relationship();
+                to_binary(&QueryRelationshipsResponse {
+                    relationships: vec![relationship],
+                    pagination: Default::default(),
+                })
+            }
+            DesmosQuery::Profiles(Blocks { .. }) => {
+                let block = get_mock_user_block();
+                to_binary(&QueryBlocksResponse {
+                    blocks: vec![block],
+                    pagination: Default::default(),
+                })
+            }
+            DesmosQuery::Profiles(ChainLinks { .. }) => to_binary(&QueryChainLinksResponse {
+                links: vec![get_mock_chain_link()],
                 pagination: Default::default(),
-            })
-        }
-        DesmosQuery::Profiles(Relationships { .. }) => {
-            let relationship = get_mock_relationship();
-            to_binary(&QueryRelationshipsResponse {
-                relationships: vec![relationship],
+            }),
+            DesmosQuery::Profiles(UserChainLink { .. }) => to_binary(&QueryUserChainLinkResponse {
+                link: get_mock_chain_link(),
+            }),
+            DesmosQuery::Profiles(AppLinks { .. }) => to_binary(&QueryApplicationLinksResponse {
+                links: vec![get_mock_application_link()],
                 pagination: Default::default(),
-            })
-        }
-        DesmosQuery::Profiles(Blocks { .. }) => {
-            let block = get_mock_user_block();
-            to_binary(&QueryBlocksResponse {
-                blocks: vec![block],
-                pagination: Default::default(),
-            })
-        }
-        DesmosQuery::Profiles(ChainLinks { .. }) => to_binary(&QueryChainLinksResponse {
-            links: vec![get_mock_chain_link()],
-            pagination: Default::default(),
-        }),
-        DesmosQuery::Profiles(UserChainLink { .. }) => to_binary(&QueryUserChainLinkResponse {
-            link: get_mock_chain_link(),
-        }),
-        DesmosQuery::Profiles(AppLinks { .. }) => to_binary(&QueryApplicationLinksResponse {
-            links: vec![get_mock_application_link()],
-            pagination: Default::default(),
-        }),
-        DesmosQuery::Profiles(UserAppLinks { .. }) => {
-            to_binary(&QueryUserApplicationLinkResponse {
-                links: get_mock_application_link(),
-            })
-        }
-        DesmosQuery::Profiles(ApplicationLinkByChainID { .. }) => {
-            to_binary(&QueryApplicationLinkByClientIDResponse {
-                link: get_mock_application_link(),
-            })
-        }
-    };
-    response.into()
+            }),
+            DesmosQuery::Profiles(UserAppLinks { .. }) => {
+                to_binary(&QueryUserApplicationLinkResponse {
+                    links: get_mock_application_link(),
+                })
+            }
+            DesmosQuery::Profiles(ApplicationLinkByChainID { .. }) => {
+                to_binary(&QueryApplicationLinkByClientIDResponse {
+                    link: get_mock_application_link(),
+                })
+            }
+        };
+        response.into()
+    }
 }
 
 #[cfg(test)]
