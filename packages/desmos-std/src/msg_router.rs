@@ -109,7 +109,7 @@ impl SubspacesMsgRouter<DesmosMsgRouter> for DesmosMsgRouter {
         name: String,
         description: String,
         signer: Addr,
-    ) -> CosmosMsg<DesmosMsgRouter>{
+    ) -> CosmosMsg<DesmosMsgRouter> {
         DesmosMsgRouter {
             route: DesmosRoute::Subspaces,
             msg_data: DesmosMsg::Subspaces(SubspacesMsgs::EditUserGroup {
@@ -129,7 +129,7 @@ impl SubspacesMsgRouter<DesmosMsgRouter> for DesmosMsgRouter {
         group_id: u32,
         permissions: u32,
         signer: Addr,
-    ) -> CosmosMsg<DesmosMsgRouter>{
+    ) -> CosmosMsg<DesmosMsgRouter> {
         DesmosMsgRouter {
             route: DesmosRoute::Subspaces,
             msg_data: DesmosMsg::Subspaces(SubspacesMsgs::SetUserGroupPermissions {
@@ -142,7 +142,12 @@ impl SubspacesMsgRouter<DesmosMsgRouter> for DesmosMsgRouter {
         .into()
     }
 
-    fn delete_user_group(&self, subspace_id: u64, group_id: u32, signer: Addr) -> CosmosMsg<DesmosMsgRouter>{
+    fn delete_user_group(
+        &self,
+        subspace_id: u64,
+        group_id: u32,
+        signer: Addr,
+    ) -> CosmosMsg<DesmosMsgRouter> {
         DesmosMsgRouter {
             route: DesmosRoute::Subspaces,
             msg_data: DesmosMsg::Subspaces(SubspacesMsgs::DeleteUserGroup {
@@ -160,7 +165,7 @@ impl SubspacesMsgRouter<DesmosMsgRouter> for DesmosMsgRouter {
         group_id: u32,
         user: Addr,
         signer: Addr,
-    ) -> CosmosMsg<DesmosMsgRouter>{
+    ) -> CosmosMsg<DesmosMsgRouter> {
         DesmosMsgRouter {
             route: DesmosRoute::Subspaces,
             msg_data: DesmosMsg::Subspaces(SubspacesMsgs::AddUserToUserGroup {
@@ -179,7 +184,7 @@ impl SubspacesMsgRouter<DesmosMsgRouter> for DesmosMsgRouter {
         group_id: u32,
         user: Addr,
         signer: Addr,
-    ) -> CosmosMsg<DesmosMsgRouter>{
+    ) -> CosmosMsg<DesmosMsgRouter> {
         DesmosMsgRouter {
             route: DesmosRoute::Subspaces,
             msg_data: DesmosMsg::Subspaces(SubspacesMsgs::RemoveUserFromUserGroup {
