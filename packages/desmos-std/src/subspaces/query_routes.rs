@@ -1,3 +1,4 @@
+use cosmwasm_std::Addr;
 use serde::{Deserialize, Serialize};
 use schemars::JsonSchema;
 use crate::{
@@ -28,6 +29,6 @@ pub enum SubspacesRoutes {
     },
     UserPermissions {
         subspace_id : u64,
-        user : String
+        user : Addr
     }
 }

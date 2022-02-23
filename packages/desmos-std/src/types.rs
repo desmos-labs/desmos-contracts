@@ -1,4 +1,4 @@
-use crate::query::DesmosQueryRouter;
+use crate::query_router::DesmosQueryRouter;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

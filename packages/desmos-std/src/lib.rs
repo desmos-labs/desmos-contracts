@@ -1,6 +1,6 @@
 pub mod msg;
 pub mod query_router;
-pub mod query;
+pub mod querier;
 pub mod types;
 pub mod subspaces;
 
