@@ -44,7 +44,11 @@ pub fn mock_dependencies_with_custom_querier(
     }
 }
 
-impl MockQueriesProfiles<DesmosQueryRouter> for DesmosQueryRouter {
+pub trait MockQueries<T> {
+    fn custom_query_execute(query: &T) -> ContractResult<Binary>;
+}
+
+impl MockQueries<DesmosQueryRouter> for DesmosQueryRouter {
     fn custom_query_execute(query: &DesmosQueryRouter) -> ContractResult<Binary> {
         let response = match query.query_data {
             DesmosQuery::Profiles(Profile { .. }) => {
@@ -85,7 +89,7 @@ impl MockQueriesProfiles<DesmosQueryRouter> for DesmosQueryRouter {
             }),
             DesmosQuery::Profiles(UserAppLinks { .. }) => {
                 to_binary(&QueryUserApplicationLinkResponse {
-                    links: get_mock_application_link(),
+                    link: get_mock_application_link(),
                 })
             }
             DesmosQuery::Profiles(ApplicationLinkByChainID { .. }) => {
@@ -261,7 +265,7 @@ mod tests {
         let response: QueryUserApplicationLinkResponse = from_binary(&bz).unwrap();
         assert_eq!(
             response,
-            QueryUserApplicationLinkResponse { links: app_link }
+            QueryUserApplicationLinkResponse { link: app_link }
         )
     }
 

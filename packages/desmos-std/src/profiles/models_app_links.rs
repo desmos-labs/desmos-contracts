@@ -54,7 +54,7 @@ pub struct QueryApplicationLinksResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QueryUserApplicationLinkResponse {
-    pub links: ApplicationLink,
+    pub link: ApplicationLink,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
