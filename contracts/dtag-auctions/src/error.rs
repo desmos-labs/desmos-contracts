@@ -10,38 +10,38 @@ pub enum ContractError {
     AuctionNotFound {},
 
     #[error("An auction has already been started by this user")]
-    AlreadyExistentAuction {creator: Addr},
+    AlreadyExistentAuction { creator: Addr },
 
     #[error("The auction is expired")]
     ExpiredAuction {},
 
     #[error("The auction has already been activated")]
-    AlreadyActivatedAuction{},
+    AlreadyActivatedAuction {},
 
     #[error("The auction dTag claiming period is still ongoing")]
     StillInClaimingPeriodAuctionDTag {},
 
     #[error("The auction is still active and cant be closed now")]
-    StillActiveAuction{},
+    StillActiveAuction {},
 
     #[error("The sender is not the creator of the auction")]
-    InvalidAuctionCreator{user: Addr, creator: Addr},
+    InvalidAuctionCreator { user: Addr, creator: Addr },
 
     #[error("Bid not found for user")]
-    BidNotFoundForUser {user: Addr},
+    BidNotFoundForUser { user: Addr },
 
     #[error("Unknown dTag transfer status")]
-    UnknownDTagTransferStatus {status: String},
+    UnknownDTagTransferStatus { status: String },
 
     #[error("Minimum bid amount not satisfied")]
-    MinimumBidAmountNotSatisfied {min_amount: Uint128},
+    MinimumBidAmountNotSatisfied { min_amount: Uint128 },
 
     #[error("No pending auctions left")]
     NoPendingAuctionsLeft {},
 
     #[error("Max participants number reached")]
-    MaxParticipantsNumberReached { max_participants: u64},
+    MaxParticipantsNumberReached { max_participants: u64 },
 
     #[error("Bid not found for user")]
-    BidNotFound{bidder: Addr}
+    BidNotFound { bidder: Addr },
 }

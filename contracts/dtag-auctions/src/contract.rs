@@ -1,12 +1,24 @@
-use std::str::FromStr;
-use crate::{error::ContractError, msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg}, state::{
-    Auction, AuctionResponse, ContractDTag, DtagTransferStatus, ACTIVE_AUCTION, INACTIVE_AUCTIONS_STORE,
-    CONTRACT_DTAG_STORE,
-}};
-use cosmwasm_std::{attr, entry_point, to_binary, Addr, BankMsg, Binary, Env, MessageInfo, Response, StdResult, Uint128, Uint64, Order};
-use desmos_std::{msg_router, msg_router::DesmosMsgRouter, types::{Deps, DepsMut}};
+use crate::{
+    error::ContractError,
+    msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg},
+    state::{
+        Auction, AuctionResponse, ContractDTag, DtagTransferStatus, ACTIVE_AUCTION,
+        CONTRACT_DTAG_STORE, INACTIVE_AUCTIONS_STORE,
+    },
+};
+use cosmwasm_std::{
+    attr, entry_point, to_binary, Addr, BankMsg, Binary, Env, MessageInfo, Order, Response,
+    StdResult, Uint128, Uint64,
+};
 use cw2::set_contract_version;
-use desmos_std::profiles::msg_router::ProfilesMsgRouter;
+use desmos_std::{
+    msg_router::{DesmosMsgBuilder, DesmosMsgRouter},
+    profiles::msg_router::ProfilesMsgRouter,
+    types::{Deps, DepsMut},
+};
+use std::str::FromStr;
+use desmos_std::profiles::querier::ProfilesQuerier;
+use desmos_std::querier::DesmosQuerier;
 
 const CONTRACT_NAME: &str = "crates.io:desmos-dtag-auctioneer";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -21,16 +33,17 @@ pub fn instantiate(
     _: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response<DesmosMsgRouter>, ContractError> {
+    let msg_builder = DesmosMsgBuilder::new();
 
     CONTRACT_DTAG_STORE.save(deps.storage, &ContractDTag(msg.contract_dtag.clone()))?;
 
-    let save_profile_msg = msg_router::DesmosMsgRouter::save_profile(
+    let save_profile_msg = msg_builder.save_profile(
         msg.contract_dtag.clone(),
         env.contract.address,
-        Some("DTag auctioneer contract".to_string()),
-        Some("Use me to put your precious DTag on sale to best bidder!".to_string()),
-        None,
-        None,
+        "".to_string(),
+        "Use me to put your precious DTag on sale to best bidder!".to_string(),
+        "".to_string(),
+        "".to_string(),
     );
 
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
@@ -51,8 +64,11 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response<DesmosMsgRouter>, ContractError> {
     match msg {
-        ExecuteMsg::CreateAuction { dtag, starting_price, max_participants}
-        => execute_create_auction(
+        ExecuteMsg::CreateAuction {
+            dtag,
+            starting_price,
+            max_participants,
+        } => execute_create_auction(
             deps,
             env,
             info.sender,
@@ -77,7 +93,6 @@ pub fn execute_create_auction(
     starting_price: Uint128,
     max_participants: Uint64,
 ) -> Result<Response<DesmosMsgRouter>, ContractError> {
-
     // check if an auction made by the msg sender already exist
     if INACTIVE_AUCTIONS_STORE.has(deps.storage, &creator) {
         return Err(ContractError::AlreadyExistentAuction { creator });
@@ -109,12 +124,10 @@ pub fn execute_create_auction(
     // if an active auction doesn't exist, add to the response a request dTag transfer message directed
     // to the current auction's creator
     if active_auction.is_none() {
+        let msg_builder = DesmosMsgBuilder::new();
         // create the Desmos native message MsgRequestDTagTransfer
         let dtag_transfer_req_msg =
-            msg_router::DesmosMsgRouter::request_dtag_transfer(
-                env.contract.address,
-                creator
-            );
+            msg_builder.request_dtag_transfer(env.contract.address, creator);
 
         // append the message to the response, it will be triggered at the end of the contract execution
         response = response.add_message(dtag_transfer_req_msg);
@@ -127,10 +140,9 @@ pub fn execute_create_auction(
 /// active auction, if it exists.
 pub fn execute_place_bid(
     deps: DepsMut,
-    env:  Env,
+    env: Env,
     info: MessageInfo,
 ) -> Result<Response<DesmosMsgRouter>, ContractError> {
-
     // Get the active auction or return an error if it not exists
     let auction = ACTIVE_AUCTION
         .may_load(deps.storage)?
@@ -138,17 +150,19 @@ pub fn execute_place_bid(
 
     // if the auction reached its end, return error
     if env.block.time > auction.end_time.unwrap() {
-        return Err(ContractError::ExpiredAuction {})
+        return Err(ContractError::ExpiredAuction {});
     }
 
     // if the user has already made a bid, update it
-    if auction.update_bid(deps.storage, &info.sender, info.funds.clone()).is_ok() {
+    if auction
+        .update_bid(deps.storage, &info.sender, info.funds.clone())
+        .is_ok()
+    {
         return Ok(Response::new()
             .add_attribute("action", "update_bid")
             .add_attribute("user", info.sender)
             .add_attribute("bid_amount", info.funds[0].amount)
-            .add_attribute("dtag", auction.dtag)
-        )
+            .add_attribute("dtag", auction.dtag));
     }
 
     // count the number of auction's bids
@@ -166,14 +180,18 @@ pub fn execute_place_bid(
     // if this the first bid and it not reach the starting price, return error
     let min_bid_amount = auction.starting_price;
     if bids_number == 0 && bid_amount < min_bid_amount {
-        return Err(ContractError::MinimumBidAmountNotSatisfied { min_amount: min_bid_amount });
+        return Err(ContractError::MinimumBidAmountNotSatisfied {
+            min_amount: min_bid_amount,
+        });
     }
 
     // if this is not the first bid, and its amount is lower than the last bid made, return error
     if bids_number > 0 {
         let last_bid_made_amount = auction.get_best_bid_amount(deps.storage)?;
         if bid_amount <= last_bid_made_amount {
-            return Err(ContractError::MinimumBidAmountNotSatisfied { min_amount: last_bid_made_amount });
+            return Err(ContractError::MinimumBidAmountNotSatisfied {
+                min_amount: last_bid_made_amount,
+            });
         }
     }
 
@@ -223,19 +241,22 @@ pub fn execute_complete_auction(
 
     // Check if the sender is the actual auction creator
     if sender != auction.creator {
-        return Err(ContractError::InvalidAuctionCreator { user: sender, creator: auction.creator })
+        return Err(ContractError::InvalidAuctionCreator {
+            user: sender,
+            creator: auction.creator,
+        });
     }
 
     // Check if the auction is already closed
     if env.block.time > auction.end_time.unwrap() {
-        return Err(ContractError::ExpiredAuction {})
+        return Err(ContractError::ExpiredAuction {});
     }
 
     // Check if the auction is still active
     // TODO Should we make it possible for the creator to shut down the auction before the end time?
     //if env.block.time < auction.end_time.unwrap() {
     //    return Err(ContractError::StillActiveAuction {})
-   // }
+    // }
 
     // Get the best bid made
     let (bidder, best_bid_amount) = auction.get_best_bid(deps.storage)?;
@@ -246,18 +267,17 @@ pub fn execute_complete_auction(
         amount: best_bid_amount,
     };
 
+    let msg_builder = DesmosMsgBuilder::new();
+
     // Prepare the dtag transfer request message for the winner
     let dtag_transfer_request_msg =
-        msg_router::DesmosMsgRouter::request_dtag_transfer(
-            env.contract.address,
-            bidder.clone()
-        );
+        msg_builder.request_dtag_transfer(env.contract.address, bidder.clone());
 
     // remove it from the inactive store (applies either if the auction has been activated or not)
     INACTIVE_AUCTIONS_STORE.remove(deps.storage, &auction.creator.clone());
 
     // start the claim period for auction
-    ACTIVE_AUCTION.update(deps.storage, | mut auction | -> StdResult<Auction> {
+    ACTIVE_AUCTION.update(deps.storage, |mut auction| -> StdResult<Auction> {
         auction.start_claim_time();
         Ok(auction)
     })?;
@@ -279,7 +299,6 @@ fn execute_start_auction(
     env: Env,
     sender: Addr,
 ) -> Result<Response<DesmosMsgRouter>, ContractError> {
-
     // Get the current active auction
     let active_auction = ACTIVE_AUCTION.load(deps.storage)?;
 
@@ -297,11 +316,9 @@ fn execute_start_auction(
     let sender_auction_res = INACTIVE_AUCTIONS_STORE.load(deps.storage, &sender);
     match sender_auction_res {
         Ok(auction) => {
+            let msg_builder = DesmosMsgBuilder::new();
             // Prepare the request for the next active auction
-            let transfer_req_msg = msg_router::DesmosMsgRouter::request_dtag_transfer(
-                env.contract.address,
-                sender,
-            );
+            let transfer_req_msg = msg_builder.request_dtag_transfer(env.contract.address, sender);
 
             let response = Response::new()
                 .add_message(transfer_req_msg)
@@ -311,7 +328,7 @@ fn execute_start_auction(
 
             Ok(response)
         }
-        Err(_) => Err(ContractError::AuctionNotFound {})
+        Err(_) => Err(ContractError::AuctionNotFound {}),
     }
 }
 
@@ -341,7 +358,6 @@ pub fn update_dtag_auction_status(
     user: Addr,
     dtag_transfer_status: DtagTransferStatus,
 ) -> Result<Response<DesmosMsgRouter>, ContractError> {
-
     // get the auction created by the user
     let mut auction = INACTIVE_AUCTIONS_STORE
         .may_load(deps.storage, &user)?
@@ -367,7 +383,7 @@ pub fn update_dtag_auction_status(
         attr("action", "update_dtag_auction_status"),
         attr("status", status_attr),
         attr("user", user),
-        attr("dtag", auction.dtag)
+        attr("dtag", auction.dtag),
     ]);
 
     Ok(response)
@@ -375,10 +391,12 @@ pub fn update_dtag_auction_status(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    let desmos_querier = DesmosQuerier::new(&deps.querier);
     match msg {
         QueryMsg::GetActiveAuction {} => to_binary(&query_active_auction(deps)?),
         QueryMsg::GetAuctionByUser { user } => to_binary(&query_auction_by_user(deps, user)?),
         QueryMsg::GetInactiveAuctions {} => to_binary(&query_inactive_auctions(deps)?),
+        QueryMsg::GetRelationships { user, subspace_id } => to_binary(&desmos_querier.query_relationships(user, subspace_id, None)?)
     }
 }
 
@@ -387,10 +405,7 @@ pub fn query_active_auction(deps: Deps) -> StdResult<AuctionResponse> {
     let auction = ACTIVE_AUCTION.load(deps.storage)?;
     let bids = auction.get_all_bids(deps.storage).unwrap_or(vec![]);
 
-    Ok(AuctionResponse{
-        auction,
-        bids
-    })
+    Ok(AuctionResponse { auction, bids })
 }
 
 /// query_auction_by_user returns the auction associated with the given user, if exists
@@ -401,28 +416,24 @@ pub fn query_auction_by_user(deps: Deps, user: Addr) -> StdResult<Auction> {
 
 // query_inactive_auctions returns the inactive auctions
 pub fn query_inactive_auctions(deps: Deps) -> StdResult<Vec<Auction>> {
-    let result : StdResult<Vec<_>> = INACTIVE_AUCTIONS_STORE
+    let result: StdResult<Vec<_>> = INACTIVE_AUCTIONS_STORE
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
 
-    let auctions = result.unwrap_or(vec![])
+    let auctions = result
+        .unwrap_or(vec![])
         .into_iter()
-        .map(| (_, auction) | {auction})
+        .map(|(_, auction)| auction)
         .collect();
 
     Ok(auctions)
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        state::AUCTION_BIDS_STORE
-    };
-    use cosmwasm_std::{
-        from_binary, Coin, Timestamp,
-    };
+    use crate::state::AUCTION_BIDS_STORE;
+    use cosmwasm_std::{from_binary, Coin, Timestamp};
     use cosmwasm_vm::testing::{mock_env, mock_info};
     use desmos_std::query_mocks::mock_dependencies_with_custom_querier;
 
@@ -486,7 +497,9 @@ mod tests {
 
         let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
-        let auction = INACTIVE_AUCTIONS_STORE.load(&deps.storage, &info.sender).unwrap();
+        let auction = INACTIVE_AUCTIONS_STORE
+            .load(&deps.storage, &info.sender)
+            .unwrap();
 
         let expected_auction = Auction::new(
             "sender_dtag".to_string(),
@@ -515,7 +528,6 @@ mod tests {
             None,
             None,
             None,
-
             info.sender.clone(),
         );
 
@@ -530,7 +542,12 @@ mod tests {
 
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg);
 
-        assert_eq!(ContractError::AlreadyExistentAuction { creator: info.sender }, res.unwrap_err())
+        assert_eq!(
+            ContractError::AlreadyExistentAuction {
+                creator: info.sender
+            },
+            res.unwrap_err()
+        )
     }
 
     #[test]
@@ -547,7 +564,6 @@ mod tests {
             None,
             None,
             None,
-
             info.sender.clone(),
         );
 
@@ -584,7 +600,6 @@ mod tests {
             None,
             Some(Timestamp::from_seconds(10000000000)),
             None,
-
             info.sender.clone(),
         );
 
@@ -621,7 +636,6 @@ mod tests {
             None,
             Some(env.block.time.minus_seconds(1500)),
             None,
-
             info.sender.clone(),
         );
 
@@ -635,7 +649,8 @@ mod tests {
             env.clone(),
             mock_info("bidder_addr", &[Coin::new(1000, "udsm")]),
             msg,
-        ).unwrap_err();
+        )
+        .unwrap_err();
 
         assert_eq!(ContractError::ExpiredAuction {}, res)
     }
@@ -691,7 +706,12 @@ mod tests {
         )
         .unwrap_err();
 
-        assert_eq!(ContractError::MinimumBidAmountNotSatisfied { min_amount: Uint128::new(100) }, err)
+        assert_eq!(
+            ContractError::MinimumBidAmountNotSatisfied {
+                min_amount: Uint128::new(100)
+            },
+            err
+        )
     }
 
     #[test]
@@ -729,7 +749,12 @@ mod tests {
         )
         .unwrap_err();
 
-        assert_eq!(ContractError::MinimumBidAmountNotSatisfied { min_amount: Uint128::new(200) }, err)
+        assert_eq!(
+            ContractError::MinimumBidAmountNotSatisfied {
+                min_amount: Uint128::new(200)
+            },
+            err
+        )
     }
 
     #[test]
@@ -754,7 +779,7 @@ mod tests {
             deps.as_mut(),
             &active_auction,
             bidder,
-            vec![Coin::new(10, "udsm")]
+            vec![Coin::new(10, "udsm")],
         );
 
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
@@ -769,7 +794,12 @@ mod tests {
         )
         .unwrap_err();
 
-        assert_eq!(ContractError::MaxParticipantsNumberReached { max_participants: 1 }, err)
+        assert_eq!(
+            ContractError::MaxParticipantsNumberReached {
+                max_participants: 1
+            },
+            err
+        )
     }
 
     #[test]
@@ -868,7 +898,12 @@ mod tests {
 
         for addr in offerers_addresses {
             amount += 10;
-            add_auction_bid(deps.as_mut(), &active_auction, addr, vec![Coin::new(amount, "udsm")]);
+            add_auction_bid(
+                deps.as_mut(),
+                &active_auction,
+                addr,
+                vec![Coin::new(amount, "udsm")],
+            );
         }
 
         let execute_msg = ExecuteMsg::CompleteAuction {};
@@ -931,7 +966,6 @@ mod tests {
                 None,
                 None,
                 None,
-
                 users[0].clone(),
             ),
             Auction::new(
@@ -955,12 +989,7 @@ mod tests {
         }
 
         let execute_msg = ExecuteMsg::StartAuction {};
-        let response = execute(
-            deps.as_mut(),
-            env.clone(),
-            info,
-            execute_msg
-        ).unwrap();
+        let response = execute(deps.as_mut(), env.clone(), info, execute_msg).unwrap();
 
         assert_eq!(exp_response.attributes, response.attributes)
     }
@@ -986,12 +1015,7 @@ mod tests {
         save_active_auction(deps.as_mut(), active_auction);
 
         let execute_msg = ExecuteMsg::StartAuction {};
-        let error = execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            execute_msg
-        ).unwrap_err();
+        let error = execute(deps.as_mut(), env.clone(), info.clone(), execute_msg).unwrap_err();
 
         assert_eq!(ContractError::AlreadyActivatedAuction {}, error)
     }
@@ -1017,12 +1041,7 @@ mod tests {
         save_active_auction(deps.as_mut(), active_auction);
 
         let execute_msg = ExecuteMsg::StartAuction {};
-        let error = execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            execute_msg
-        ).unwrap_err();
+        let error = execute(deps.as_mut(), env.clone(), info.clone(), execute_msg).unwrap_err();
 
         assert_eq!(ContractError::StillInClaimingPeriodAuctionDTag {}, error)
     }
@@ -1048,12 +1067,7 @@ mod tests {
         save_active_auction(deps.as_mut(), active_auction);
 
         let execute_msg = ExecuteMsg::StartAuction {};
-        let error = execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            execute_msg
-        ).unwrap_err();
+        let error = execute(deps.as_mut(), env.clone(), info.clone(), execute_msg).unwrap_err();
 
         assert_eq!(ContractError::AuctionNotFound {}, error)
     }
@@ -1089,7 +1103,7 @@ mod tests {
             attr("action", "update_dtag_auction_status"),
             attr("status", "Activated"),
             attr("user", info.sender.clone()),
-            attr("dtag", auction.dtag.clone())
+            attr("dtag", auction.dtag.clone()),
         ]);
 
         assert_eq!(exp_response, response);
@@ -1129,7 +1143,7 @@ mod tests {
             attr("action", "update_dtag_auction_status"),
             attr("status", "Deleted"),
             attr("user", info.sender.clone()),
-            attr("dtag", auction.dtag)
+            attr("dtag", auction.dtag),
         ]);
 
         assert_eq!(exp_response, response);
@@ -1174,14 +1188,18 @@ mod tests {
             info.sender.clone(),
         );
 
-        let exp_response = AuctionResponse { auction: active_auction.clone(), bids: vec![] };
+        let exp_response = AuctionResponse {
+            auction: active_auction.clone(),
+            bids: vec![],
+        };
 
         setup_test(deps.as_mut(), env.clone(), info.clone(), "contract_dtag");
         save_active_auction(deps.as_mut(), active_auction.clone());
 
         let msg = QueryMsg::GetActiveAuction {};
 
-        let result: AuctionResponse = from_binary(&query(deps.as_ref(), env, msg).unwrap()).unwrap();
+        let result: AuctionResponse =
+            from_binary(&query(deps.as_ref(), env, msg).unwrap()).unwrap();
 
         assert_eq!(exp_response, result)
     }
@@ -1235,7 +1253,8 @@ mod tests {
         save_auction(deps.as_mut(), info.sender.clone(), auction.clone());
 
         let query_msg = QueryMsg::GetInactiveAuctions {};
-        let response: Vec<Auction> =  from_binary(&query(deps.as_ref(), env, query_msg).unwrap()).unwrap();
+        let response: Vec<Auction> =
+            from_binary(&query(deps.as_ref(), env, query_msg).unwrap()).unwrap();
 
         assert_eq!(auction, response[0])
     }
