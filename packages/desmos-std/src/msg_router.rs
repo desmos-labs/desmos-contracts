@@ -1,10 +1,11 @@
+use cosmwasm_std::{Addr, CosmosMsg, CustomMsg, Uint64};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
 use crate::{
     subspaces::{msg_builder::SubspacesMsgBuilder, msg_routes::SubspacesMsgs},
     types::DesmosRoute,
 };
-use cosmwasm_std::{Addr, CosmosMsg, CustomMsg};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -78,7 +79,7 @@ impl SubspacesMsgBuilder<DesmosMsgRouter> for DesmosMsgBuilder {
         .into()
     }
 
-    fn delete_subspace(&self, subspace_id: u64, signer: Addr) -> CosmosMsg<DesmosMsgRouter> {
+    fn delete_subspace(&self, subspace_id: Uint64, signer: Addr) -> CosmosMsg<DesmosMsgRouter> {
         DesmosMsgRouter {
             route: DesmosRoute::Subspaces,
             msg_data: DesmosMsg::Subspaces(SubspacesMsgs::DeleteSubspace {
@@ -91,7 +92,7 @@ impl SubspacesMsgBuilder<DesmosMsgRouter> for DesmosMsgBuilder {
 
     fn create_user_group(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         name: String,
         description: String,
         default_permissions: u32,
@@ -112,7 +113,7 @@ impl SubspacesMsgBuilder<DesmosMsgRouter> for DesmosMsgBuilder {
 
     fn edit_user_group(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         group_id: u32,
         name: String,
         description: String,
@@ -133,7 +134,7 @@ impl SubspacesMsgBuilder<DesmosMsgRouter> for DesmosMsgBuilder {
 
     fn set_user_group_permissions(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         group_id: u32,
         permissions: u32,
         signer: Addr,
@@ -152,7 +153,7 @@ impl SubspacesMsgBuilder<DesmosMsgRouter> for DesmosMsgBuilder {
 
     fn delete_user_group(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         group_id: u32,
         signer: Addr,
     ) -> CosmosMsg<DesmosMsgRouter> {
@@ -169,7 +170,7 @@ impl SubspacesMsgBuilder<DesmosMsgRouter> for DesmosMsgBuilder {
 
     fn add_user_to_user_group(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         group_id: u32,
         user: Addr,
         signer: Addr,
@@ -188,7 +189,7 @@ impl SubspacesMsgBuilder<DesmosMsgRouter> for DesmosMsgBuilder {
 
     fn remove_user_from_user_group(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         group_id: u32,
         user: Addr,
         signer: Addr,
@@ -207,7 +208,7 @@ impl SubspacesMsgBuilder<DesmosMsgRouter> for DesmosMsgBuilder {
 
     fn set_user_permissions(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         user: Addr,
         permissions: u32,
         signer: Addr,

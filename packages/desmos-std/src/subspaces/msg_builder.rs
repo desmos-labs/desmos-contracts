@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, CosmosMsg};
+use cosmwasm_std::{Addr, CosmosMsg, Uint64};
 
 pub trait SubspacesMsgBuilder<T> {
     fn create_subspace(
@@ -19,11 +19,11 @@ pub trait SubspacesMsgBuilder<T> {
         signer: Addr,
     ) -> CosmosMsg<T>;
 
-    fn delete_subspace(&self, subspace_id: u64, signer: Addr) -> CosmosMsg<T>;
+    fn delete_subspace(&self, subspace_id: Uint64, signer: Addr) -> CosmosMsg<T>;
 
     fn create_user_group(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         name: String,
         description: String,
         default_permissions: u32,
@@ -32,7 +32,7 @@ pub trait SubspacesMsgBuilder<T> {
 
     fn edit_user_group(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         group_id: u32,
         name: String,
         description: String,
@@ -41,17 +41,17 @@ pub trait SubspacesMsgBuilder<T> {
 
     fn set_user_group_permissions(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         group_id: u32,
         permissions: u32,
         signer: Addr,
     ) -> CosmosMsg<T>;
 
-    fn delete_user_group(&self, subspace_id: u64, group_id: u32, signer: Addr) -> CosmosMsg<T>;
+    fn delete_user_group(&self, subspace_id: Uint64, group_id: u32, signer: Addr) -> CosmosMsg<T>;
 
     fn add_user_to_user_group(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         group_id: u32,
         user: Addr,
         signer: Addr,
@@ -59,14 +59,14 @@ pub trait SubspacesMsgBuilder<T> {
 
     fn remove_user_from_user_group(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         group_id: u32,
         user: Addr,
         signer: Addr,
     ) -> CosmosMsg<T>;
     fn set_user_permissions(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         user: Addr,
         permissions: u32,
         signer: Addr,
