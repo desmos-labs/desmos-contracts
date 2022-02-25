@@ -26,6 +26,5 @@ pub struct PageRequest {
 #[serde(rename_all = "snake_case")]
 pub struct PageResponse {
     next_key: Option<String>,
-    #[serde(default)]
-    total: u64,
+    total: String,
 }
