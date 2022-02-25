@@ -16,7 +16,7 @@ pub enum DesmosRoute {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PageRequest {
-    key: Binary,
+    key: Option<Binary>,
     offset: Uint64,
     limit: Uint64,
     count_total: bool,
@@ -26,6 +26,6 @@ pub struct PageRequest {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PageResponse {
-    next_key: Binary,
+    next_key: Option<Binary>,
     total: Uint64,
 }
