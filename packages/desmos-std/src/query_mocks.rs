@@ -147,7 +147,7 @@ mod tests {
             route: DesmosRoute::Profiles,
             query_data: DesmosQuery::Profiles(Relationships {
                 user: relationship.creator.clone(),
-                subspace_id: Uint64(1),
+                subspace_id: Uint64::new(1),
                 pagination: None,
             }),
         };
@@ -169,7 +169,7 @@ mod tests {
             route: DesmosRoute::Profiles,
             query_data: DesmosQuery::Profiles(Blocks {
                 user: block.blocker.clone(),
-                subspace_id: Uint64(1),
+                subspace_id: Uint64::new(1),
                 pagination: None,
             }),
         };
