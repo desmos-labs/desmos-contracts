@@ -1,5 +1,5 @@
 use crate::{
-    subspaces::{msg_router::SubspacesMsgRouter, msg_routes::SubspacesMsgs},
+    subspaces::{msg_router::SubspacesMsgBuilder, msg_routes::SubspacesMsgs},
     types::DesmosRoute,
 };
 use cosmwasm_std::{Addr, CosmosMsg, CustomMsg};
@@ -28,14 +28,14 @@ impl Into<CosmosMsg<DesmosMsgRouter>> for DesmosMsgRouter {
 
 impl CustomMsg for DesmosMsgRouter {}
 
-pub struct DesmosMsgRouterBuilder {}
-impl DesmosMsgRouterBuilder{
+pub struct DesmosMsgBuilder {}
+impl DesmosMsgBuilder{
     pub fn new() -> Self {
-        DesmosMsgRouterBuilder{}
+        DesmosMsgBuilder{}
     }
 }
 
-impl SubspacesMsgRouter<DesmosMsgRouter> for DesmosMsgRouterBuilder {
+impl SubspacesMsgBuilder<DesmosMsgRouter> for DesmosMsgBuilder {
     fn create_subspace(
         &self,
         name: String,

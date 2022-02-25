@@ -1,6 +1,6 @@
 use cosmwasm_std::{Addr, CosmosMsg};
 
-pub trait SubspacesMsgRouter<T> {
+pub trait SubspacesMsgBuilder<T> {
     fn create_subspace(
         &self,
         name: String,
