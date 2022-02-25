@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, QuerierWrapper, StdResult, Uint64};
+use cosmwasm_std::{Addr, QuerierWrapper, StdResult, Uint64, Querier};
 
 use crate::{
     subspaces::{
@@ -12,12 +12,13 @@ use crate::{
 };
 
 pub struct SubspacesQuerier<'a> {
-    querier: &'a QuerierWrapper<'a, SubspacesQueryRouter>,
+    querier: QuerierWrapper<'a, SubspacesQueryRouter>,
 }
 
-impl<'a> SubspacesQuerier<'a> {
-    pub fn new(querier: &'a QuerierWrapper<'a, SubspacesQueryRouter>) -> Self {
-        SubspacesQuerier { querier }
+impl <'a> SubspacesQuerier<'a> {
+    pub fn new(querier:  &'a dyn Querier) -> Self {
+        let q = QuerierWrapper::<'a, SubspacesQueryRouter>::new(querier);
+        Self { querier: q }
     }
 }
 
