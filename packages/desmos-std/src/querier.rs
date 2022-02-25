@@ -18,7 +18,7 @@ use crate::{
     query_router::{DesmosQuery, DesmosQueryRouter},
     types::{DesmosRoute, PageRequest},
 };
-use cosmwasm_std::{Addr, QuerierWrapper, StdResult};
+use cosmwasm_std::{Addr, QuerierWrapper, StdResult, Uint64};
 
 pub struct DesmosQuerier<'a> {
     querier: &'a QuerierWrapper<'a, DesmosQueryRouter>,
@@ -44,7 +44,7 @@ impl<'a> ProfilesQuerier for DesmosQuerier<'a> {
     fn query_relationships(
         &self,
         user: Addr,
-        subspace_id: u64,
+        subspace_id: Uint64,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryRelationshipsResponse> {
         let request = DesmosQueryRouter {
@@ -80,7 +80,7 @@ impl<'a> ProfilesQuerier for DesmosQuerier<'a> {
     fn query_blocks(
         &self,
         user: Addr,
-        subspace_id: u64,
+        subspace_id: Uint64,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryBlocksResponse> {
         let request = DesmosQueryRouter {

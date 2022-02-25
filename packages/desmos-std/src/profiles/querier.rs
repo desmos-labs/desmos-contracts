@@ -12,14 +12,14 @@ use crate::{
     },
     types::PageRequest,
 };
-use cosmwasm_std::{Addr, StdResult};
+use cosmwasm_std::{Addr, StdResult, Uint64};
 
 pub trait ProfilesQuerier {
     fn query_profile(&self, user: Addr) -> StdResult<QueryProfileResponse>;
     fn query_relationships(
         &self,
         user: Addr,
-        subspace_id: u64,
+        subspace_id: Uint64,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryRelationshipsResponse>;
     fn query_incoming_dtag_transfer_requests(
@@ -30,7 +30,7 @@ pub trait ProfilesQuerier {
     fn query_blocks(
         &self,
         user: Addr,
-        subspace_id: u64,
+        subspace_id: Uint64,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryBlocksResponse>;
     fn query_chain_links(

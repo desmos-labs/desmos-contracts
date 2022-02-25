@@ -1,6 +1,6 @@
 use cosmwasm_std::{Addr, CosmosMsg};
 
-pub trait ProfilesMsgRouter<T> {
+pub trait ProfilesMsgBuilder<T> {
     fn save_profile(
         &self,
         dtag: String,

@@ -103,7 +103,7 @@ impl MockQueries<DesmosQueryRouter> for DesmosQueryRouter {
 mod tests {
     use super::*;
     use crate::types::DesmosRoute;
-    use cosmwasm_std::{from_binary, Addr, QuerierWrapper};
+    use cosmwasm_std::{from_binary, Addr, QuerierWrapper, Uint64};
 
     #[test]
     fn test_query_profile() {
@@ -147,7 +147,7 @@ mod tests {
             route: DesmosRoute::Profiles,
             query_data: DesmosQuery::Profiles(Relationships {
                 user: relationship.creator.clone(),
-                subspace_id: 1,
+                subspace_id: Uint64(1),
                 pagination: None,
             }),
         };
@@ -169,7 +169,7 @@ mod tests {
             route: DesmosRoute::Profiles,
             query_data: DesmosQuery::Profiles(Blocks {
                 user: block.blocker.clone(),
-                subspace_id: 1,
+                subspace_id: Uint64(1),
                 pagination: None,
             }),
         };

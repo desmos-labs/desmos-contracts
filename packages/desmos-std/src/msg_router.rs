@@ -1,6 +1,6 @@
 use crate::{
     profiles::{
-        msg_router::ProfilesMsgRouter,
+        msg_router::ProfilesMsgBuilder,
         msg_routes::ProfilesMsgs,
         msg_routes::ProfilesMsgs::{
             AcceptDtagTransferRequest, BlockUser, CancelDtagTransferRequest, CreateRelationship,
@@ -50,7 +50,7 @@ impl Default for DesmosMsgBuilder {
     }
 }
 
-impl ProfilesMsgRouter<DesmosMsgRouter> for DesmosMsgBuilder {
+impl ProfilesMsgBuilder<DesmosMsgRouter> for DesmosMsgBuilder {
     fn save_profile(
         &self,
         dtag: String,
