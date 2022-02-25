@@ -1,8 +1,6 @@
 use crate::{
     profiles::{
-        mocks::{
-            MockProfilesQueries,
-        },
+        mocks::MockProfilesQueries,
         models_app_links::{
             QueryApplicationLinkByClientIDResponse, QueryApplicationLinksResponse,
             QueryUserApplicationLinkResponse,

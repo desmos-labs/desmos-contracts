@@ -7,7 +7,7 @@ use crate::profiles::{
     models_profile::{Account, Pictures, Profile},
     models_relationships::Relationship,
 };
-use cosmwasm_std::{Addr};
+use cosmwasm_std::Addr;
 
 /**
 This file contains some useful mocks of the Desmos x/profiles modules types ready made to be used
