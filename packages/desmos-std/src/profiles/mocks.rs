@@ -7,7 +7,7 @@ use crate::profiles::{
     models_profile::{Account, Pictures, Profile},
     models_relationships::Relationship,
 };
-use cosmwasm_std::{Addr, Binary, ContractResult};
+use cosmwasm_std::{Addr};
 
 /**
 This file contains some useful mocks of the Desmos x/profiles modules types ready made to be used
@@ -104,7 +104,8 @@ impl MockProfilesQueries {
                     application: "twitter".to_string(),
                     call_data: "7b22757365726e616d65223a224c756361675f5f2335323337227d".to_string(),
                 },
-                client_id: "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc-twitter-goldrake".to_string(),
+                client_id: "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc-twitter-goldrake"
+                    .to_string(),
             },
             result: AppLinkResult::Success {
                 value: "4c756361675f5f2345423337".to_string(),

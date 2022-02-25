@@ -37,9 +37,16 @@ pub enum DesmosMsg {
 }
 
 pub struct DesmosMsgBuilder {}
+
 impl DesmosMsgBuilder {
     pub fn new() -> Self {
         DesmosMsgBuilder {}
+    }
+}
+
+impl Default for DesmosMsgBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -100,7 +107,11 @@ impl ProfilesMsgRouter<DesmosMsgRouter> for DesmosMsgBuilder {
         .into()
     }
 
-    fn refuse_dtag_transfer_request(&self, sender: Addr, receiver: Addr) -> CosmosMsg<DesmosMsgRouter> {
+    fn refuse_dtag_transfer_request(
+        &self,
+        sender: Addr,
+        receiver: Addr,
+    ) -> CosmosMsg<DesmosMsgRouter> {
         DesmosMsgRouter {
             route: DesmosRoute::Profiles,
             msg_data: DesmosMsg::Profiles(RefuseDtagTransferRequest { sender, receiver }),
@@ -108,7 +119,11 @@ impl ProfilesMsgRouter<DesmosMsgRouter> for DesmosMsgBuilder {
         .into()
     }
 
-    fn cancel_dtag_transfer_request(&self,receiver: Addr, sender: Addr) -> CosmosMsg<DesmosMsgRouter> {
+    fn cancel_dtag_transfer_request(
+        &self,
+        receiver: Addr,
+        sender: Addr,
+    ) -> CosmosMsg<DesmosMsgRouter> {
         DesmosMsgRouter {
             route: DesmosRoute::Profiles,
             msg_data: DesmosMsg::Profiles(CancelDtagTransferRequest { receiver, sender }),
@@ -169,7 +184,12 @@ impl ProfilesMsgRouter<DesmosMsgRouter> for DesmosMsgBuilder {
         .into()
     }
 
-    fn unblock_user(&self, blocker: Addr, blocked: Addr, subspace: String) -> CosmosMsg<DesmosMsgRouter> {
+    fn unblock_user(
+        &self,
+        blocker: Addr,
+        blocked: Addr,
+        subspace: String,
+    ) -> CosmosMsg<DesmosMsgRouter> {
         DesmosMsgRouter {
             route: DesmosRoute::Profiles,
             msg_data: DesmosMsg::Profiles(UnblockUser {
