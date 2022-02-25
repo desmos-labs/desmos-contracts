@@ -1,5 +1,5 @@
 use crate::{
-    subspaces::{msg_router::SubspacesMsgBuilder, msg_routes::SubspacesMsgs},
+    subspaces::{msg_builder::SubspacesMsgBuilder, msg_routes::SubspacesMsgs},
     types::DesmosRoute,
 };
 use cosmwasm_std::{Addr, CosmosMsg, CustomMsg};
