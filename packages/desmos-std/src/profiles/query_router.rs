@@ -25,7 +25,7 @@ pub enum ProfilesQueryRoute {
     },
     Relationships {
         user: Addr,
-        subspace_id: Uint64,
+        subspace_id: u64,
         pagination: Option<PageRequest>,
     },
     Blocks {

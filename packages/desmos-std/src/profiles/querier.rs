@@ -33,10 +33,10 @@ impl<'a> ProfilesQuerier<'a> {
         Ok(res)
     }
 
-    fn query_relationships(
+    pub fn query_relationships(
         &self,
         user: Addr,
-        subspace_id: Uint64,
+        subspace_id: u64,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryRelationshipsResponse> {
         let request = ProfilesQueryRouter {

@@ -33,7 +33,7 @@ impl Default for ProfilesMsgBuilder {
 }
 
 impl ProfilesMsgBuilder {
-    fn save_profile(
+    pub fn save_profile(
         &self,
         dtag: String,
         creator: Addr,
@@ -64,7 +64,7 @@ impl ProfilesMsgBuilder {
         .into()
     }
 
-    fn request_dtag_transfer(&self, sender: Addr, receiver: Addr) -> CosmosMsg<ProfilesMsgRouter> {
+    pub fn request_dtag_transfer(&self, sender: Addr, receiver: Addr) -> CosmosMsg<ProfilesMsgRouter> {
         ProfilesMsgRouter {
             route: DesmosRoute::Profiles,
             msg_data: ProfilesMsgs::RequestDtagTransfer { receiver, sender },
