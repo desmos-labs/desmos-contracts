@@ -1,4 +1,4 @@
-use crate::{profiles::models_common::PubKey, types::PageResponse};
+use crate::profiles::models_common::PubKey;
 use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -42,17 +42,4 @@ pub struct Signature {
 #[serde(rename_all = "snake_case")]
 pub struct ChainConfig {
     pub name: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct QueryChainLinksResponse {
-    pub links: Vec<ChainLink>,
-    pub pagination: PageResponse,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct QueryUserChainLinkResponse {
-    pub link: ChainLink,
 }

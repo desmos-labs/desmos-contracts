@@ -1,10 +1,6 @@
-use crate::query_router::DesmosQueryRouter;
 use cosmwasm_std::{Binary, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-
-pub type Deps<'a> = cosmwasm_std::Deps<'a, DesmosQueryRouter>;
-pub type DepsMut<'a> = cosmwasm_std::DepsMut<'a, DesmosQueryRouter>;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
