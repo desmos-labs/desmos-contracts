@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::ops::Deref;
 use crate::{
     error::ContractError,
@@ -16,7 +15,6 @@ use desmos_std::{
 use std::str::FromStr;
 use desmos_std::profiles::msg_router::ProfilesMsgBuilder;
 use desmos_std::profiles::querier::ProfilesQuerier;
-use desmos_std::profiles::query_router::ProfilesQueryRouter;
 
 const CONTRACT_NAME: &str = "crates.io:desmos-dtag-auctioneer";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -434,6 +432,7 @@ mod tests {
     use crate::state::AUCTION_BIDS_STORE;
     use cosmwasm_std::{from_binary, Coin, Timestamp};
     use cosmwasm_vm::testing::{mock_env, mock_info};
+    use desmos_std::profiles::mocks::mock_dependencies_with_custom_querier;
     use desmos_std::query_mocks::mock_dependencies_with_custom_querier;
 
     /// Helper functions
