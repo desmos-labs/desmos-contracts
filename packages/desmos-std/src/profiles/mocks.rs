@@ -208,7 +208,7 @@ mod tests {
         QueryIncomingDtagTransferRequestResponse, QueryProfileResponse,
     };
     use crate::{profiles::query_router::ProfilesQueryRoute, types::DesmosRoute};
-    use cosmwasm_std::{from_binary, Addr, QuerierWrapper, Uint64};
+    use cosmwasm_std::{from_binary, Addr, QuerierWrapper};
 
     #[test]
     fn test_query_profile() {
@@ -252,7 +252,7 @@ mod tests {
             route: DesmosRoute::Profiles,
             query_data: ProfilesQueryRoute::Relationships {
                 user: relationship.creator.clone(),
-                subspace_id: Uint64::new(1),
+                subspace_id: 1,
                 pagination: None,
             },
         };
@@ -274,7 +274,7 @@ mod tests {
             route: DesmosRoute::Profiles,
             query_data: ProfilesQueryRoute::Blocks {
                 user: block.blocker.clone(),
-                subspace_id: Uint64::new(1),
+                subspace_id: 1,
                 pagination: None,
             },
         };
