@@ -1,5 +1,5 @@
 use crate::types::{DesmosRoute, PageRequest};
-use cosmwasm_std::{Addr, CustomQuery, Uint64};
+use cosmwasm_std::{Addr, CustomQuery};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -30,7 +30,7 @@ pub enum ProfilesQueryRoute {
     },
     Blocks {
         user: Addr,
-        subspace_id: Uint64,
+        subspace_id: u64,
         pagination: Option<PageRequest>,
     },
     ChainLinks {

@@ -56,7 +56,7 @@ impl ProfilesMsgBuilder {
         .into()
     }
 
-    fn delete_profile(&self, creator: Addr) -> CosmosMsg<ProfilesMsgRouter> {
+    pub fn delete_profile(&self, creator: Addr) -> CosmosMsg<ProfilesMsgRouter> {
         ProfilesMsgRouter {
             route: DesmosRoute::Profiles,
             msg_data: ProfilesMsgs::DeleteProfile { creator },
@@ -64,7 +64,11 @@ impl ProfilesMsgBuilder {
         .into()
     }
 
-    pub fn request_dtag_transfer(&self, sender: Addr, receiver: Addr) -> CosmosMsg<ProfilesMsgRouter> {
+    pub fn request_dtag_transfer(
+        &self,
+        sender: Addr,
+        receiver: Addr,
+    ) -> CosmosMsg<ProfilesMsgRouter> {
         ProfilesMsgRouter {
             route: DesmosRoute::Profiles,
             msg_data: ProfilesMsgs::RequestDtagTransfer { receiver, sender },
@@ -72,7 +76,7 @@ impl ProfilesMsgBuilder {
         .into()
     }
 
-    fn accept_dtag_transfer_request(
+    pub fn accept_dtag_transfer_request(
         &self,
         new_dtag: String,
         sender: Addr,
@@ -89,7 +93,7 @@ impl ProfilesMsgBuilder {
         .into()
     }
 
-    fn refuse_dtag_transfer_request(
+    pub fn refuse_dtag_transfer_request(
         &self,
         sender: Addr,
         receiver: Addr,
@@ -101,7 +105,7 @@ impl ProfilesMsgBuilder {
         .into()
     }
 
-    fn cancel_dtag_transfer_request(
+    pub fn cancel_dtag_transfer_request(
         &self,
         receiver: Addr,
         sender: Addr,
@@ -113,7 +117,7 @@ impl ProfilesMsgBuilder {
         .into()
     }
 
-    fn create_relationship(
+    pub fn create_relationship(
         &self,
         sender: Addr,
         receiver: Addr,
@@ -130,7 +134,7 @@ impl ProfilesMsgBuilder {
         .into()
     }
 
-    fn delete_relationship(
+    pub fn delete_relationship(
         &self,
         user: Addr,
         counterparty: Addr,
@@ -147,7 +151,7 @@ impl ProfilesMsgBuilder {
         .into()
     }
 
-    fn block_user(
+    pub fn block_user(
         &self,
         blocker: Addr,
         blocked: Addr,
@@ -166,7 +170,7 @@ impl ProfilesMsgBuilder {
         .into()
     }
 
-    fn unblock_user(
+    pub fn unblock_user(
         &self,
         blocker: Addr,
         blocked: Addr,

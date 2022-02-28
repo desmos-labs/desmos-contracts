@@ -10,7 +10,7 @@ use crate::{
     },
     types::{DesmosRoute, PageRequest},
 };
-use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult, Uint64};
+use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult};
 
 pub struct ProfilesQuerier<'a> {
     querier: QuerierWrapper<'a, ProfilesQueryRouter>,
@@ -23,7 +23,7 @@ impl<'a> ProfilesQuerier<'a> {
         }
     }
 
-    fn query_profile(&self, user: Addr) -> StdResult<QueryProfileResponse> {
+    pub fn query_profile(&self, user: Addr) -> StdResult<QueryProfileResponse> {
         let request = ProfilesQueryRouter {
             route: DesmosRoute::Profiles,
             query_data: ProfilesQueryRoute::Profile { user },
@@ -52,7 +52,7 @@ impl<'a> ProfilesQuerier<'a> {
         Ok(res)
     }
 
-    fn query_incoming_dtag_transfer_requests(
+    pub fn query_incoming_dtag_transfer_requests(
         &self,
         receiver: Addr,
         pagination: Option<PageRequest>,
@@ -69,10 +69,10 @@ impl<'a> ProfilesQuerier<'a> {
         Ok(res)
     }
 
-    fn query_blocks(
+    pub fn query_blocks(
         &self,
         user: Addr,
-        subspace_id: Uint64,
+        subspace_id: u64,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryBlocksResponse> {
         let request = ProfilesQueryRouter {
@@ -88,7 +88,7 @@ impl<'a> ProfilesQuerier<'a> {
         Ok(res)
     }
 
-    fn query_chain_links(
+    pub fn query_chain_links(
         &self,
         user: Addr,
         pagination: Option<PageRequest>,
@@ -102,7 +102,7 @@ impl<'a> ProfilesQuerier<'a> {
         Ok(res)
     }
 
-    fn query_user_chain_link(
+    pub fn query_user_chain_link(
         &self,
         user: Addr,
         chain_name: String,
@@ -121,7 +121,7 @@ impl<'a> ProfilesQuerier<'a> {
         Ok(res)
     }
 
-    fn query_application_links(
+    pub fn query_application_links(
         &self,
         user: Addr,
         pagination: Option<PageRequest>,
@@ -135,7 +135,7 @@ impl<'a> ProfilesQuerier<'a> {
         Ok(res)
     }
 
-    fn query_user_application_link(
+    pub fn query_user_application_link(
         &self,
         user: Addr,
         application: String,
@@ -154,7 +154,7 @@ impl<'a> ProfilesQuerier<'a> {
         Ok(res)
     }
 
-    fn query_application_link_by_client_id(
+    pub fn query_application_link_by_client_id(
         &self,
         client_id: String,
     ) -> StdResult<QueryApplicationLinkByClientIDResponse> {
