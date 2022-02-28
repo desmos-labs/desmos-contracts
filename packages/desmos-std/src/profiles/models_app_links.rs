@@ -1,4 +1,3 @@
-use crate::types::PageResponse;
 use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -42,23 +41,4 @@ pub struct CallData {
 pub enum AppLinkResult {
     Success { value: String, signature: String },
     Failed { error: String },
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct QueryApplicationLinksResponse {
-    pub links: Vec<ApplicationLink>,
-    pub pagination: PageResponse,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct QueryUserApplicationLinkResponse {
-    pub link: ApplicationLink,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct QueryApplicationLinkByClientIDResponse {
-    pub link: ApplicationLink,
 }

@@ -57,9 +57,3 @@ impl Pictures {
         Pictures { profile, cover }
     }
 }
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct QueryProfileResponse {
-    pub profile: Profile,
-}
