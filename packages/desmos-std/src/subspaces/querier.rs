@@ -17,8 +17,7 @@ pub struct SubspacesQuerier<'a> {
 
 impl <'a> SubspacesQuerier<'a> {
     pub fn new(querier:  &'a dyn Querier) -> Self {
-        let q = QuerierWrapper::<'a, SubspacesQueryRouter>::new(querier);
-        Self { querier: q }
+        Self { querier: QuerierWrapper::<'a, SubspacesQueryRouter>::new(querier) }
     }
 }
 
