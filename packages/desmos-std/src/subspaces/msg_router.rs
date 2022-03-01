@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, CosmosMsg, CustomMsg, Uint64};
+use cosmwasm_std::{Addr, CosmosMsg, CustomMsg};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -72,7 +72,7 @@ impl SubspacesMsgBuilder {
         .into()
     }
 
-    pub fn delete_subspace(&self, subspace_id: Uint64, signer: Addr) -> CosmosMsg<SubspacesMsgRouter> {
+    pub fn delete_subspace(&self, subspace_id: u64, signer: Addr) -> CosmosMsg<SubspacesMsgRouter> {
         SubspacesMsgRouter {
             route: DesmosRoute::Subspaces,
             msg_data: SubspacesMsgs::DeleteSubspace {
@@ -85,7 +85,7 @@ impl SubspacesMsgBuilder {
 
     pub fn create_user_group(
         &self,
-        subspace_id: Uint64,
+        subspace_id: u64,
         name: String,
         description: String,
         default_permissions: u32,
@@ -106,7 +106,7 @@ impl SubspacesMsgBuilder {
 
     pub fn edit_user_group(
         &self,
-        subspace_id: Uint64,
+        subspace_id: u64,
         group_id: u32,
         name: String,
         description: String,
@@ -127,7 +127,7 @@ impl SubspacesMsgBuilder {
 
     pub fn set_user_group_permissions(
         &self,
-        subspace_id: Uint64,
+        subspace_id: u64,
         group_id: u32,
         permissions: u32,
         signer: Addr,
@@ -146,7 +146,7 @@ impl SubspacesMsgBuilder {
 
     pub fn delete_user_group(
         &self,
-        subspace_id: Uint64,
+        subspace_id: u64,
         group_id: u32,
         signer: Addr,
     ) -> CosmosMsg<SubspacesMsgRouter> {
@@ -163,7 +163,7 @@ impl SubspacesMsgBuilder {
 
     pub fn add_user_to_user_group(
         &self,
-        subspace_id: Uint64,
+        subspace_id: u64,
         group_id: u32,
         user: Addr,
         signer: Addr,
@@ -182,7 +182,7 @@ impl SubspacesMsgBuilder {
 
     pub fn remove_user_from_user_group(
         &self,
-        subspace_id: Uint64,
+        subspace_id: u64,
         group_id: u32,
         user: Addr,
         signer: Addr,
@@ -201,7 +201,7 @@ impl SubspacesMsgBuilder {
 
     pub fn set_user_permissions(
         &self,
-        subspace_id: Uint64,
+        subspace_id: u64,
         user: Addr,
         permissions: u32,
         signer: Addr,

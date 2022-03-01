@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Uint64};
+use cosmwasm_std::{Addr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -20,48 +20,48 @@ pub enum SubspacesMsgs {
         signer: Addr,
     },
     DeleteSubspace {
-        subspace_id: Uint64,
+        subspace_id: u64,
         signer: Addr,
     },
     CreateUserGroup {
-        subspace_id: Uint64,
+        subspace_id: u64,
         name: String,
         description: String,
         default_permissions: u32,
         creator: Addr,
     },
     EditUserGroup {
-        subspace_id: Uint64,
+        subspace_id: u64,
         group_id: u32,
         name: String,
         description: String,
         signer: Addr,
     },
     SetUserGroupPermissions {
-        subspace_id: Uint64,
+        subspace_id: u64,
         group_id: u32,
         permissions: u32,
         signer: Addr,
     },
     DeleteUserGroup {
-        subspace_id: Uint64,
+        subspace_id: u64,
         group_id: u32,
         signer: Addr,
     },
     AddUserToUserGroup {
-        subspace_id: Uint64,
+        subspace_id: u64,
         group_id: u32,
         user: Addr,
         signer: Addr,
     },
     RemoveUserFromUserGroup {
-        subspace_id: Uint64,
+        subspace_id: u64,
         group_id: u32,
         user: Addr,
         signer: Addr,
     },
     SetUserPermissions {
-        subspace_id: Uint64,
+        subspace_id: u64,
         user: Addr,
         permissions: u32,
         signer: Addr,
