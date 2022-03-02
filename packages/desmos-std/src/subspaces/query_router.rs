@@ -9,14 +9,14 @@ use crate::types::{PageRequest, DesmosRoute};
 #[serde(rename_all = "snake_case")]
 pub struct SubspacesQueryRouter {
     pub route: DesmosRoute,
-    pub query_data: SubspacesQuery,
+    pub query_data: SubspacesQueryRoute,
 }
 
 impl CustomQuery for SubspacesQueryRouter {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum SubspacesQuery {
+pub enum SubspacesQueryRoute {
     Subspaces {
         pagination: Option<PageRequest>,
     },

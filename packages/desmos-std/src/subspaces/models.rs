@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct Subspace {
     pub id: Uint64,
     pub name: String,
-    pub description: Addr,
+    pub description: String,
     pub treasury: Addr,
     pub owner: Addr,
     pub creator: Addr,
@@ -20,7 +20,6 @@ pub struct UserGroup {
     pub subspace_id: Uint64,
     pub id: u32,
     pub name: String,
-    #[serde(default)]
     pub description: String,
     pub permissions: u32,
 }
@@ -36,12 +35,12 @@ pub enum PermissionDetail {
 #[serde(rename_all = "snake_case")]
 pub struct UserPermission {
     pub user: String,
-    pub permission: u32,
+    pub permissions: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct GroupPermission {
     pub group_id: u32,
-    pub permission: u32,
+    pub permissions: u32,
 }

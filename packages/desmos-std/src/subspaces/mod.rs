@@ -1,3 +1,5 @@
+pub mod mocks;
+
 pub mod models;
 pub mod msg_router;
 pub mod msg_routes;

@@ -1,5 +1,6 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use cosmwasm_std::{Addr};
 
 use crate::subspaces::models::{PermissionDetail, Subspace, UserGroup};
 use crate::types::PageResponse;
@@ -33,7 +34,7 @@ pub struct QueryUserGroupResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QueryUserGroupMembersResponse {
-    pub members: Vec<String>,
+    pub members: Vec<Addr>,
     pub pagination: PageResponse,
 }
 

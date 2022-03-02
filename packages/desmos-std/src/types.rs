@@ -2,6 +2,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use cosmwasm_std::{Uint64, Binary};
 
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum DesmosRoute {
@@ -19,7 +20,7 @@ pub struct PageRequest {
     reverse: bool,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PageResponse {
     next_key: Option<Binary>,
