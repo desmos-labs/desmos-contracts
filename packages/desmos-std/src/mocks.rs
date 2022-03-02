@@ -3,7 +3,6 @@ use cosmwasm_std::{
     Coin, CustomQuery, OwnedDeps, SystemResult,
 };
 use schemars::JsonSchema;
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
@@ -12,7 +11,6 @@ use crate::{
         mocks::MockSubspacesQuerier,
         query_router::{SubspacesQueryRoute, SubspacesQueryRouter},
     },
-    types::DesmosRoute,
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -37,19 +35,13 @@ impl DesmosMockRouter {
 
 pub fn mock_dependencies_with_custom_querier(
     contract_balance: &[Coin],
-) -> OwnedDeps<MockStorage, MockApi, MockQuerier<DesmosMockRouter>, impl CustomQuery> {
+) -> OwnedDeps<MockStorage, MockApi, MockQuerier<SubspacesQueryRouter>, impl CustomQuery> {
     let contract_addr = MOCK_CONTRACT_ADDR;
-    let custom_querier = MockQuerier::<DesmosMockRouter>::new(&[(contract_addr, contract_balance)])
-        .with_custom_handler(|query| match &query.query_data {
-            DesmosMockRoute::Subspaces(data) => {
-                let c = SubspacesQueryRouter {
-                    route: DesmosRoute::Subspaces,
-                    query_data: data.clone(),
-                };
-                SystemResult::Ok(MockSubspacesQuerier::custom_query_execute(c))
-            }
+    let custom_querier = MockQuerier::<SubspacesQueryRouter>::new(&[(contract_addr, contract_balance)])
+        .with_custom_handler(|query|  {
+            SystemResult::Ok(MockSubspacesQuerier::custom_query_execute(query.clone()))
         });
-    OwnedDeps::<_, _, _, DesmosMockRouter> {
+    OwnedDeps::<_, _, _, SubspacesQueryRouter> {
         storage: MockStorage::default(),
         api: MockApi::default(),
         querier: custom_querier,
@@ -62,18 +54,21 @@ mod tests {
     #[test]
     fn custom_querier() {
         use super::*;
-        use std::ops::Deref;
-        use cosmwasm_std::{from_binary, Addr, QuerierWrapper};
-        use crate::{subspaces::{query_router::SubspacesQueryRoute, querier::SubspacesQuerier}, types::DesmosRoute};
-
-
-        let deps = mock_dependencies_with_custom_querier(&[]);
-      
-        let querier = SubspacesQuerier::new(deps.querier.deref());
-        let response: QueryProfileResponse = wrapper.query(&req).unwrap();
-        let expected = QueryProfileResponse {
-            profile: MockProfilesQueries::get_mock_profile(),
+        use crate::subspaces::{
+            mocks::MockSubspacesQueries, querier::SubspacesQuerier,
+            query_types::QuerySubspaceResponse,
         };
+        use cosmwasm_std::Uint64;
+        use std::ops::Deref;
+
+        let owned_deps = mock_dependencies_with_custom_querier(&[]);
+        let deps = owned_deps.as_ref();
+        let querier = SubspacesQuerier::new(deps.querier.deref());
+        let response = querier.query_subspace(Uint64::new(1)).unwrap();
+        let expected = QuerySubspaceResponse {
+            subspace: MockSubspacesQueries::get_mock_subspace(),
+        };
+        println!("response {:?}", response);
         assert_eq!(response, expected);
     }
 }
