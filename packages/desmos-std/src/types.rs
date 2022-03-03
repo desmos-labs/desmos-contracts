@@ -1,7 +1,6 @@
+use cosmwasm_std::{Binary, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::{Uint64, Binary};
-
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]

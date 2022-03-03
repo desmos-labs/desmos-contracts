@@ -2,10 +2,7 @@ use cosmwasm_std::{Addr, CosmosMsg, CustomMsg};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    subspaces::{msg_routes::SubspacesMsgs},
-    types::DesmosRoute,
-};
+use crate::{subspaces::msg_routes::SubspacesMsgs, types::DesmosRoute};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -21,11 +18,10 @@ impl Into<CosmosMsg<SubspacesMsgRouter>> for SubspacesMsgRouter {
 }
 impl CustomMsg for SubspacesMsgRouter {}
 
-
-pub struct SubspacesMsgBuilder{}
-impl SubspacesMsgBuilder{
+pub struct SubspacesMsgBuilder {}
+impl SubspacesMsgBuilder {
     pub fn new() -> Self {
-        SubspacesMsgBuilder{}
+        SubspacesMsgBuilder {}
     }
 }
 

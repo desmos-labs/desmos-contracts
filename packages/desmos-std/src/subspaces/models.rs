@@ -1,4 +1,4 @@
-use cosmwasm_std::{Uint64, Addr};
+use cosmwasm_std::{Addr, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

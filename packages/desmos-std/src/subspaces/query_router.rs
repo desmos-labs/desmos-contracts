@@ -1,8 +1,8 @@
+use cosmwasm_std::{Addr, CustomQuery, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::{Addr, Uint64, CustomQuery};
 
-use crate::types::{PageRequest, DesmosRoute};
+use crate::types::{DesmosRoute, PageRequest};
 
 /// SubspacesQueryRouter is an override of QueryRequest::Custom to access desmos-specific modules
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

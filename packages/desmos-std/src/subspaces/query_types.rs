@@ -1,6 +1,6 @@
+use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::{Addr};
 
 use crate::subspaces::models::{PermissionDetail, Subspace, UserGroup};
 use crate::types::PageResponse;

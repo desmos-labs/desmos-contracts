@@ -1,8 +1,8 @@
-use cosmwasm_std::{Addr, QuerierWrapper, StdResult, Uint64, Querier};
+use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult, Uint64};
 
 use crate::{
     subspaces::{
-        query_router::{SubspacesQueryRouter, SubspacesQueryRoute},
+        query_router::{SubspacesQueryRoute, SubspacesQueryRouter},
         query_types::{
             QuerySubspaceResponse, QuerySubspacesResponse, QueryUserGroupMembersResponse,
             QueryUserGroupResponse, QueryUserGroupsResponse, QueryUserPermissionsResponse,
@@ -15,9 +15,11 @@ pub struct SubspacesQuerier<'a> {
     querier: QuerierWrapper<'a, SubspacesQueryRouter>,
 }
 
-impl <'a> SubspacesQuerier<'a> {
-    pub fn new(querier:  &'a dyn Querier) -> Self {
-        Self { querier: QuerierWrapper::<'a, SubspacesQueryRouter>::new(querier) }
+impl<'a> SubspacesQuerier<'a> {
+    pub fn new(querier: &'a dyn Querier) -> Self {
+        Self {
+            querier: QuerierWrapper::<'a, SubspacesQueryRouter>::new(querier),
+        }
     }
 }
 
@@ -104,10 +106,7 @@ impl<'a> SubspacesQuerier<'a> {
     ) -> StdResult<QueryUserPermissionsResponse> {
         let request = SubspacesQueryRouter {
             route: DesmosRoute::Subspaces,
-            query_data: SubspacesQueryRoute::UserPermissions {
-                subspace_id,
-                user,
-            },
+            query_data: SubspacesQueryRoute::UserPermissions { subspace_id, user },
         };
         let res: QueryUserPermissionsResponse = self.querier.query(&request.into())?;
         Ok(res)
