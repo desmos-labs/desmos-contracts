@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult, Uint64};
+use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult};
 
 use crate::{
     subspaces::{
@@ -38,7 +38,7 @@ impl<'a> SubspacesQuerier<'a> {
         Ok(res)
     }
 
-    pub fn query_subspace(&self, subspace_id: Uint64) -> StdResult<QuerySubspaceResponse> {
+    pub fn query_subspace(&self, subspace_id: u64) -> StdResult<QuerySubspaceResponse> {
         let request = SubspacesQueryRouter {
             route: DesmosRoute::Subspaces,
             query_data: SubspacesQueryRoute::Subspace {
@@ -51,7 +51,7 @@ impl<'a> SubspacesQuerier<'a> {
 
     pub fn query_user_groups(
         &self,
-        subspace_id: Uint64,
+        subspace_id: u64,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryUserGroupsResponse> {
         let request = SubspacesQueryRouter {
@@ -67,7 +67,7 @@ impl<'a> SubspacesQuerier<'a> {
 
     pub fn query_user_group(
         &self,
-        subspace_id: Uint64,
+        subspace_id: u64,
         group_id: u32,
     ) -> StdResult<QueryUserGroupResponse> {
         let request = SubspacesQueryRouter {
@@ -83,7 +83,7 @@ impl<'a> SubspacesQuerier<'a> {
 
     pub fn query_user_group_members(
         &self,
-        subspace_id: Uint64,
+        subspace_id: u64,
         group_id: u32,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryUserGroupMembersResponse> {
@@ -101,7 +101,7 @@ impl<'a> SubspacesQuerier<'a> {
 
     pub fn query_user_permissions(
         &self,
-        subspace_id: Uint64,
+        subspace_id: u64,
         user: Addr,
     ) -> StdResult<QueryUserPermissionsResponse> {
         let request = SubspacesQueryRouter {

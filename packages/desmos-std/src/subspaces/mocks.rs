@@ -127,13 +127,12 @@ mod tests {
             mocks::MockSubspacesQueries, querier::SubspacesQuerier,
             query_types::QuerySubspaceResponse,
         };
-        use cosmwasm_std::Uint64;
         use std::ops::Deref;
 
         let owned_deps = mock_dependencies_with_custom_querier(&[]);
         let deps = owned_deps.as_ref();
         let querier = SubspacesQuerier::new(deps.querier.deref());
-        let response = querier.query_subspace(Uint64::new(1)).unwrap();
+        let response = querier.query_subspace(1).unwrap();
         let expected = QuerySubspaceResponse {
             subspace: MockSubspacesQueries::get_mock_subspace(),
         };

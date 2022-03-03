@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, CustomQuery, Uint64};
+use cosmwasm_std::{Addr, CustomQuery};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -21,23 +21,23 @@ pub enum SubspacesQueryRoute {
         pagination: Option<PageRequest>,
     },
     Subspace {
-        subspace_id: Uint64,
+        subspace_id: u64,
     },
     UserGroups {
-        subspace_id: Uint64,
+        subspace_id: u64,
         pagination: Option<PageRequest>,
     },
     UserGroup {
-        subspace_id: Uint64,
+        subspace_id: u64,
         group_id: u32,
     },
     UserGroupMembers {
-        subspace_id: Uint64,
+        subspace_id: u64,
         group_id: u32,
         pagination: Option<PageRequest>,
     },
     UserPermissions {
-        subspace_id: Uint64,
+        subspace_id: u64,
         user: Addr,
     },
 }
