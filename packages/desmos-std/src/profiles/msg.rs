@@ -1,3 +1,5 @@
+use crate::profiles::models_app_links::{Data, TimeoutHeight};
+use crate::profiles::models_chain_links::{ChainConfig, ChainLinkAddr, Proof};
 use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -32,6 +34,21 @@ pub enum ProfilesMsg {
     CancelDtagTransferRequest {
         receiver: Addr,
         sender: Addr,
+    },
+    LinkChainAccount {
+        chain_address: ChainLinkAddr,
+        proof: Proof,
+        chain_config: ChainConfig,
+        signer: Addr,
+    },
+    LinkApplication {
+        sender: Addr,
+        link_data: Data,
+        call_data: String,
+        source_port: String,
+        source_channel: String,
+        timeout_height: TimeoutHeight,
+        timeout_timestamp: u64,
     },
     CreateRelationship {
         sender: Addr,
