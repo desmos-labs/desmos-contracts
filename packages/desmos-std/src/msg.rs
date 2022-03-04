@@ -6,29 +6,29 @@ use crate::{profiles::msg::ProfilesMsg, types::DesmosRoute};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct DesmosMsg {
+pub struct DesmosMsgRouter {
     pub route: DesmosRoute,
-    pub msg_data: DesmosMsgRoute,
+    pub msg_data: DesmosMsg,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum DesmosMsgRoute {
+pub enum DesmosMsg {
     Profiles(ProfilesMsg),
 }
 
-impl Into<CosmosMsg<DesmosMsg>> for DesmosMsg {
-    fn into(self) -> CosmosMsg<DesmosMsg> {
+impl Into<CosmosMsg<DesmosMsgRouter>> for DesmosMsgRouter {
+    fn into(self) -> CosmosMsg<DesmosMsgRouter> {
         CosmosMsg::Custom(self)
     }
 }
-impl CustomMsg for DesmosMsg {}
+impl CustomMsg for DesmosMsgRouter {}
 
-impl From<ProfilesMsg> for DesmosMsg {
+impl From<ProfilesMsg> for DesmosMsgRouter {
     fn from(msg: ProfilesMsg) -> Self {
         Self {
             route: DesmosRoute::Profiles,
-            msg_data: DesmosMsgRoute::Profiles(msg),
+            msg_data: DesmosMsg::Profiles(msg),
         }
     }
 }
