@@ -50,7 +50,6 @@ impl SubspacesMsgBuilder {
     }
 
     pub fn create_user_group(
-        &self,
         subspace_id: u64,
         name: String,
         description: String,
@@ -67,7 +66,6 @@ impl SubspacesMsgBuilder {
     }
 
     pub fn edit_user_group(
-        &self,
         subspace_id: u64,
         group_id: u32,
         name: String,
@@ -84,7 +82,6 @@ impl SubspacesMsgBuilder {
     }
 
     pub fn set_user_group_permissions(
-        &self,
         subspace_id: u64,
         group_id: u32,
         permissions: u32,
@@ -107,7 +104,6 @@ impl SubspacesMsgBuilder {
     }
 
     pub fn add_user_to_user_group(
-        &self,
         subspace_id: u64,
         group_id: u32,
         user: Addr,
@@ -122,7 +118,6 @@ impl SubspacesMsgBuilder {
     }
 
     pub fn remove_user_from_user_group(
-        &self,
         subspace_id: u64,
         group_id: u32,
         user: Addr,
@@ -137,7 +132,6 @@ impl SubspacesMsgBuilder {
     }
 
     pub fn set_user_permissions(
-        &self,
         subspace_id: u64,
         user: Addr,
         permissions: u32,
