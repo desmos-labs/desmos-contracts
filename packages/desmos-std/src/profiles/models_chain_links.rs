@@ -35,6 +35,7 @@ pub struct Proof {
 pub struct Signature {
     #[serde(rename = "@type")]
     pub proto_type: String,
+    pub mode: String,
     pub signature: String,
 }
 

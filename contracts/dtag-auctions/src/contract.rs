@@ -16,6 +16,8 @@ use desmos_std::profiles::msg_builder::ProfilesMsgBuilder;
 use desmos_std::profiles::querier::ProfilesQuerier;
 use std::ops::Deref;
 use std::str::FromStr;
+use desmos_std::profiles::models_chain_links::{ChainConfig, ChainLinkAddr, Proof, Signature};
+use desmos_std::profiles::models_common::PubKey;
 
 const CONTRACT_NAME: &str = "crates.io:desmos-dtag-auctioneer";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -36,17 +38,40 @@ pub fn instantiate(
 
     let save_profile_msg = msg_builder.save_profile(
         msg.contract_dtag.clone(),
-        env.contract.address,
+        env.contract.address.clone(),
         "".to_string(),
         "Use me to put your precious DTag on sale to best bidder!".to_string(),
         "".to_string(),
         "".to_string(),
     );
 
+    let chain_link = msg_builder.link_chain_account(
+        ChainLinkAddr {
+            proto_type: "/desmos.profiles.v3.Bech32Address".to_string(),
+            value: "cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2".to_string(),
+            prefix: "cosmos".to_string()
+        },
+        Proof {
+            pub_key: PubKey {
+                proto_type: "/cosmos.crypto.secp256k1.PubKey".to_string(),
+                key: "AyRUhKXAY6zOCjjFkPN78Q29sBKHjUx4VSZQ4HXh66IM".to_string()
+            },
+            signature: Signature {
+                proto_type: "/desmos.profiles.v3.SingleSignatureData".to_string(),
+                mode: "SIGN_MODE_DIRECT".to_string(),
+                signature: "C7xppu4C4S3dgeC9TVqhyGN1hbMnMbnmWgXQI2WE8t0oHIHhDTqXyZgzhNNYiBO7ulno3G8EXO3Ep5KMFngyFg".to_string()
+            },
+            plain_text: "636f736d6f733138786e6d6c7a71727172367a74353236706e637a786536357a6b33663478676d6e6470786e32".to_string()
+        },
+        ChainConfig { name: "cosmos".to_string() },
+        env.contract.address.clone()
+    );
+
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let response: Response<DesmosMsg> = Response::new()
         .add_message(DesmosMsg::from(save_profile_msg))
+        .add_message(DesmosMsg::from(chain_link))
         .add_attribute("action", "save_contract_profile")
         .add_attribute("dtag", msg.contract_dtag);
 
