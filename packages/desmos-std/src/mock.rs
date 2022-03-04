@@ -45,7 +45,6 @@ mod tests {
         let expected = QuerySubspaceResponse {
             subspace: MockSubspacesQueries::get_mock_subspace(),
         };
-        println!("response {:?}", response);
         assert_eq!(response, expected);
     }
 }
