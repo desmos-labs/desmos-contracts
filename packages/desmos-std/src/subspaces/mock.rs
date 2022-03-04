@@ -1,12 +1,8 @@
-use cosmwasm_std::{
-    testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
-    {to_binary, Addr, Binary, Coin, ContractResult, CustomQuery, OwnedDeps, SystemResult, Uint64},
-};
-use std::marker::PhantomData;
+use cosmwasm_std::{to_binary, Addr, Binary, ContractResult, Uint64, SystemResult, QuerierResult};
 
 use crate::subspaces::{
     models::{GroupPermission, PermissionDetail, Subspace, UserGroup},
-    query_router::{SubspacesQueryRoute, SubspacesQueryRouter},
+    query_router::{SubspacesQueryRoute, SubspacesQuery},
     query_types::{
         QuerySubspaceResponse, QuerySubspacesResponse, QueryUserGroupMembersResponse,
         QueryUserGroupResponse, QueryUserGroupsResponse, QueryUserPermissionsResponse,
@@ -58,7 +54,7 @@ impl MockSubspacesQueries {
 pub struct MockSubspacesQuerier {}
 
 impl MockSubspacesQuerier {
-    pub fn custom_query_execute(query: SubspacesQueryRouter) -> ContractResult<Binary> {
+    pub fn query(&self, query: &SubspacesQuery) -> QuerierResult {
         let response = match query.query_data {
             SubspacesQueryRoute::Subspaces { .. } => {
                 let subspace = MockSubspacesQueries::get_mock_subspace();
@@ -97,46 +93,6 @@ impl MockSubspacesQuerier {
                 })
             }
         };
-        response.into()
-    }
-}
-
-pub fn mock_dependencies_with_custom_querier(
-    contract_balance: &[Coin],
-) -> OwnedDeps<MockStorage, MockApi, MockQuerier<SubspacesQueryRouter>, impl CustomQuery> {
-    let contract_addr = MOCK_CONTRACT_ADDR;
-    let custom_querier =
-        MockQuerier::<SubspacesQueryRouter>::new(&[(contract_addr, contract_balance)])
-            .with_custom_handler(|query| {
-                SystemResult::Ok(MockSubspacesQuerier::custom_query_execute(query.clone()))
-            });
-    OwnedDeps::<_, _, _, SubspacesQueryRouter> {
-        storage: MockStorage::default(),
-        api: MockApi::default(),
-        querier: custom_querier,
-        custom_query_type: PhantomData,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn custom_querier() {
-        use super::*;
-        use crate::subspaces::{
-            mocks::MockSubspacesQueries, querier::SubspacesQuerier,
-            query_types::QuerySubspaceResponse,
-        };
-        use std::ops::Deref;
-
-        let owned_deps = mock_dependencies_with_custom_querier(&[]);
-        let deps = owned_deps.as_ref();
-        let querier = SubspacesQuerier::new(deps.querier.deref());
-        let response = querier.query_subspace(1).unwrap();
-        let expected = QuerySubspaceResponse {
-            subspace: MockSubspacesQueries::get_mock_subspace(),
-        };
-        println!("response {:?}", response);
-        assert_eq!(response, expected);
+        SystemResult::Ok(response.into())
     }
 }

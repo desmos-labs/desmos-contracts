@@ -1,5 +1,5 @@
 #[cfg(not(target_arch = "wasm32"))]
-pub mod mocks;
+pub mod mock;
 
 pub mod models;
 pub mod msg;
