@@ -1,8 +1,9 @@
 use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult};
 
 use crate::{
+    query::{DesmosQuery, DesmosQueryRouter},
     subspaces::{
-        query_router::{SubspacesQueryRoute, SubspacesQuery},
+        query_router::SubspacesQuery,
         query_types::{
             QuerySubspaceResponse, QuerySubspacesResponse, QueryUserGroupMembersResponse,
             QueryUserGroupResponse, QueryUserGroupsResponse, QueryUserPermissionsResponse,
@@ -12,13 +13,13 @@ use crate::{
 };
 
 pub struct SubspacesQuerier<'a> {
-    querier: QuerierWrapper<'a, SubspacesQuery>,
+    querier: QuerierWrapper<'a, DesmosQuery>,
 }
 
 impl<'a> SubspacesQuerier<'a> {
     pub fn new(querier: &'a dyn Querier) -> Self {
         Self {
-            querier: QuerierWrapper::<'a, SubspacesQuery>::new(querier),
+            querier: QuerierWrapper::<'a, DesmosQuery>::new(querier),
         }
     }
 }
@@ -28,23 +29,17 @@ impl<'a> SubspacesQuerier<'a> {
         &self,
         pagination: Option<PageRequest>,
     ) -> StdResult<QuerySubspacesResponse> {
-        let request = SubspacesQuery {
-            route: DesmosRoute::Subspaces,
-            query_data: SubspacesQueryRoute::Subspaces {
-                pagination: pagination,
-            },
-        };
+        let request = DesmosQuery::from(SubspacesQuery::Subspaces {
+            pagination: pagination,
+        });
         let res: QuerySubspacesResponse = self.querier.query(&request.into())?;
         Ok(res)
     }
 
     pub fn query_subspace(&self, subspace_id: u64) -> StdResult<QuerySubspaceResponse> {
-        let request = SubspacesQuery {
-            route: DesmosRoute::Subspaces,
-            query_data: SubspacesQueryRoute::Subspace {
-                subspace_id: subspace_id,
-            },
-        };
+        let request = DesmosQuery::from(SubspacesQuery::Subspace {
+            subspace_id: subspace_id,
+        });
         let res: QuerySubspaceResponse = self.querier.query(&request.into())?;
         Ok(res)
     }
@@ -54,13 +49,10 @@ impl<'a> SubspacesQuerier<'a> {
         subspace_id: u64,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryUserGroupsResponse> {
-        let request = SubspacesQuery {
-            route: DesmosRoute::Subspaces,
-            query_data: SubspacesQueryRoute::UserGroups {
-                subspace_id,
-                pagination,
-            },
-        };
+        let request = DesmosQuery::from(SubspacesQuery::UserGroups {
+            subspace_id,
+            pagination,
+        });
         let res: QueryUserGroupsResponse = self.querier.query(&request.into())?;
         Ok(res)
     }
@@ -70,13 +62,10 @@ impl<'a> SubspacesQuerier<'a> {
         subspace_id: u64,
         group_id: u32,
     ) -> StdResult<QueryUserGroupResponse> {
-        let request = SubspacesQuery {
-            route: DesmosRoute::Subspaces,
-            query_data: SubspacesQueryRoute::UserGroup {
-                subspace_id,
-                group_id,
-            },
-        };
+        let request = DesmosQuery::from(SubspacesQuery::UserGroup {
+            subspace_id,
+            group_id,
+        });
         let res: QueryUserGroupResponse = self.querier.query(&request.into())?;
         Ok(res)
     }
@@ -87,14 +76,11 @@ impl<'a> SubspacesQuerier<'a> {
         group_id: u32,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryUserGroupMembersResponse> {
-        let request = SubspacesQuery {
-            route: DesmosRoute::Subspaces,
-            query_data: SubspacesQueryRoute::UserGroupMembers {
-                subspace_id,
-                group_id,
-                pagination,
-            },
-        };
+        let request = DesmosQuery::from(SubspacesQuery::UserGroupMembers {
+            subspace_id,
+            group_id,
+            pagination,
+        });
         let res: QueryUserGroupMembersResponse = self.querier.query(&request.into())?;
         Ok(res)
     }
@@ -104,10 +90,7 @@ impl<'a> SubspacesQuerier<'a> {
         subspace_id: u64,
         user: Addr,
     ) -> StdResult<QueryUserPermissionsResponse> {
-        let request = SubspacesQuery {
-            route: DesmosRoute::Subspaces,
-            query_data: SubspacesQueryRoute::UserPermissions { subspace_id, user },
-        };
+        let request = DesmosQuery::from(SubspacesQuery::UserPermissions { subspace_id, user });
         let res: QueryUserPermissionsResponse = self.querier.query(&request.into())?;
         Ok(res)
     }
