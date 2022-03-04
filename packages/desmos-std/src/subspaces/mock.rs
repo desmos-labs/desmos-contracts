@@ -52,10 +52,10 @@ impl MockSubspacesQueries {
     }
 }
 
-pub struct MockSubspacesQuerier {}
+pub struct MockSubspacesQuerier;
 
 impl MockSubspacesQuerier {
-    pub fn query(&self, query: &DesmosQuery) -> ContractResult<Binary> {
+    pub fn query(query: &DesmosQuery) -> ContractResult<Binary> {
         let response = match query.query_data {
             DesmosQueryRouter::Subspaces(SubspacesQueryRoute::Subspaces { .. }) => {
                 let subspace = MockSubspacesQueries::get_mock_subspace();
