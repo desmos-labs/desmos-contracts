@@ -1,7 +1,8 @@
 use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult};
 
 use crate::{
-    query::{DesmosQuery, DesmosQueryRouter},
+    query::DesmosQuery,
+    types::{PageRequest},
     subspaces::{
         query_router::SubspacesQuery,
         query_types::{
@@ -9,7 +10,6 @@ use crate::{
             QueryUserGroupResponse, QueryUserGroupsResponse, QueryUserPermissionsResponse,
         },
     },
-    types::{DesmosRoute, PageRequest},
 };
 
 pub struct SubspacesQuerier<'a> {
