@@ -22,6 +22,13 @@ pub struct Data {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+pub struct TimeoutHeight {
+    pub revision_number: u64,
+    pub revision_height: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub struct OracleRequest {
     pub id: String,
     pub oracle_script_id: String,
