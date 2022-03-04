@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum SubspacesMsgs {
+pub enum SubspacesMsg {
     CreateSubspace {
         name: String,
         description: String,
