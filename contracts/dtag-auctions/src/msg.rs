@@ -1,7 +1,7 @@
 use cosmwasm_std::{Addr, Uint128, Uint64};
+use desmos_std::types::PageRequest;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use desmos_std::types::PageRequest;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -39,5 +39,9 @@ pub enum QueryMsg {
         user: Addr,
     },
     GetInactiveAuctions {},
-    GetRelationships{user: Addr, subspace_id: u64, pagination: Option<PageRequest>}
+    GetRelationships {
+        user: Addr,
+        subspace_id: u64,
+        pagination: Option<PageRequest>,
+    },
 }

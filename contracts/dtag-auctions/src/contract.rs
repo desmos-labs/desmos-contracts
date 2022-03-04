@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use crate::{
     error::ContractError,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg, SudoMsg},
@@ -7,12 +6,16 @@ use crate::{
         CONTRACT_DTAG_STORE, INACTIVE_AUCTIONS_STORE,
     },
 };
-use cosmwasm_std::{attr, entry_point, to_binary, Addr, BankMsg, Binary, Env, MessageInfo, Order, Response, StdResult, Uint128, Uint64, DepsMut, Deps};
+use cosmwasm_std::{
+    attr, entry_point, to_binary, Addr, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Order,
+    Response, StdResult, Uint128, Uint64,
+};
 use cw2::set_contract_version;
-use std::str::FromStr;
 use desmos_std::msg::DesmosMsg;
 use desmos_std::profiles::msg_builder::ProfilesMsgBuilder;
 use desmos_std::profiles::querier::ProfilesQuerier;
+use std::ops::Deref;
+use std::str::FromStr;
 
 const CONTRACT_NAME: &str = "crates.io:desmos-dtag-auctioneer";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -43,7 +46,7 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let response: Response<DesmosMsg> = Response::new()
-        .add_message(save_profile_msg)
+        .add_message(DesmosMsg::from(save_profile_msg))
         .add_attribute("action", "save_contract_profile")
         .add_attribute("dtag", msg.contract_dtag);
 
@@ -87,7 +90,6 @@ pub fn execute_create_auction(
     starting_price: Uint128,
     max_participants: Uint64,
 ) -> Result<Response<DesmosMsg>, ContractError> {
-
     // check if an auction made by the msg sender already exist
     if INACTIVE_AUCTIONS_STORE.has(deps.storage, &creator) {
         return Err(ContractError::AlreadyExistentAuction { creator });
@@ -125,7 +127,7 @@ pub fn execute_create_auction(
             msg_builder.request_dtag_transfer(env.contract.address, creator);
 
         // append the message to the response, it will be triggered at the end of the contract execution
-        response = response.add_message(dtag_transfer_req_msg);
+        response = response.add_message(DesmosMsg::from(dtag_transfer_req_msg));
     }
 
     Ok(response)
@@ -279,7 +281,7 @@ pub fn execute_complete_auction(
 
     let response = Response::new()
         .add_message(deliver_best_bid_amount_msg)
-        .add_message(dtag_transfer_request_msg)
+        .add_message(DesmosMsg::from(dtag_transfer_request_msg))
         .add_attribute("action", "complete_auction")
         .add_attribute("user", auction.creator)
         .add_attribute("dtag", auction.dtag)
@@ -316,7 +318,7 @@ fn execute_start_auction(
             let transfer_req_msg = msg_builder.request_dtag_transfer(env.contract.address, sender);
 
             let response = Response::new()
-                .add_message(transfer_req_msg)
+                .add_message(DesmosMsg::from(transfer_req_msg))
                 .add_attribute("action", "start_auction")
                 .add_attribute("user", auction.creator.clone())
                 .add_attribute("dtag", auction.dtag);
@@ -328,11 +330,7 @@ fn execute_start_auction(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn sudo(
-    deps: DepsMut,
-    env: Env,
-    msg: SudoMsg,
-) -> Result<Response<DesmosMsg>, ContractError> {
+pub fn sudo(deps: DepsMut, env: Env, msg: SudoMsg) -> Result<Response<DesmosMsg>, ContractError> {
     match msg {
         SudoMsg::UpdateDtagAuctionStatus {
             user,
@@ -391,7 +389,11 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetActiveAuction {} => to_binary(&query_active_auction(deps)?),
         QueryMsg::GetAuctionByUser { user } => to_binary(&query_auction_by_user(deps, user)?),
         QueryMsg::GetInactiveAuctions {} => to_binary(&query_inactive_auctions(deps)?),
-        QueryMsg::GetRelationships { user, subspace_id, pagination } => to_binary(&profiles_querier.query_relationships(user, subspace_id, pagination)?)
+        QueryMsg::GetRelationships {
+            user,
+            subspace_id,
+            pagination,
+        } => to_binary(&profiles_querier.query_relationships(user, subspace_id, pagination)?),
     }
 }
 
