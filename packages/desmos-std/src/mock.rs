@@ -10,14 +10,15 @@ pub fn mock_dependencies_with_custom_querier(
 ) -> OwnedDeps<MockStorage, MockApi, MockQuerier<DesmosQuery>, impl CustomQuery> {
     let contract_addr = MOCK_CONTRACT_ADDR;
     let custom_querier: MockQuerier<DesmosQuery> =
-        MockQuerier::<DesmosQuery>::new(&[(contract_addr, contract_balance)])
-            .with_custom_handler(|query| match query.route {
+        MockQuerier::<DesmosQuery>::new(&[(contract_addr, contract_balance)]).with_custom_handler(
+            |query| match query.route {
                 DesmosRoute::Profiles => SystemResult::Ok(MockProfilesQuerier::query(query)),
                 _ => {
                     let error = SystemError::Unknown {};
                     SystemResult::Err(error)
                 }
-            });
+            },
+        );
     OwnedDeps::<_, _, _, DesmosQuery> {
         storage: MockStorage::default(),
         api: MockApi::default(),
