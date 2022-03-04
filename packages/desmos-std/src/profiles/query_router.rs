@@ -1,21 +1,11 @@
-use crate::types::{DesmosRoute, PageRequest};
-use cosmwasm_std::{Addr, CustomQuery};
+use crate::types::PageRequest;
+use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-/// DesmosQueryRouter is an override of QueryRequest::Custom to access desmos-specific modules
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct ProfilesQueryRouter {
-    pub route: DesmosRoute,
-    pub query_data: ProfilesQueryRoute,
-}
-
-impl CustomQuery for ProfilesQueryRouter {}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum ProfilesQueryRoute {
+pub enum ProfilesQuery {
     Profile {
         user: Addr,
     },
