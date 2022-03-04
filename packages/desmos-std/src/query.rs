@@ -6,24 +6,24 @@ use crate::{profiles::query_router::ProfilesQuery, types::DesmosRoute};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct DesmosQueryRouter {
+pub struct DesmosQuery {
     pub route: DesmosRoute,
-    pub query_data: DesmosQuery,
+    pub query_data: DesmosQueryRoute,
 }
 
-impl CustomQuery for DesmosQueryRouter {}
+impl CustomQuery for DesmosQuery {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum DesmosQuery {
+pub enum DesmosQueryRoute {
     Profiles(ProfilesQuery),
 }
 
-impl From<ProfilesQuery> for DesmosQueryRouter {
+impl From<ProfilesQuery> for DesmosQuery {
     fn from(query: ProfilesQuery) -> Self {
         Self {
             route: DesmosRoute::Profiles,
-            query_data: DesmosQuery::Profiles(query),
+            query_data: DesmosQueryRoute::Profiles(query),
         }
     }
 }

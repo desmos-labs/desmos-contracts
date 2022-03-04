@@ -15,7 +15,7 @@ use crate::{
         models_relationships::Relationship,
         query_router::ProfilesQuery,
     },
-    query::{DesmosQuery, DesmosQueryRouter},
+    query::{DesmosQueryRoute, DesmosQuery},
 };
 use cosmwasm_std::{to_binary, Addr, Binary, ContractResult};
 
@@ -130,58 +130,58 @@ impl MockProfilesQueries {
 pub struct MockProfilesQuerier {}
 
 impl MockProfilesQuerier {
-    pub fn query(router: &DesmosQueryRouter) -> ContractResult<Binary> {
+    pub fn query(router: &DesmosQuery) -> ContractResult<Binary> {
         let response = match router.query_data {
-            DesmosQuery::Profiles(ProfilesQuery::Profile { .. }) => {
+            DesmosQueryRoute::Profiles(ProfilesQuery::Profile { .. }) => {
                 let profile = MockProfilesQueries::get_mock_profile();
                 to_binary(&QueryProfileResponse { profile })
             }
-            DesmosQuery::Profiles(ProfilesQuery::IncomingDtagTransferRequests { .. }) => {
+            DesmosQueryRoute::Profiles(ProfilesQuery::IncomingDtagTransferRequests { .. }) => {
                 let incoming_dtag_requests = MockProfilesQueries::get_mock_dtag_transfer_request();
                 to_binary(&QueryIncomingDtagTransferRequestResponse {
                     requests: vec![incoming_dtag_requests],
                     pagination: Default::default(),
                 })
             }
-            DesmosQuery::Profiles(ProfilesQuery::Relationships { .. }) => {
+            DesmosQueryRoute::Profiles(ProfilesQuery::Relationships { .. }) => {
                 let relationship = MockProfilesQueries::get_mock_relationship();
                 to_binary(&QueryRelationshipsResponse {
                     relationships: vec![relationship],
                     pagination: Default::default(),
                 })
             }
-            DesmosQuery::Profiles(ProfilesQuery::Blocks { .. }) => {
+            DesmosQueryRoute::Profiles(ProfilesQuery::Blocks { .. }) => {
                 let block = MockProfilesQueries::get_mock_user_block();
                 to_binary(&QueryBlocksResponse {
                     blocks: vec![block],
                     pagination: Default::default(),
                 })
             }
-            DesmosQuery::Profiles(ProfilesQuery::ChainLinks { .. }) => {
+            DesmosQueryRoute::Profiles(ProfilesQuery::ChainLinks { .. }) => {
                 let chain_link = MockProfilesQueries::get_mock_chain_link();
                 to_binary(&QueryChainLinksResponse {
                     links: vec![chain_link],
                     pagination: Default::default(),
                 })
             }
-            DesmosQuery::Profiles(ProfilesQuery::UserChainLink { .. }) => {
+            DesmosQueryRoute::Profiles(ProfilesQuery::UserChainLink { .. }) => {
                 let user_chain_link = MockProfilesQueries::get_mock_chain_link();
                 to_binary(&QueryUserChainLinkResponse {
                     link: user_chain_link,
                 })
             }
-            DesmosQuery::Profiles(ProfilesQuery::AppLinks { .. }) => {
+            DesmosQueryRoute::Profiles(ProfilesQuery::AppLinks { .. }) => {
                 let app_link = MockProfilesQueries::get_mock_application_link();
                 to_binary(&QueryApplicationLinksResponse {
                     links: vec![app_link],
                     pagination: Default::default(),
                 })
             }
-            DesmosQuery::Profiles(ProfilesQuery::UserAppLinks { .. }) => {
+            DesmosQueryRoute::Profiles(ProfilesQuery::UserAppLinks { .. }) => {
                 let app_link = MockProfilesQueries::get_mock_application_link();
                 to_binary(&QueryUserApplicationLinkResponse { link: app_link })
             }
-            DesmosQuery::Profiles(ProfilesQuery::ApplicationLinkByChainID { .. }) => {
+            DesmosQueryRoute::Profiles(ProfilesQuery::ApplicationLinkByChainID { .. }) => {
                 let app_link = MockProfilesQueries::get_mock_application_link();
                 to_binary(&QueryApplicationLinkByClientIDResponse { link: app_link })
             }

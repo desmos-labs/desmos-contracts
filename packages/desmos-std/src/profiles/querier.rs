@@ -8,26 +8,26 @@ use crate::{
         },
         query_router::ProfilesQuery,
     },
-    query::{DesmosQuery, DesmosQueryRouter},
+    query::{DesmosQueryRoute, DesmosQuery},
     types::{DesmosRoute, PageRequest},
 };
 use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult};
 
 pub struct ProfilesQuerier<'a> {
-    querier: QuerierWrapper<'a, DesmosQueryRouter>,
+    querier: QuerierWrapper<'a, DesmosQuery>,
 }
 
 impl<'a> ProfilesQuerier<'a> {
     pub fn new(querier: &'a dyn Querier) -> Self {
         Self {
-            querier: QuerierWrapper::<'a, DesmosQueryRouter>::new(querier),
+            querier: QuerierWrapper::<'a, DesmosQuery>::new(querier),
         }
     }
 
     pub fn query_profile(&self, user: Addr) -> StdResult<QueryProfileResponse> {
-        let request = DesmosQueryRouter {
+        let request = DesmosQuery {
             route: DesmosRoute::Profiles,
-            query_data: DesmosQuery::Profiles(ProfilesQuery::Profile { user }),
+            query_data: DesmosQueryRoute::Profiles(ProfilesQuery::Profile { user }),
         };
 
         let res: QueryProfileResponse = self.querier.query(&request.into())?;
@@ -40,9 +40,9 @@ impl<'a> ProfilesQuerier<'a> {
         subspace_id: u64,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryRelationshipsResponse> {
-        let request = DesmosQueryRouter {
+        let request = DesmosQuery {
             route: DesmosRoute::Profiles,
-            query_data: DesmosQuery::Profiles(ProfilesQuery::Relationships {
+            query_data: DesmosQueryRoute::Profiles(ProfilesQuery::Relationships {
                 user,
                 subspace_id,
                 pagination,
@@ -58,9 +58,9 @@ impl<'a> ProfilesQuerier<'a> {
         receiver: Addr,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryIncomingDtagTransferRequestResponse> {
-        let request = DesmosQueryRouter {
+        let request = DesmosQuery {
             route: DesmosRoute::Profiles,
-            query_data: DesmosQuery::Profiles(ProfilesQuery::IncomingDtagTransferRequests {
+            query_data: DesmosQueryRoute::Profiles(ProfilesQuery::IncomingDtagTransferRequests {
                 receiver,
                 pagination,
             }),
@@ -76,9 +76,9 @@ impl<'a> ProfilesQuerier<'a> {
         subspace_id: u64,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryBlocksResponse> {
-        let request = DesmosQueryRouter {
+        let request = DesmosQuery {
             route: DesmosRoute::Profiles,
-            query_data: DesmosQuery::Profiles(ProfilesQuery::Blocks {
+            query_data: DesmosQueryRoute::Profiles(ProfilesQuery::Blocks {
                 user,
                 subspace_id,
                 pagination,
@@ -94,9 +94,9 @@ impl<'a> ProfilesQuerier<'a> {
         user: Addr,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryChainLinksResponse> {
-        let request = DesmosQueryRouter {
+        let request = DesmosQuery {
             route: DesmosRoute::Profiles,
-            query_data: DesmosQuery::Profiles(ProfilesQuery::ChainLinks { user, pagination }),
+            query_data: DesmosQueryRoute::Profiles(ProfilesQuery::ChainLinks { user, pagination }),
         };
 
         let res: QueryChainLinksResponse = self.querier.query(&request.into())?;
@@ -109,9 +109,9 @@ impl<'a> ProfilesQuerier<'a> {
         chain_name: String,
         target: String,
     ) -> StdResult<QueryUserChainLinkResponse> {
-        let request = DesmosQueryRouter {
+        let request = DesmosQuery {
             route: DesmosRoute::Profiles,
-            query_data: DesmosQuery::Profiles(ProfilesQuery::UserChainLink {
+            query_data: DesmosQueryRoute::Profiles(ProfilesQuery::UserChainLink {
                 user,
                 chain_name,
                 target,
@@ -127,9 +127,9 @@ impl<'a> ProfilesQuerier<'a> {
         user: Addr,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryApplicationLinksResponse> {
-        let request = DesmosQueryRouter {
+        let request = DesmosQuery {
             route: DesmosRoute::Profiles,
-            query_data: DesmosQuery::Profiles(ProfilesQuery::AppLinks { user, pagination }),
+            query_data: DesmosQueryRoute::Profiles(ProfilesQuery::AppLinks { user, pagination }),
         };
 
         let res: QueryApplicationLinksResponse = self.querier.query(&request.into())?;
@@ -142,9 +142,9 @@ impl<'a> ProfilesQuerier<'a> {
         application: String,
         username: String,
     ) -> StdResult<QueryUserApplicationLinkResponse> {
-        let request = DesmosQueryRouter {
+        let request = DesmosQuery {
             route: DesmosRoute::Profiles,
-            query_data: DesmosQuery::Profiles(ProfilesQuery::UserAppLinks {
+            query_data: DesmosQueryRoute::Profiles(ProfilesQuery::UserAppLinks {
                 user,
                 application,
                 username,
@@ -159,9 +159,9 @@ impl<'a> ProfilesQuerier<'a> {
         &self,
         client_id: String,
     ) -> StdResult<QueryApplicationLinkByClientIDResponse> {
-        let request = DesmosQueryRouter {
+        let request = DesmosQuery {
             route: DesmosRoute::Profiles,
-            query_data: DesmosQuery::Profiles(ProfilesQuery::ApplicationLinkByChainID {
+            query_data: DesmosQueryRoute::Profiles(ProfilesQuery::ApplicationLinkByChainID {
                 client_id,
             }),
         };
