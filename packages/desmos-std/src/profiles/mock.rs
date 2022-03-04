@@ -15,7 +15,7 @@ use crate::{
         models_relationships::Relationship,
         query_router::ProfilesQuery,
     },
-    query::{DesmosQueryRoute, DesmosQuery},
+    query::{DesmosQuery, DesmosQueryRoute},
 };
 use cosmwasm_std::{to_binary, Addr, Binary, ContractResult};
 

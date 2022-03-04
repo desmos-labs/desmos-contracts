@@ -8,7 +8,7 @@ use crate::{
         },
         query_router::ProfilesQuery,
     },
-    query::{DesmosQueryRoute, DesmosQuery},
+    query::{DesmosQuery, DesmosQueryRoute},
     types::{DesmosRoute, PageRequest},
 };
 use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult};
