@@ -13,7 +13,7 @@ use desmos_std::{
     profiles::msg_router::ProfilesMsgRouter,
 };
 use std::str::FromStr;
-use desmos_std::profiles::msg_router::ProfilesMsgBuilder;
+use desmos_std::profiles::msg_builder::ProfilesMsgBuilder;
 use desmos_std::profiles::querier::ProfilesQuerier;
 
 const CONTRACT_NAME: &str = "crates.io:desmos-dtag-auctioneer";
@@ -432,6 +432,8 @@ mod tests {
     use crate::state::AUCTION_BIDS_STORE;
     use cosmwasm_std::{from_binary, Coin, Timestamp};
     use cosmwasm_vm::testing::{mock_env, mock_info};
+    use desmos_std::mock::mock_dependencies_with_custom_querier;
+    use desmos_std::msg::DesmosMsgRouter;
     use desmos_std::profiles::mocks::mock_dependencies_with_custom_querier;
     use desmos_std::query_mocks::mock_dependencies_with_custom_querier;
 
