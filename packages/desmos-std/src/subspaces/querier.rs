@@ -96,13 +96,12 @@ impl<'a> SubspacesQuerier<'a> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::ops::Deref;
     use super::*;
     use crate::mock::mock_dependencies_with_custom_querier;
     use crate::subspaces::mock::MockSubspacesQueries;
+    use std::ops::Deref;
 
     #[test]
     fn test_query_subspaces() {
@@ -147,7 +146,7 @@ mod tests {
         let owned_deps = mock_dependencies_with_custom_querier(&[]);
         let deps = owned_deps.as_ref();
         let querier = SubspacesQuerier::new(deps.querier.deref());
-        let response = querier.query_user_group(1,1);
+        let response = querier.query_user_group(1, 1);
         let expected = QueryUserGroupResponse {
             group: MockSubspacesQueries::get_mock_user_group(),
         };
@@ -172,7 +171,10 @@ mod tests {
         let owned_deps = mock_dependencies_with_custom_querier(&[]);
         let deps = owned_deps.as_ref();
         let querier = SubspacesQuerier::new(deps.querier.deref());
-        let response = querier.query_user_permissions(1, Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"));
+        let response = querier.query_user_permissions(
+            1,
+            Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
+        );
         let expected = QueryUserPermissionsResponse {
             permissions: Default::default(),
             details: vec![MockSubspacesQueries::get_mock_permission_detail()],
