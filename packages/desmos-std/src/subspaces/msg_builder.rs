@@ -277,6 +277,22 @@ mod tests {
     }
 
     #[test]
+    fn test_delete_user_group() {
+        let builder = SubspacesMsgBuilder::default();
+        let msg = builder.delete_user_group(
+            1,
+            1,
+            Addr::unchecked("cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0"),
+        );
+        let expected = SubspacesMsg::DeleteUserGroup {
+            subspace_id: 1,
+            group_id: 1,
+            signer: Addr::unchecked("cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0"),
+        };
+        assert_eq!(msg, expected)
+    }
+
+    #[test]
     fn test_add_user_to_user_group() {
         let builder = SubspacesMsgBuilder::default();
         let msg = builder.add_user_to_user_group(
