@@ -48,7 +48,7 @@ mod tests {
             owner: Addr::unchecked("cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t"),
             creator: Addr::unchecked("cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0"),
         };
-        let expected = DesmosMsg{
+        let expected = DesmosMsg {
             route: DesmosRoute::Subspaces,
             msg_data: DesmosMsgRouter::Subspaces(msg.clone()),
         };

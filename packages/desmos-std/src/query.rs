@@ -36,9 +36,9 @@ mod tests {
     #[test]
     fn test_from_subspaces_msg() {
         let query = SubspacesQueryRoute::Subspaces {
-           pagination: Default::default(),
+            pagination: Default::default(),
         };
-        let expected = DesmosQuery{
+        let expected = DesmosQuery {
             route: DesmosRoute::Subspaces,
             query_data: DesmosQueryRouter::Subspaces(query.clone()),
         };
