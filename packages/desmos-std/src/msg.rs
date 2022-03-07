@@ -32,3 +32,27 @@ impl From<ProfilesMsg> for DesmosMsg {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        msg::{DesmosMsg, DesmosMsgRoute},
+        profiles::msg::ProfilesMsg,
+        types::DesmosRoute,
+    };
+    use cosmwasm_std::Addr;
+
+    #[test]
+    fn test_from_profile_msg() {
+        let msg = ProfilesMsg::CreateRelationship {
+            sender: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
+            receiver: Addr::unchecked("cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t"),
+            subspace: "1".to_string(),
+        };
+        let expected = DesmosMsg {
+            route: DesmosRoute::Profiles,
+            msg_data: DesmosMsgRoute::Profiles(msg.clone()),
+        };
+        assert_eq!(expected, DesmosMsg::from(msg))
+    }
+}
