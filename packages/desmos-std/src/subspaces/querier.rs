@@ -95,3 +95,88 @@ impl<'a> SubspacesQuerier<'a> {
         Ok(res)
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use std::ops::Deref;
+    use super::*;
+    use crate::mock::mock_dependencies_with_custom_querier;
+    use crate::subspaces::mock::MockSubspacesQueries;
+
+    #[test]
+    fn test_query_subspaces() {
+        let owned_deps = mock_dependencies_with_custom_querier(&[]);
+        let deps = owned_deps.as_ref();
+        let querier = SubspacesQuerier::new(deps.querier.deref());
+        let response = querier.query_subspaces(Default::default());
+        let expected = QuerySubspacesResponse {
+            subspaces: vec![MockSubspacesQueries::get_mock_subspace()],
+            pagination: Default::default(),
+        };
+        assert_eq!(response.ok(), Some(expected));
+    }
+
+    #[test]
+    fn test_query_subspace() {
+        let owned_deps = mock_dependencies_with_custom_querier(&[]);
+        let deps = owned_deps.as_ref();
+        let querier = SubspacesQuerier::new(deps.querier.deref());
+        let response = querier.query_subspace(1);
+        let expected = QuerySubspaceResponse {
+            subspace: MockSubspacesQueries::get_mock_subspace(),
+        };
+        assert_eq!(response.ok(), Some(expected));
+    }
+
+    #[test]
+    fn test_query_user_groups() {
+        let owned_deps = mock_dependencies_with_custom_querier(&[]);
+        let deps = owned_deps.as_ref();
+        let querier = SubspacesQuerier::new(deps.querier.deref());
+        let response = querier.query_user_groups(1, Default::default());
+        let expected = QueryUserGroupsResponse {
+            groups: vec![MockSubspacesQueries::get_mock_user_group()],
+            pagination: Default::default(),
+        };
+        assert_eq!(response.ok(), Some(expected));
+    }
+
+    #[test]
+    fn test_query_user_group() {
+        let owned_deps = mock_dependencies_with_custom_querier(&[]);
+        let deps = owned_deps.as_ref();
+        let querier = SubspacesQuerier::new(deps.querier.deref());
+        let response = querier.query_user_group(1,1);
+        let expected = QueryUserGroupResponse {
+            group: MockSubspacesQueries::get_mock_user_group(),
+        };
+        assert_eq!(response.ok(), Some(expected));
+    }
+
+    #[test]
+    fn test_query_user_group_members() {
+        let owned_deps = mock_dependencies_with_custom_querier(&[]);
+        let deps = owned_deps.as_ref();
+        let querier = SubspacesQuerier::new(deps.querier.deref());
+        let response = querier.query_user_group_members(1, 1, Default::default());
+        let expected = QueryUserGroupMembersResponse {
+            members: vec![MockSubspacesQueries::get_mock_group_member()],
+            pagination: Default::default(),
+        };
+        assert_eq!(response.ok(), Some(expected));
+    }
+
+    #[test]
+    fn test_query_user_permissions() {
+        let owned_deps = mock_dependencies_with_custom_querier(&[]);
+        let deps = owned_deps.as_ref();
+        let querier = SubspacesQuerier::new(deps.querier.deref());
+        let response = querier.query_user_permissions(1, Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"));
+        let expected = QueryUserPermissionsResponse {
+            permissions: Default::default(),
+            details: vec![MockSubspacesQueries::get_mock_permission_detail()],
+        };
+        assert_eq!(response.ok(), Some(expected));
+    }
+}
