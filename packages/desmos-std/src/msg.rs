@@ -33,3 +33,25 @@ impl From<SubspacesMsg> for DesmosMsg {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::Addr;
+
+    #[test]
+    fn test_from_subspaces_msg() {
+        let msg = SubspacesMsg::CreateSubspace {
+            name: "test".to_string(),
+            description: "test".to_string(),
+            treasury: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
+            owner: Addr::unchecked("cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t"),
+            creator: Addr::unchecked("cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0"),
+        };
+        let expected = DesmosMsg{
+            route: DesmosRoute::Subspaces,
+            msg_data: DesmosMsgRouter::Subspaces(msg.clone()),
+        };
+        assert_eq!(expected, DesmosMsg::from(msg));
+    }
+}
