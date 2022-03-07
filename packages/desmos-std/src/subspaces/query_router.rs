@@ -1,8 +1,8 @@
-use cosmwasm_std::{Addr};
+use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::types::{PageRequest};
+use crate::types::PageRequest;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]

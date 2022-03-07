@@ -1,7 +1,5 @@
-use cosmwasm_std::{
-    testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
-    {Coin, CustomQuery, OwnedDeps, SystemError, SystemResult},
-};
+use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
+use cosmwasm_std::{Coin, CustomQuery, OwnedDeps, SystemError, SystemResult};
 use std::marker::PhantomData;
 
 use crate::subspaces::mock::MockSubspacesQuerier;
