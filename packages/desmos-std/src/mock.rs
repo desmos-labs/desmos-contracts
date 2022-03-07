@@ -27,15 +27,15 @@ pub fn mock_dependencies_with_custom_querier(
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Deref;
+    use super::*;
+    use crate::subspaces::{
+        mock::MockSubspacesQueries, querier::SubspacesQuerier,
+        query_types::QuerySubspaceResponse,
+    };
+
     #[test]
     fn test_subspaces_querier() {
-        use super::*;
-        use crate::subspaces::{
-            mock::MockSubspacesQueries, querier::SubspacesQuerier,
-            query_types::QuerySubspaceResponse,
-        };
-        use std::ops::Deref;
-
         let owned_deps = mock_dependencies_with_custom_querier(&[]);
         let deps = owned_deps.as_ref();
         let querier = SubspacesQuerier::new(deps.querier.deref());
