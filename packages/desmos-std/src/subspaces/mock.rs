@@ -3,7 +3,7 @@ use cosmwasm_std::{to_binary, Addr, Binary, ContractResult, Uint64};
 use crate::query::{DesmosQuery, DesmosQueryRouter};
 use crate::subspaces::{
     models::{GroupPermission, PermissionDetail, Subspace, UserGroup},
-    query_router::{SubspacesQueryRoute},
+    query_router::SubspacesQueryRoute,
     query_types::{
         QuerySubspaceResponse, QuerySubspacesResponse, QueryUserGroupMembersResponse,
         QueryUserGroupResponse, QueryUserGroupsResponse, QueryUserPermissionsResponse,
@@ -94,7 +94,7 @@ impl MockSubspacesQuerier {
                 })
             }
         };
-       response.into()
+        response.into()
     }
 }
 
@@ -104,7 +104,9 @@ mod tests {
 
     #[test]
     fn test_query_subspaces() {
-        let route = SubspacesQueryRoute::Subspaces{ pagination: Default::default() };
+        let route = SubspacesQueryRoute::Subspaces {
+            pagination: Default::default(),
+        };
         let response = MockSubspacesQuerier::query(&DesmosQuery::from(route));
         let expected = to_binary(&QuerySubspacesResponse {
             subspaces: vec![MockSubspacesQueries::get_mock_subspace()],
@@ -115,7 +117,7 @@ mod tests {
 
     #[test]
     fn test_query_subspace() {
-        let route = SubspacesQueryRoute::Subspace{ subspace_id: 1};
+        let route = SubspacesQueryRoute::Subspace { subspace_id: 1 };
         let response = MockSubspacesQuerier::query(&DesmosQuery::from(route));
         let expected = to_binary(&QuerySubspaceResponse {
             subspace: MockSubspacesQueries::get_mock_subspace(),
@@ -125,7 +127,10 @@ mod tests {
 
     #[test]
     fn test_query_user_groups() {
-        let route = SubspacesQueryRoute::UserGroups{ subspace_id: 1, pagination: Default::default() };
+        let route = SubspacesQueryRoute::UserGroups {
+            subspace_id: 1,
+            pagination: Default::default(),
+        };
         let response = MockSubspacesQuerier::query(&DesmosQuery::from(route));
         let expected = to_binary(&QueryUserGroupsResponse {
             groups: vec![MockSubspacesQueries::get_mock_user_group()],
@@ -136,7 +141,10 @@ mod tests {
 
     #[test]
     fn test_query_user_group() {
-        let route = SubspacesQueryRoute::UserGroup{ subspace_id: 1, group_id: 1 };
+        let route = SubspacesQueryRoute::UserGroup {
+            subspace_id: 1,
+            group_id: 1,
+        };
         let response = MockSubspacesQuerier::query(&DesmosQuery::from(route));
         let expected = to_binary(&QueryUserGroupResponse {
             group: MockSubspacesQueries::get_mock_user_group(),
@@ -146,7 +154,11 @@ mod tests {
 
     #[test]
     fn test_query_user_group_members() {
-        let route = SubspacesQueryRoute::UserGroupMembers{ subspace_id: 1, group_id: 1, pagination: Default::default() };
+        let route = SubspacesQueryRoute::UserGroupMembers {
+            subspace_id: 1,
+            group_id: 1,
+            pagination: Default::default(),
+        };
         let response = MockSubspacesQuerier::query(&DesmosQuery::from(route));
         let expected = to_binary(&QueryUserGroupMembersResponse {
             members: vec![MockSubspacesQueries::get_mock_group_member()],
@@ -157,7 +169,10 @@ mod tests {
 
     #[test]
     fn test_query_user_permissions() {
-        let route = SubspacesQueryRoute::UserPermissions{ subspace_id: 1, user: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69") };
+        let route = SubspacesQueryRoute::UserPermissions {
+            subspace_id: 1,
+            user: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
+        };
         let response = MockSubspacesQuerier::query(&DesmosQuery::from(route));
         let expected = to_binary(&QueryUserPermissionsResponse {
             permissions: Default::default(),

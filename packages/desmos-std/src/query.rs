@@ -1,9 +1,9 @@
-use cosmwasm_std::{CustomQuery};
+use cosmwasm_std::CustomQuery;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::types::DesmosRoute;
 use crate::subspaces::query_router::SubspacesQueryRoute;
+use crate::types::DesmosRoute;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]

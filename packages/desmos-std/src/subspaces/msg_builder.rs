@@ -288,7 +288,7 @@ mod tests {
         let expected = SubspacesMsg::AddUserToUserGroup {
             subspace_id: 1,
             group_id: 1,
-            user:  Addr::unchecked("cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0"),
+            user: Addr::unchecked("cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0"),
             signer: Addr::unchecked("cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t"),
         };
         assert_eq!(msg, expected)
@@ -306,7 +306,7 @@ mod tests {
         let expected = SubspacesMsg::RemoveUserFromUserGroup {
             subspace_id: 1,
             group_id: 1,
-            user:  Addr::unchecked("cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0"),
+            user: Addr::unchecked("cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0"),
             signer: Addr::unchecked("cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t"),
         };
         assert_eq!(msg, expected)
@@ -323,7 +323,7 @@ mod tests {
         );
         let expected = SubspacesMsg::SetUserPermissions {
             subspace_id: 1,
-            user:  Addr::unchecked("cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0"),
+            user: Addr::unchecked("cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0"),
             permissions: 1,
             signer: Addr::unchecked("cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t"),
         };
