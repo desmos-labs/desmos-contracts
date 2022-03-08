@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult};
+use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult, Uint64};
 
 use crate::{
     query::DesmosQuery,
@@ -36,7 +36,7 @@ impl<'a> SubspacesQuerier<'a> {
         Ok(res)
     }
 
-    pub fn query_subspace(&self, subspace_id: u64) -> StdResult<QuerySubspaceResponse> {
+    pub fn query_subspace(&self, subspace_id: Uint64) -> StdResult<QuerySubspaceResponse> {
         let request = DesmosQuery::from(SubspacesQueryRoute::Subspace {
             subspace_id: subspace_id,
         });
@@ -46,7 +46,7 @@ impl<'a> SubspacesQuerier<'a> {
 
     pub fn query_user_groups(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryUserGroupsResponse> {
         let request = DesmosQuery::from(SubspacesQueryRoute::UserGroups {
@@ -59,7 +59,7 @@ impl<'a> SubspacesQuerier<'a> {
 
     pub fn query_user_group(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         group_id: u32,
     ) -> StdResult<QueryUserGroupResponse> {
         let request = DesmosQuery::from(SubspacesQueryRoute::UserGroup {
@@ -72,7 +72,7 @@ impl<'a> SubspacesQuerier<'a> {
 
     pub fn query_user_group_members(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         group_id: u32,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryUserGroupMembersResponse> {
@@ -87,7 +87,7 @@ impl<'a> SubspacesQuerier<'a> {
 
     pub fn query_user_permissions(
         &self,
-        subspace_id: u64,
+        subspace_id: Uint64,
         user: Addr,
     ) -> StdResult<QueryUserPermissionsResponse> {
         let request = DesmosQuery::from(SubspacesQueryRoute::UserPermissions { subspace_id, user });
@@ -98,10 +98,11 @@ impl<'a> SubspacesQuerier<'a> {
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Deref;
+
     use super::*;
     use crate::mock::mock_dependencies_with_custom_querier;
     use crate::subspaces::mock::MockSubspacesQueries;
-    use std::ops::Deref;
 
     #[test]
     fn test_query_subspaces() {
@@ -121,7 +122,7 @@ mod tests {
         let owned_deps = mock_dependencies_with_custom_querier(&[]);
         let deps = owned_deps.as_ref();
         let querier = SubspacesQuerier::new(deps.querier.deref());
-        let response = querier.query_subspace(1);
+        let response = querier.query_subspace(Uint64::new(1));
         let expected = QuerySubspaceResponse {
             subspace: MockSubspacesQueries::get_mock_subspace(),
         };
@@ -133,7 +134,7 @@ mod tests {
         let owned_deps = mock_dependencies_with_custom_querier(&[]);
         let deps = owned_deps.as_ref();
         let querier = SubspacesQuerier::new(deps.querier.deref());
-        let response = querier.query_user_groups(1, Default::default());
+        let response = querier.query_user_groups(Uint64::new(1), Default::default());
         let expected = QueryUserGroupsResponse {
             groups: vec![MockSubspacesQueries::get_mock_user_group()],
             pagination: Default::default(),
@@ -146,7 +147,7 @@ mod tests {
         let owned_deps = mock_dependencies_with_custom_querier(&[]);
         let deps = owned_deps.as_ref();
         let querier = SubspacesQuerier::new(deps.querier.deref());
-        let response = querier.query_user_group(1, 1);
+        let response = querier.query_user_group(Uint64::new(1), 1);
         let expected = QueryUserGroupResponse {
             group: MockSubspacesQueries::get_mock_user_group(),
         };
@@ -158,7 +159,7 @@ mod tests {
         let owned_deps = mock_dependencies_with_custom_querier(&[]);
         let deps = owned_deps.as_ref();
         let querier = SubspacesQuerier::new(deps.querier.deref());
-        let response = querier.query_user_group_members(1, 1, Default::default());
+        let response = querier.query_user_group_members(Uint64::new(1), 1, Default::default());
         let expected = QueryUserGroupMembersResponse {
             members: vec![MockSubspacesQueries::get_mock_group_member()],
             pagination: Default::default(),
@@ -172,7 +173,7 @@ mod tests {
         let deps = owned_deps.as_ref();
         let querier = SubspacesQuerier::new(deps.querier.deref());
         let response = querier.query_user_permissions(
-            1,
+            Uint64::new(1),
             Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
         );
         let expected = QueryUserPermissionsResponse {

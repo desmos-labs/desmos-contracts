@@ -12,9 +12,9 @@ pub enum DesmosRoute {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PageRequest {
-    key: Vec<u8>,
-    offset: u64,
-    limit: u64,
+    key: Option<Binary>,
+    offset: Uint64,
+    limit: Uint64,
     count_total: bool,
     reverse: bool,
 }
