@@ -9,7 +9,7 @@ pub enum DesmosRoute {
     Profiles,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PageRequest {
     key: Option<Binary>,
