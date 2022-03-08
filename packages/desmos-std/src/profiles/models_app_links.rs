@@ -1,4 +1,4 @@
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -23,15 +23,15 @@ pub struct Data {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct TimeoutHeight {
-    pub revision_number: u64,
-    pub revision_height: u64,
+    pub revision_number: Uint64,
+    pub revision_height: Uint64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct OracleRequest {
-    pub id: String,
-    pub oracle_script_id: String,
+    pub id: Uint64,
+    pub oracle_script_id: Uint64,
     pub call_data: CallData,
     pub client_id: String,
 }

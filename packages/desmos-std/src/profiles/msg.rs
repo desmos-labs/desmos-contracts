@@ -1,6 +1,6 @@
 use crate::profiles::models_app_links::{Data, TimeoutHeight};
 use crate::profiles::models_chain_links::{ChainConfig, ChainLinkAddr, Proof};
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -48,7 +48,7 @@ pub enum ProfilesMsg {
         source_port: String,
         source_channel: String,
         timeout_height: TimeoutHeight,
-        timeout_timestamp: u64,
+        timeout_timestamp: Uint64,
     },
     CreateRelationship {
         sender: Addr,

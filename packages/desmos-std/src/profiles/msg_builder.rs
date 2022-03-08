@@ -1,7 +1,7 @@
 use crate::profiles::models_app_links::{Data, TimeoutHeight};
 use crate::profiles::models_chain_links::{ChainConfig, ChainLinkAddr, Proof};
 use crate::profiles::msg::ProfilesMsg;
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint64};
 
 pub struct ProfilesMsgBuilder {}
 
@@ -89,7 +89,7 @@ impl ProfilesMsgBuilder {
         source_port: String,
         source_channel: String,
         timeout_height: TimeoutHeight,
-        timeout_timestamp: u64,
+        timeout_timestamp: Uint64,
     ) -> ProfilesMsg {
         ProfilesMsg::LinkApplication {
             sender,
@@ -161,7 +161,7 @@ mod tests {
         msg::ProfilesMsg,
         msg_builder::ProfilesMsgBuilder,
     };
-    use cosmwasm_std::Addr;
+    use cosmwasm_std::{Addr, Uint64};
 
     #[test]
     fn test_save_profile() {
@@ -301,8 +301,8 @@ mod tests {
             username: "goldrake".to_string(),
         };
         let oracle_req = OracleRequest {
-            id: "537807".to_string(),
-            oracle_script_id: "32".to_string(),
+            id: Uint64::new(537807),
+            oracle_script_id: Uint64::new(32),
             call_data: CallData {
                 application: "twitter".to_string(),
                 call_data: "7b22757365726e616d65223a224c756361675f5f2335323337227d".to_string(),
@@ -311,8 +311,8 @@ mod tests {
         };
 
         let timeout_height = TimeoutHeight {
-            revision_number: 0,
-            revision_height: 0,
+            revision_number: Uint64::new(0),
+            revision_height: Uint64::new(0),
         };
 
         let msg = builder.link_application(
@@ -322,7 +322,7 @@ mod tests {
             "123".to_string(),
             "123".to_string(),
             timeout_height.clone(),
-            1,
+            Uint64::new(1),
         );
         let expected = ProfilesMsg::LinkApplication {
             sender: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
@@ -331,7 +331,7 @@ mod tests {
             source_port: "123".to_string(),
             source_channel: "123".to_string(),
             timeout_height: timeout_height,
-            timeout_timestamp: 1,
+            timeout_timestamp: Uint64::new(1),
         };
         assert_eq!(expected, msg)
     }

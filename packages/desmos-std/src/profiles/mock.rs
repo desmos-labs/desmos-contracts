@@ -17,7 +17,7 @@ use crate::{
     },
     query::{DesmosQuery, DesmosQueryRoute},
 };
-use cosmwasm_std::{to_binary, Addr, Binary, ContractResult};
+use cosmwasm_std::{to_binary, Addr, Binary, ContractResult, Uint64};
 
 /**
 This file contains some useful mocks of the Desmos x/profiles modules types ready made to be used
@@ -62,7 +62,7 @@ impl MockProfilesQueries {
         Relationship {
             creator: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
             recipient: Addr::unchecked("desmos1rfv0f7mx7w9d3jv3h803u38vqym9ygg344asm3"),
-            subspace_id: "1".to_string(),
+            subspace_id: Uint64::new(1),
         }
     }
 
@@ -71,7 +71,7 @@ impl MockProfilesQueries {
             blocker: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
             blocked: Addr::unchecked("desmos1rfv0f7mx7w9d3jv3h803u38vqym9ygg344asm3"),
             reason: "test".to_string(),
-            subspace_id: "1".to_string(),
+            subspace_id: Uint64::new(1),
         }
     }
 
@@ -109,8 +109,8 @@ impl MockProfilesQueries {
             },
             state: "APPLICATION_LINK_STATE_VERIFICATION_SUCCESS".to_string(),
             oracle_request: OracleRequest {
-                id: "537807".to_string(),
-                oracle_script_id: "32".to_string(),
+                id: Uint64::new(537807),
+                oracle_script_id: Uint64::new(32),
                 call_data: CallData {
                     application: "twitter".to_string(),
                     call_data: "7b22757365726e616d65223a224c756361675f5f2335323337227d".to_string(),
@@ -207,7 +207,7 @@ mod tests {
         },
         query::DesmosQuery,
     };
-    use cosmwasm_std::{to_binary, Addr};
+    use cosmwasm_std::{to_binary, Addr, Uint64};
 
     #[test]
     fn test_query_profile() {
@@ -239,7 +239,7 @@ mod tests {
     fn test_query_relationships() {
         let query = ProfilesQuery::Relationships {
             user: Addr::unchecked(""),
-            subspace_id: 0,
+            subspace_id: Uint64::new(1),
             pagination: Default::default(),
         };
         let response = MockProfilesQuerier::query(&DesmosQuery::from(query));
@@ -254,7 +254,7 @@ mod tests {
     fn test_query_blocks() {
         let query = ProfilesQuery::Blocks {
             user: Addr::unchecked(""),
-            subspace_id: 0,
+            subspace_id: Uint64::new(1),
             pagination: Default::default(),
         };
         let response = MockProfilesQuerier::query(&DesmosQuery::from(query));

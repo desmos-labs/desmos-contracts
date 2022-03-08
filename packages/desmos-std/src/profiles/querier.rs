@@ -11,7 +11,7 @@ use crate::{
     query::{DesmosQuery, DesmosQueryRoute},
     types::{DesmosRoute, PageRequest},
 };
-use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult};
+use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult, Uint64};
 
 pub struct ProfilesQuerier<'a> {
     querier: QuerierWrapper<'a, DesmosQuery>,
@@ -37,7 +37,7 @@ impl<'a> ProfilesQuerier<'a> {
     pub fn query_relationships(
         &self,
         user: Addr,
-        subspace_id: u64,
+        subspace_id: Uint64,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryRelationshipsResponse> {
         let request = DesmosQuery {
@@ -73,7 +73,7 @@ impl<'a> ProfilesQuerier<'a> {
     pub fn query_blocks(
         &self,
         user: Addr,
-        subspace_id: u64,
+        subspace_id: Uint64,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryBlocksResponse> {
         let request = DesmosQuery {
@@ -187,7 +187,7 @@ mod tests {
             querier::ProfilesQuerier,
         },
     };
-    use cosmwasm_std::Addr;
+    use cosmwasm_std::{Addr, Uint64};
     use std::ops::Deref;
 
     #[test]
@@ -228,7 +228,7 @@ mod tests {
         let profiles_querier = ProfilesQuerier::new(deps.querier.deref());
 
         let response = profiles_querier
-            .query_relationships(Addr::unchecked(""), 0, None)
+            .query_relationships(Addr::unchecked(""), Uint64::new(0), None)
             .unwrap();
         let expected = QueryRelationshipsResponse {
             relationships: vec![MockProfilesQueries::get_mock_relationship()],
@@ -245,7 +245,7 @@ mod tests {
         let profiles_querier = ProfilesQuerier::new(deps.querier.deref());
 
         let response = profiles_querier
-            .query_blocks(Addr::unchecked(""), 0, None)
+            .query_blocks(Addr::unchecked(""), Uint64::new(0), None)
             .unwrap();
         let expected = QueryBlocksResponse {
             blocks: vec![MockProfilesQueries::get_mock_user_block()],

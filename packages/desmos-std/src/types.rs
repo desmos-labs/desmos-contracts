@@ -13,8 +13,8 @@ pub enum DesmosRoute {
 #[serde(rename_all = "snake_case")]
 pub struct PageRequest {
     key: Vec<u8>,
-    offset: u64,
-    limit: u64,
+    offset: Uint64,
+    limit: Uint64,
     count_total: bool,
     reverse: bool,
 }

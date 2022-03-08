@@ -1,4 +1,4 @@
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -8,5 +8,5 @@ pub struct UserBlock {
     pub blocker: Addr,
     pub blocked: Addr,
     pub reason: String,
-    pub subspace_id: String,
+    pub subspace_id: Uint64,
 }

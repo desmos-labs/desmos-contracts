@@ -1,4 +1,4 @@
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -7,5 +7,5 @@ use serde::{Deserialize, Serialize};
 pub struct Relationship {
     pub creator: Addr,
     pub recipient: Addr,
-    pub subspace_id: String,
+    pub subspace_id: Uint64,
 }
