@@ -117,7 +117,9 @@ mod tests {
 
     #[test]
     fn test_query_subspace() {
-        let route = SubspacesQueryRoute::Subspace { subspace_id: Uint64::new(1) };
+        let route = SubspacesQueryRoute::Subspace {
+            subspace_id: Uint64::new(1),
+        };
         let response = MockSubspacesQuerier::query(&DesmosQuery::from(route));
         let expected = to_binary(&QuerySubspaceResponse {
             subspace: MockSubspacesQueries::get_mock_subspace(),

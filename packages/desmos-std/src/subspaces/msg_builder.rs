@@ -106,7 +106,12 @@ impl SubspacesMsgBuilder {
         }
     }
 
-    pub fn delete_user_group(&self, subspace_id: Uint64, group_id: u32, signer: Addr) -> SubspacesMsg {
+    pub fn delete_user_group(
+        &self,
+        subspace_id: Uint64,
+        group_id: u32,
+        signer: Addr,
+    ) -> SubspacesMsg {
         SubspacesMsg::DeleteUserGroup {
             subspace_id,
             group_id,
