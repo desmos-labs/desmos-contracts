@@ -97,3 +97,87 @@ impl MockSubspacesQuerier {
         response.into()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_query_subspaces() {
+        let route = SubspacesQueryRoute::Subspaces {
+            pagination: Default::default(),
+        };
+        let response = MockSubspacesQuerier::query(&DesmosQuery::from(route));
+        let expected = to_binary(&QuerySubspacesResponse {
+            subspaces: vec![MockSubspacesQueries::get_mock_subspace()],
+            pagination: Default::default(),
+        });
+        assert_eq!(response.into_result().ok(), expected.ok());
+    }
+
+    #[test]
+    fn test_query_subspace() {
+        let route = SubspacesQueryRoute::Subspace { subspace_id: Uint64::new(1) };
+        let response = MockSubspacesQuerier::query(&DesmosQuery::from(route));
+        let expected = to_binary(&QuerySubspaceResponse {
+            subspace: MockSubspacesQueries::get_mock_subspace(),
+        });
+        assert_eq!(response.into_result().ok(), expected.ok());
+    }
+
+    #[test]
+    fn test_query_user_groups() {
+        let route = SubspacesQueryRoute::UserGroups {
+            subspace_id: Uint64::new(1),
+            pagination: Default::default(),
+        };
+        let response = MockSubspacesQuerier::query(&DesmosQuery::from(route));
+        let expected = to_binary(&QueryUserGroupsResponse {
+            groups: vec![MockSubspacesQueries::get_mock_user_group()],
+            pagination: Default::default(),
+        });
+        assert_eq!(response.into_result().ok(), expected.ok());
+    }
+
+    #[test]
+    fn test_query_user_group() {
+        let route = SubspacesQueryRoute::UserGroup {
+            subspace_id: Uint64::new(1),
+            group_id: 1,
+        };
+        let response = MockSubspacesQuerier::query(&DesmosQuery::from(route));
+        let expected = to_binary(&QueryUserGroupResponse {
+            group: MockSubspacesQueries::get_mock_user_group(),
+        });
+        assert_eq!(response.into_result().ok(), expected.ok());
+    }
+
+    #[test]
+    fn test_query_user_group_members() {
+        let route = SubspacesQueryRoute::UserGroupMembers {
+            subspace_id: Uint64::new(1),
+            group_id: 1,
+            pagination: Default::default(),
+        };
+        let response = MockSubspacesQuerier::query(&DesmosQuery::from(route));
+        let expected = to_binary(&QueryUserGroupMembersResponse {
+            members: vec![MockSubspacesQueries::get_mock_group_member()],
+            pagination: Default::default(),
+        });
+        assert_eq!(response.into_result().ok(), expected.ok());
+    }
+
+    #[test]
+    fn test_query_user_permissions() {
+        let route = SubspacesQueryRoute::UserPermissions {
+            subspace_id: Uint64::new(1),
+            user: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
+        };
+        let response = MockSubspacesQuerier::query(&DesmosQuery::from(route));
+        let expected = to_binary(&QueryUserPermissionsResponse {
+            permissions: Default::default(),
+            details: vec![MockSubspacesQueries::get_mock_permission_detail()],
+        });
+        assert_eq!(response.into_result().ok(), expected.ok());
+    }
+}
