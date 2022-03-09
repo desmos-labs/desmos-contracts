@@ -6,7 +6,7 @@ use crate::{
             QueryProfileResponse, QueryRelationshipsResponse, QueryUserApplicationLinkResponse,
             QueryUserChainLinkResponse,
         },
-        query_router::ProfilesQuery,
+        query::ProfilesQuery,
     },
     query::{DesmosQuery, DesmosQueryRoute},
     types::{DesmosRoute, PageRequest},

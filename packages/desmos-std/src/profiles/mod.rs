@@ -1,4 +1,3 @@
-pub mod mock;
 pub mod models_app_links;
 pub mod models_blocks;
 pub mod models_chain_links;
@@ -10,4 +9,7 @@ pub mod models_relationships;
 pub mod msg;
 pub mod msg_builder;
 pub mod querier;
-pub mod query_router;
+pub mod query;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod mock;

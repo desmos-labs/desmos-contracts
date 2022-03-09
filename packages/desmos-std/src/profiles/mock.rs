@@ -13,7 +13,7 @@ use crate::{
             QueryUserChainLinkResponse,
         },
         models_relationships::Relationship,
-        query_router::ProfilesQuery,
+        query::ProfilesQuery,
     },
     query::{DesmosQuery, DesmosQueryRoute},
 };
@@ -203,7 +203,7 @@ mod tests {
                 QueryRelationshipsResponse, QueryUserApplicationLinkResponse,
                 QueryUserChainLinkResponse,
             },
-            query_router::ProfilesQuery,
+            query::ProfilesQuery,
         },
         query::DesmosQuery,
     };

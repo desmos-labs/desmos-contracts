@@ -2,7 +2,7 @@ use cosmwasm_std::CustomQuery;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{profiles::query_router::ProfilesQuery, types::DesmosRoute};
+use crate::{profiles::query::ProfilesQuery, types::DesmosRoute};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -31,7 +31,7 @@ impl From<ProfilesQuery> for DesmosQuery {
 #[cfg(test)]
 mod tests {
     use crate::{
-        profiles::query_router::ProfilesQuery,
+        profiles::query::ProfilesQuery,
         query::{DesmosQuery, DesmosQueryRoute},
         types::DesmosRoute,
     };
