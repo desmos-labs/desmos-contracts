@@ -2,7 +2,7 @@ use cosmwasm_std::CustomQuery;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{subspaces::query_route::SubspacesQueryRoute, types::DesmosRoute};
+use crate::{subspaces::query::SubspacesQuery, types::DesmosRoute};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -16,11 +16,11 @@ impl CustomQuery for DesmosQuery {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum DesmosQueryRoute {
-    Subspaces(SubspacesQueryRoute),
+    Subspaces(SubspacesQuery),
 }
 
-impl From<SubspacesQueryRoute> for DesmosQuery {
-    fn from(query: SubspacesQueryRoute) -> Self {
+impl From<SubspacesQuery> for DesmosQuery {
+    fn from(query: SubspacesQuery) -> Self {
         Self {
             route: DesmosRoute::Subspaces,
             query_data: DesmosQueryRoute::Subspaces(query),
@@ -34,7 +34,7 @@ mod tests {
 
     #[test]
     fn test_from_subspaces_msg() {
-        let query = SubspacesQueryRoute::Subspaces {
+        let query = SubspacesQuery::Subspaces {
             pagination: Default::default(),
         };
         let expected = DesmosQuery {

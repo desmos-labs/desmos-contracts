@@ -6,7 +6,7 @@ use crate::types::PageRequest;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum SubspacesQueryRoute {
+pub enum SubspacesQuery {
     Subspaces {
         pagination: Option<PageRequest>,
     },
