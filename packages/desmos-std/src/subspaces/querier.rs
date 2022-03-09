@@ -3,7 +3,7 @@ use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult, Uint64};
 use crate::{
     query::DesmosQuery,
     subspaces::{
-        query_router::SubspacesQueryRoute,
+        query_route::SubspacesQueryRoute,
         query_types::{
             QuerySubspaceResponse, QuerySubspacesResponse, QueryUserGroupMembersResponse,
             QueryUserGroupResponse, QueryUserGroupsResponse, QueryUserPermissionsResponse,
