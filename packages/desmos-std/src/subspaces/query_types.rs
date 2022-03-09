@@ -2,8 +2,10 @@ use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::subspaces::models::{PermissionDetail, Subspace, UserGroup};
-use crate::types::PageResponse;
+use crate::{
+    subspaces::models::{PermissionDetail, Subspace, UserGroup},
+    types::PageResponse,
+};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
