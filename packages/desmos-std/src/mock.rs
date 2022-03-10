@@ -1,4 +1,4 @@
-use crate::{profiles::mock::MockProfilesQuerier, query::DesmosQuery, types::DesmosRoute};
+use crate::{profiles::mock::MockProfilesQuerier, query::DesmosQuery, subspaces::mock::MockSubspacesQuerier,  types::DesmosRoute};
 use cosmwasm_std::{
     testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
     Coin, CustomQuery, OwnedDeps, SystemError, SystemResult,
@@ -15,6 +15,7 @@ pub fn mock_dependencies_with_custom_querier(
         MockQuerier::<DesmosQuery>::new(&[(contract_addr, contract_balance)]).with_custom_handler(
             |query| match query.route {
                 DesmosRoute::Profiles => SystemResult::Ok(MockProfilesQuerier::query(query)),
+                DesmosRoute::Subspaces => SystemResult::Ok(MockSubspacesQuerier::query(query)),
                 _ => {
                     let error = SystemError::Unknown {};
                     SystemResult::Err(error)
@@ -31,11 +32,15 @@ pub fn mock_dependencies_with_custom_querier(
 
 #[cfg(test)]
 mod tests {
+    use cosmwasm_std::Uint64;
     use crate::{
         mock::mock_dependencies_with_custom_querier,
         profiles::{
             mock::MockProfilesQueries, models_query::QueryProfileResponse, querier::ProfilesQuerier,
         },
+        subspaces::{
+            mock::MockSubspacesQueries, querier::SubspacesQuerier, query_types::QuerySubspaceResponse,
+        }
     };
     use cosmwasm_std::Addr;
     use std::ops::Deref;
@@ -50,5 +55,17 @@ mod tests {
             profile: MockProfilesQueries::get_mock_profile(),
         };
         assert_eq!(expected, response)
+    }
+
+    #[test]
+    fn test_subspaces_querier() {
+        let owned_deps = mock_dependencies_with_custom_querier(&[]);
+        let deps = owned_deps.as_ref();
+        let querier = SubspacesQuerier::new(deps.querier.deref());
+        let response = querier.query_subspace(Uint64::new(1)).unwrap();
+        let expected = QuerySubspaceResponse {
+            subspace: MockSubspacesQueries::get_mock_subspace(),
+        };
+        assert_eq!(response, expected);
     }
 }

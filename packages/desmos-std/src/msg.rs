@@ -2,7 +2,9 @@ use cosmwasm_std::{CosmosMsg, CustomMsg};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{profiles::msg::ProfilesMsg, types::DesmosRoute};
+use crate::{
+    profiles::msg::ProfilesMsg, types::DesmosRoute, subspaces::msg::SubspacesMsg
+};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -15,6 +17,7 @@ pub struct DesmosMsg {
 #[serde(rename_all = "snake_case")]
 pub enum DesmosMsgRoute {
     Profiles(ProfilesMsg),
+    Subspaces(SubspacesMsg),
 }
 
 impl Into<CosmosMsg<DesmosMsg>> for DesmosMsg {
@@ -29,6 +32,15 @@ impl From<ProfilesMsg> for DesmosMsg {
         Self {
             route: DesmosRoute::Profiles,
             msg_data: DesmosMsgRoute::Profiles(msg),
+        }
+    }
+}
+
+impl From<SubspacesMsg> for DesmosMsg {
+    fn from(msg: SubspacesMsg) -> Self {
+        Self {
+            route: DesmosRoute::Subspaces,
+            msg_data: DesmosMsgRoute::Subspaces(msg),
         }
     }
 }
@@ -54,5 +66,21 @@ mod tests {
             msg_data: DesmosMsgRoute::Profiles(msg.clone()),
         };
         assert_eq!(expected, DesmosMsg::from(msg))
+    }
+
+    #[test]
+    fn test_from_subspaces_msg() {
+        let msg = SubspacesMsg::CreateSubspace {
+            name: "test".to_string(),
+            description: "test".to_string(),
+            treasury: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
+            owner: Addr::unchecked("cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t"),
+            creator: Addr::unchecked("cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0"),
+        };
+        let expected = DesmosMsg {
+            route: DesmosRoute::Subspaces,
+            msg_data: DesmosMsgRoute::Subspaces(msg.clone()),
+        };
+        assert_eq!(expected, DesmosMsg::from(msg));
     }
 }

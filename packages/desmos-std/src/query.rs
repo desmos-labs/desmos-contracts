@@ -2,7 +2,9 @@ use cosmwasm_std::CustomQuery;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{profiles::query::ProfilesQuery, types::DesmosRoute};
+use crate::{
+    profiles::query::ProfilesQuery, subspaces::query::SubspacesQuery, types::DesmosRoute
+};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -17,6 +19,7 @@ impl CustomQuery for DesmosQuery {}
 #[serde(rename_all = "snake_case")]
 pub enum DesmosQueryRoute {
     Profiles(ProfilesQuery),
+    Subspaces(SubspacesQuery),
 }
 
 impl From<ProfilesQuery> for DesmosQuery {
@@ -24,6 +27,15 @@ impl From<ProfilesQuery> for DesmosQuery {
         Self {
             route: DesmosRoute::Profiles,
             query_data: DesmosQueryRoute::Profiles(query),
+        }
+    }
+}
+
+impl From<SubspacesQuery> for DesmosQuery {
+    fn from(query: SubspacesQuery) -> Self {
+        Self {
+            route: DesmosRoute::Subspaces,
+            query_data: DesmosQueryRoute::Subspaces(query),
         }
     }
 }
@@ -45,6 +57,18 @@ mod tests {
         let expected = DesmosQuery {
             route: DesmosRoute::Profiles,
             query_data: DesmosQueryRoute::Profiles(query.clone()),
+        };
+        assert_eq!(expected, DesmosQuery::from(query));
+    }
+
+    #[test]
+    fn test_from_subspaces_msg() {
+        let query = SubspacesQuery::Subspaces {
+            pagination: Default::default(),
+        };
+        let expected = DesmosQuery {
+            route: DesmosRoute::Subspaces,
+            query_data: DesmosQueryRoute::Subspaces(query.clone()),
         };
         assert_eq!(expected, DesmosQuery::from(query));
     }
