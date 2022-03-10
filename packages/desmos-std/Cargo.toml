@@ -1,7 +1,7 @@
 [package]
 name = "desmos-std"
 version = "0.1.6"
-authors = ["Leonardo Bragagnolo <leonardo@forbole.com>"]
+authors = ["Leonardo Bragagnolo <leonardo@forbole.com>", "Paul Chen <paul@forbole.com>"]
 edition = "2018"
 description = "Desmos network standards for smart contracts development"
 license = "Apache-2.0"

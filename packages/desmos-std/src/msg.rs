@@ -1,74 +1,56 @@
-use crate::types::DesmosRoute;
 use cosmwasm_std::{CosmosMsg, CustomMsg};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::{subspaces::msg::SubspacesMsg, types::DesmosRoute};
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct DesmosMsgWrapper {
+pub struct DesmosMsg {
     pub route: DesmosRoute,
-    pub msg: DesmosMsg,
+    pub msg_data: DesmosMsgRoute,
 }
 
-impl Into<CosmosMsg<DesmosMsgWrapper>> for DesmosMsgWrapper {
-    fn into(self) -> CosmosMsg<DesmosMsgWrapper> {
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum DesmosMsgRoute {
+    Subspaces(SubspacesMsg),
+}
+
+impl Into<CosmosMsg<DesmosMsg>> for DesmosMsg {
+    fn into(self) -> CosmosMsg<DesmosMsg> {
         CosmosMsg::Custom(self)
     }
 }
+impl CustomMsg for DesmosMsg {}
 
-impl CustomMsg for DesmosMsgWrapper {}
+impl From<SubspacesMsg> for DesmosMsg {
+    fn from(msg: SubspacesMsg) -> Self {
+        Self {
+            route: DesmosRoute::Subspaces,
+            msg_data: DesmosMsgRoute::Subspaces(msg),
+        }
+    }
+}
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-#[non_exhaustive] // missing chain-links and app-links messages
-pub enum DesmosMsg {
-    SaveProfile {
-        dtag: String,
-        nickname: String,
-        bio: String,
-        profile_picture: String,
-        cover_picture: String,
-        creator: String,
-    },
-    DeleteProfile {
-        creator: String,
-    },
-    RequestDtagTransfer {
-        receiver: String,
-        sender: String,
-    },
-    AcceptDtagTransferRequest {
-        new_dtag: String,
-        sender: String,
-        receiver: String,
-    },
-    RefuseDtagTransferRequest {
-        sender: String,
-        receiver: String,
-    },
-    CancelDtagTransferRequest {
-        receiver: String,
-        sender: String,
-    },
-    CreateRelationship {
-        sender: String,
-        receiver: String,
-        subspace: String,
-    },
-    DeleteRelationship {
-        user: String,
-        counterparty: String,
-        subspace: String,
-    },
-    BlockUser {
-        blocker: String,
-        blocked: String,
-        reason: String,
-        subspace: String,
-    },
-    UnblockUser {
-        blocker: String,
-        blocked: String,
-        subspace: String,
-    },
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::Addr;
+
+    #[test]
+    fn test_from_subspaces_msg() {
+        let msg = SubspacesMsg::CreateSubspace {
+            name: "test".to_string(),
+            description: "test".to_string(),
+            treasury: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
+            owner: Addr::unchecked("cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t"),
+            creator: Addr::unchecked("cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0"),
+        };
+        let expected = DesmosMsg {
+            route: DesmosRoute::Subspaces,
+            msg_data: DesmosMsgRoute::Subspaces(msg.clone()),
+        };
+        assert_eq!(expected, DesmosMsg::from(msg));
+    }
 }
