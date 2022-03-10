@@ -186,6 +186,9 @@ impl MockProfilesQuerier {
                 let app_link = MockProfilesQueries::get_mock_application_link();
                 to_binary(&QueryApplicationLinkByClientIDResponse { link: app_link })
             }
+            _ => to_binary(&ContractResult::<Binary>::Err(
+                "not supported query".to_string(),
+            )),
         };
         response.into()
     }

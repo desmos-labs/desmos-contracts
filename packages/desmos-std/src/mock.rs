@@ -1,7 +1,10 @@
-use crate::{profiles::mock::MockProfilesQuerier, query::DesmosQuery, subspaces::mock::MockSubspacesQuerier,  types::DesmosRoute};
+use crate::{
+    profiles::mock::MockProfilesQuerier, query::DesmosQuery, subspaces::mock::MockSubspacesQuerier,
+    types::DesmosRoute,
+};
 use cosmwasm_std::{
     testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
-    Coin, CustomQuery, OwnedDeps, SystemError, SystemResult,
+    Coin, CustomQuery, OwnedDeps, SystemResult,
 };
 use std::marker::PhantomData;
 
@@ -16,10 +19,6 @@ pub fn mock_dependencies_with_custom_querier(
             |query| match query.route {
                 DesmosRoute::Profiles => SystemResult::Ok(MockProfilesQuerier::query(query)),
                 DesmosRoute::Subspaces => SystemResult::Ok(MockSubspacesQuerier::query(query)),
-                _ => {
-                    let error = SystemError::Unknown {};
-                    SystemResult::Err(error)
-                }
             },
         );
     OwnedDeps::<_, _, _, DesmosQuery> {
@@ -32,17 +31,18 @@ pub fn mock_dependencies_with_custom_querier(
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::Uint64;
     use crate::{
         mock::mock_dependencies_with_custom_querier,
         profiles::{
             mock::MockProfilesQueries, models_query::QueryProfileResponse, querier::ProfilesQuerier,
         },
         subspaces::{
-            mock::MockSubspacesQueries, querier::SubspacesQuerier, query_types::QuerySubspaceResponse,
-        }
+            mock::MockSubspacesQueries, querier::SubspacesQuerier,
+            query_types::QuerySubspaceResponse,
+        },
     };
     use cosmwasm_std::Addr;
+    use cosmwasm_std::Uint64;
     use std::ops::Deref;
 
     #[test]

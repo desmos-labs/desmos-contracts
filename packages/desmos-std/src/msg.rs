@@ -2,9 +2,7 @@ use cosmwasm_std::{CosmosMsg, CustomMsg};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    profiles::msg::ProfilesMsg, types::DesmosRoute, subspaces::msg::SubspacesMsg
-};
+use crate::{profiles::msg::ProfilesMsg, subspaces::msg::SubspacesMsg, types::DesmosRoute};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
