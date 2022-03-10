@@ -1,21 +1,19 @@
 use cosmwasm_std::{
     testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
-    Coin, CustomQuery, OwnedDeps, SystemError, SystemResult,
+    Coin, CustomQuery, OwnedDeps, SystemResult,
 };
 use std::marker::PhantomData;
 
-use crate::{query::DesmosQuery, subspaces::mock::MockSubspacesQuerier, types::DesmosRoute};
+use crate::{query::DesmosQuery, subspaces::mock::MockSubspacesQuerier};
 
 pub fn mock_dependencies_with_custom_querier(
     contract_balance: &[Coin],
 ) -> OwnedDeps<MockStorage, MockApi, MockQuerier<DesmosQuery>, impl CustomQuery> {
     let contract_addr = MOCK_CONTRACT_ADDR;
     let custom_querier = MockQuerier::<DesmosQuery>::new(&[(contract_addr, contract_balance)])
-        .with_custom_handler(|query| match query.route {
-            DesmosRoute::Subspaces => SystemResult::Ok(MockSubspacesQuerier::query(query)),
-            _ => {
-                let error = SystemError::Unknown {};
-                SystemResult::Err(error)
+        .with_custom_handler(|query| match query {
+            DesmosQuery::Subspaces(subspaces_query) => {
+                SystemResult::Ok(MockSubspacesQuerier::query(subspaces_query))
             }
         });
     OwnedDeps::<_, _, _, DesmosQuery> {

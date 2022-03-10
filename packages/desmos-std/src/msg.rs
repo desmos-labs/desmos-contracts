@@ -2,18 +2,11 @@ use cosmwasm_std::{CosmosMsg, CustomMsg};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{subspaces::msg::SubspacesMsg, types::DesmosRoute};
+use crate::subspaces::msg::SubspacesMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct DesmosMsg {
-    pub route: DesmosRoute,
-    pub msg_data: DesmosMsgRoute,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub enum DesmosMsgRoute {
+#[serde(rename_all = "snake_case", tag = "route", content = "msg_data")]
+pub enum DesmosMsg {
     Subspaces(SubspacesMsg),
 }
 
@@ -26,10 +19,7 @@ impl CustomMsg for DesmosMsg {}
 
 impl From<SubspacesMsg> for DesmosMsg {
     fn from(msg: SubspacesMsg) -> Self {
-        Self {
-            route: DesmosRoute::Subspaces,
-            msg_data: DesmosMsgRoute::Subspaces(msg),
-        }
+        Self::Subspaces(msg)
     }
 }
 
@@ -47,10 +37,7 @@ mod tests {
             owner: Addr::unchecked("cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t"),
             creator: Addr::unchecked("cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0"),
         };
-        let expected = DesmosMsg {
-            route: DesmosRoute::Subspaces,
-            msg_data: DesmosMsgRoute::Subspaces(msg.clone()),
-        };
+        let expected = DesmosMsg::Subspaces(msg.clone());
         assert_eq!(expected, DesmosMsg::from(msg));
     }
 }
