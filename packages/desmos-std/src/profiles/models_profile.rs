@@ -1,5 +1,5 @@
 use crate::profiles::models_common::PubKey;
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -41,8 +41,8 @@ pub struct Account {
     pub proto_type: String,
     pub address: Addr,
     pub pub_key: PubKey,
-    pub account_number: String,
-    pub sequence: String,
+    pub account_number: Uint64,
+    pub sequence: Uint64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
