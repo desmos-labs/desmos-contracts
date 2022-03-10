@@ -29,17 +29,13 @@ impl<'a> SubspacesQuerier<'a> {
         &self,
         pagination: Option<PageRequest>,
     ) -> StdResult<QuerySubspacesResponse> {
-        let request = DesmosQuery::from(SubspacesQuery::Subspaces {
-            pagination: pagination,
-        });
+        let request = DesmosQuery::from(SubspacesQuery::Subspaces { pagination });
         let res: QuerySubspacesResponse = self.querier.query(&request.into())?;
         Ok(res)
     }
 
     pub fn query_subspace(&self, subspace_id: Uint64) -> StdResult<QuerySubspaceResponse> {
-        let request = DesmosQuery::from(SubspacesQuery::Subspace {
-            subspace_id: subspace_id,
-        });
+        let request = DesmosQuery::from(SubspacesQuery::Subspace { subspace_id });
         let res: QuerySubspaceResponse = self.querier.query(&request.into())?;
         Ok(res)
     }

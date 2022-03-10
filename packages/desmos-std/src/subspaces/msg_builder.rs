@@ -3,6 +3,7 @@ use cosmwasm_std::{Addr, Uint64};
 use crate::subspaces::msg::SubspacesMsg;
 
 pub struct SubspacesMsgBuilder;
+
 impl SubspacesMsgBuilder {
     pub fn new() -> Self {
         SubspacesMsgBuilder {}
