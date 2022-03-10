@@ -15,12 +15,8 @@ pub fn mock_dependencies_with_custom_querier(
     let contract_addr = MOCK_CONTRACT_ADDR;
     let custom_querier = MockQuerier::<DesmosQuery>::new(&[(contract_addr, contract_balance)])
         .with_custom_handler(|query| match query {
-            DesmosQuery::Profiles(query) => {
-                SystemResult::Ok(MockProfilesQuerier::query(query))
-            }
-            DesmosQuery::Subspaces(query) => {
-                SystemResult::Ok(MockSubspacesQuerier::query(query))
-            }
+            DesmosQuery::Profiles(query) => SystemResult::Ok(MockProfilesQuerier::query(query)),
+            DesmosQuery::Subspaces(query) => SystemResult::Ok(MockSubspacesQuerier::query(query)),
         });
     OwnedDeps::<_, _, _, DesmosQuery> {
         storage: MockStorage::default(),

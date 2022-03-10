@@ -13,8 +13,6 @@ pub enum DesmosQuery {
 
 impl CustomQuery for DesmosQuery {}
 
-
-
 impl From<ProfilesQuery> for DesmosQuery {
     fn from(query: ProfilesQuery) -> Self {
         Self::Profiles(query)
@@ -30,9 +28,7 @@ impl From<SubspacesQuery> for DesmosQuery {
 #[cfg(test)]
 mod tests {
     use crate::{
-        profiles::query::ProfilesQuery,
-        query::DesmosQuery,
-        subspaces::query::SubspacesQuery,
+        profiles::query::ProfilesQuery, query::DesmosQuery, subspaces::query::SubspacesQuery,
     };
     use cosmwasm_std::Addr;
 

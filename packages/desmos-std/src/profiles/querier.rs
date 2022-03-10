@@ -8,7 +8,7 @@ use crate::{
         },
         query::ProfilesQuery,
     },
-    query::{DesmosQuery},
+    query::DesmosQuery,
     types::PageRequest,
 };
 use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult, Uint64};
@@ -38,10 +38,10 @@ impl<'a> ProfilesQuerier<'a> {
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryRelationshipsResponse> {
         let request = DesmosQuery::Profiles(ProfilesQuery::Relationships {
-                user,
-                subspace_id,
-                pagination,
-            });
+            user,
+            subspace_id,
+            pagination,
+        });
 
         let res: QueryRelationshipsResponse = self.querier.query(&request.into())?;
         Ok(res)
@@ -53,9 +53,9 @@ impl<'a> ProfilesQuerier<'a> {
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryIncomingDtagTransferRequestResponse> {
         let request = DesmosQuery::Profiles(ProfilesQuery::IncomingDtagTransferRequests {
-                receiver,
-                pagination,
-            });
+            receiver,
+            pagination,
+        });
 
         let res: QueryIncomingDtagTransferRequestResponse = self.querier.query(&request.into())?;
         Ok(res)
@@ -68,10 +68,10 @@ impl<'a> ProfilesQuerier<'a> {
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryBlocksResponse> {
         let request = DesmosQuery::Profiles(ProfilesQuery::Blocks {
-                user,
-                subspace_id,
-                pagination,
-            });
+            user,
+            subspace_id,
+            pagination,
+        });
 
         let res: QueryBlocksResponse = self.querier.query(&request.into())?;
         Ok(res)
@@ -95,10 +95,10 @@ impl<'a> ProfilesQuerier<'a> {
         target: String,
     ) -> StdResult<QueryUserChainLinkResponse> {
         let request = DesmosQuery::Profiles(ProfilesQuery::UserChainLink {
-                user,
-                chain_name,
-                target,
-            });
+            user,
+            chain_name,
+            target,
+        });
 
         let res: QueryUserChainLinkResponse = self.querier.query(&request.into())?;
         Ok(res)
@@ -122,10 +122,10 @@ impl<'a> ProfilesQuerier<'a> {
         username: String,
     ) -> StdResult<QueryUserApplicationLinkResponse> {
         let request = DesmosQuery::Profiles(ProfilesQuery::UserAppLinks {
-                user,
-                application,
-                username,
-            });
+            user,
+            application,
+            username,
+        });
 
         let res: QueryUserApplicationLinkResponse = self.querier.query(&request.into())?;
         Ok(res)
@@ -135,9 +135,7 @@ impl<'a> ProfilesQuerier<'a> {
         &self,
         client_id: String,
     ) -> StdResult<QueryApplicationLinkByClientIDResponse> {
-        let request = DesmosQuery::Profiles(ProfilesQuery::ApplicationLinkByChainID {
-                client_id,
-            });
+        let request = DesmosQuery::Profiles(ProfilesQuery::ApplicationLinkByChainID { client_id });
 
         let res: QueryApplicationLinkByClientIDResponse = self.querier.query(&request.into())?;
         Ok(res)

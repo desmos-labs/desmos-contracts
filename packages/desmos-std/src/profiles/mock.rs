@@ -1,20 +1,17 @@
-use crate::{
-    profiles::{
-        models_app_links::{AppLinkResult, ApplicationLink, CallData, Data, OracleRequest},
-        models_blocks::UserBlock,
-        models_chain_links::{ChainConfig, ChainLink, ChainLinkAddr, Proof, Signature},
-        models_common::PubKey,
-        models_dtag_requests::DtagTransferRequest,
-        models_profile::{Account, Pictures, Profile},
-        models_query::{
-            QueryApplicationLinkByClientIDResponse, QueryApplicationLinksResponse,
-            QueryBlocksResponse, QueryChainLinksResponse, QueryIncomingDtagTransferRequestResponse,
-            QueryProfileResponse, QueryRelationshipsResponse, QueryUserApplicationLinkResponse,
-            QueryUserChainLinkResponse,
-        },
-        models_relationships::Relationship,
-        query::ProfilesQuery,
+use crate::profiles::{
+    models_app_links::{AppLinkResult, ApplicationLink, CallData, Data, OracleRequest},
+    models_blocks::UserBlock,
+    models_chain_links::{ChainConfig, ChainLink, ChainLinkAddr, Proof, Signature},
+    models_common::PubKey,
+    models_dtag_requests::DtagTransferRequest,
+    models_profile::{Account, Pictures, Profile},
+    models_query::{
+        QueryApplicationLinkByClientIDResponse, QueryApplicationLinksResponse, QueryBlocksResponse,
+        QueryChainLinksResponse, QueryIncomingDtagTransferRequestResponse, QueryProfileResponse,
+        QueryRelationshipsResponse, QueryUserApplicationLinkResponse, QueryUserChainLinkResponse,
     },
+    models_relationships::Relationship,
+    query::ProfilesQuery,
 };
 use cosmwasm_std::{to_binary, Addr, Binary, ContractResult, Uint64};
 
@@ -195,18 +192,15 @@ impl MockProfilesQuerier {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        profiles::{
-            mock::{MockProfilesQuerier, MockProfilesQueries},
-            models_query::{
-                QueryApplicationLinkByClientIDResponse, QueryApplicationLinksResponse,
-                QueryBlocksResponse, QueryChainLinksResponse,
-                QueryIncomingDtagTransferRequestResponse, QueryProfileResponse,
-                QueryRelationshipsResponse, QueryUserApplicationLinkResponse,
-                QueryUserChainLinkResponse,
-            },
-            query::ProfilesQuery,
+    use crate::profiles::{
+        mock::{MockProfilesQuerier, MockProfilesQueries},
+        models_query::{
+            QueryApplicationLinkByClientIDResponse, QueryApplicationLinksResponse,
+            QueryBlocksResponse, QueryChainLinksResponse, QueryIncomingDtagTransferRequestResponse,
+            QueryProfileResponse, QueryRelationshipsResponse, QueryUserApplicationLinkResponse,
+            QueryUserChainLinkResponse,
         },
+        query::ProfilesQuery,
     };
     use cosmwasm_std::{to_binary, Addr, Uint64};
 
