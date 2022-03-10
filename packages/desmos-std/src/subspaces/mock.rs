@@ -13,7 +13,7 @@ use crate::subspaces::{
 /**
 This file contains some useful mocks of the Desmos x/subspaces modules types ready made to be used
 in any test
-**/
+ **/
 
 pub struct MockSubspacesQueries {}
 
@@ -66,7 +66,7 @@ impl MockSubspacesQuerier {
             }
             DesmosQueryRoute::Subspaces(SubspacesQuery::Subspace { .. }) => {
                 let subspace = MockSubspacesQueries::get_mock_subspace();
-                to_binary(&QuerySubspaceResponse { subspace: subspace })
+                to_binary(&QuerySubspaceResponse { subspace })
             }
             DesmosQueryRoute::Subspaces(SubspacesQuery::UserGroups { .. }) => {
                 let group = MockSubspacesQueries::get_mock_user_group();
@@ -77,7 +77,7 @@ impl MockSubspacesQuerier {
             }
             DesmosQueryRoute::Subspaces(SubspacesQuery::UserGroup { .. }) => {
                 let group = MockSubspacesQueries::get_mock_user_group();
-                to_binary(&QueryUserGroupResponse { group: group })
+                to_binary(&QueryUserGroupResponse { group })
             }
             DesmosQueryRoute::Subspaces(SubspacesQuery::UserGroupMembers { .. }) => {
                 let member = MockSubspacesQueries::get_mock_group_member();
@@ -93,6 +93,9 @@ impl MockSubspacesQuerier {
                     details: vec![permission],
                 })
             }
+            _ => to_binary(&ContractResult::<Binary>::Err(
+                "not supported query".to_string(),
+            )),
         };
         response.into()
     }
