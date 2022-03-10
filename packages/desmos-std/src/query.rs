@@ -43,6 +43,7 @@ mod tests {
     use crate::{
         profiles::query::ProfilesQuery,
         query::{DesmosQuery, DesmosQueryRoute},
+        subspaces::query::SubspacesQuery,
         types::DesmosRoute,
     };
     use cosmwasm_std::Addr;

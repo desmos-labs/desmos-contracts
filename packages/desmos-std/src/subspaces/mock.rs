@@ -13,7 +13,7 @@ use crate::subspaces::{
 /**
 This file contains some useful mocks of the Desmos x/subspaces modules types ready made to be used
 in any test
-**/
+ **/
 
 pub struct MockSubspacesQueries {}
 

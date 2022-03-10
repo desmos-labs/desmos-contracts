@@ -76,27 +76,27 @@ impl MockProfilesQueries {
     }
 
     pub fn get_mock_chain_link() -> ChainLink {
-        ChainLink{
+        ChainLink {
             user: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
             address: ChainLinkAddr {
                 proto_type: "/desmos.profiles.v1beta1.Bech32Address".to_string(),
                 value: "cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2".to_string(),
-                prefix: "cosmos".to_string()
+                prefix: "cosmos".to_string(),
             },
             proof: Proof {
                 pub_key: PubKey {
                     proto_type: "/cosmos.crypto.secp256k1.PubKey".to_string(),
-                    key: "AyRUhKXAY6zOCjjFkPN78Q29sBKHjUx4VSZQ4HXh66IM".to_string()
+                    key: "AyRUhKXAY6zOCjjFkPN78Q29sBKHjUx4VSZQ4HXh66IM".to_string(),
                 },
                 signature: Signature {
                     proto_type: "/desmos.profiles.v1beta1.SingleSignatureData".to_string(),
                     mode: "SIGN_MODE_DIRECT".to_string(),
-                    signature: "C7xppu4C4S3dgeC9TVqhyGN1hbMnMbnmWgXQI2WE8t0oHIHhDTqXyZgzhNNYiBO7ulno3G8EXO3Ep5KMFngyFg".to_string()
+                    signature: "C7xppu4C4S3dgeC9TVqhyGN1hbMnMbnmWgXQI2WE8t0oHIHhDTqXyZgzhNNYiBO7ulno3G8EXO3Ep5KMFngyFg".to_string(),
                 },
-                plain_text: "636f736d6f733138786e6d6c7a71727172367a74353236706e637a786536357a6b33663478676d6e6470786e32".to_string()
+                plain_text: "636f736d6f733138786e6d6c7a71727172367a74353236706e637a786536357a6b33663478676d6e6470786e32".to_string(),
             },
             chain_config: ChainConfig { name: "cosmos".to_string() },
-            creation_time: "2022-02-21T13:18:57.800827Z".to_string()
+            creation_time: "2022-02-21T13:18:57.800827Z".to_string(),
         }
     }
 

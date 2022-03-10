@@ -23,6 +23,7 @@ impl Into<CosmosMsg<DesmosMsg>> for DesmosMsg {
         CosmosMsg::Custom(self)
     }
 }
+
 impl CustomMsg for DesmosMsg {}
 
 impl From<ProfilesMsg> for DesmosMsg {
@@ -48,6 +49,7 @@ mod tests {
     use crate::{
         msg::{DesmosMsg, DesmosMsgRoute},
         profiles::msg::ProfilesMsg,
+        subspaces::msg::SubspacesMsg,
         types::DesmosRoute,
     };
     use cosmwasm_std::Addr;

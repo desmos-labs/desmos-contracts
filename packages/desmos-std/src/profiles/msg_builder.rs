@@ -266,14 +266,14 @@ mod tests {
         let proof = Proof {
             pub_key: PubKey {
                 proto_type: "/cosmos.crypto.secp256k1.PubKey".to_string(),
-                key: "AyRUhKXAY6zOCjjFkPN78Q29sBKHjUx4VSZQ4HXh66IM".to_string()
+                key: "AyRUhKXAY6zOCjjFkPN78Q29sBKHjUx4VSZQ4HXh66IM".to_string(),
             },
             signature: Signature {
                 proto_type: "/desmos.profiles.v1beta1.SingleSignatureData".to_string(),
                 mode: "SIGN_MODE_DIRECT".to_string(),
-                signature: "C7xppu4C4S3dgeC9TVqhyGN1hbMnMbnmWgXQI2WE8t0oHIHhDTqXyZgzhNNYiBO7ulno3G8EXO3Ep5KMFngyFg".to_string()
+                signature: "C7xppu4C4S3dgeC9TVqhyGN1hbMnMbnmWgXQI2WE8t0oHIHhDTqXyZgzhNNYiBO7ulno3G8EXO3Ep5KMFngyFg".to_string(),
             },
-            plain_text: "636f736d6f733138786e6d6c7a71727172367a74353236706e637a786536357a6b33663478676d6e6470786e32".to_string()
+            plain_text: "636f736d6f733138786e6d6c7a71727172367a74353236706e637a786536357a6b33663478676d6e6470786e32".to_string(),
         };
         let chain_config = ChainConfig {
             name: "cosmos".to_string(),

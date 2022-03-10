@@ -10,7 +10,6 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /** Profile query models **/
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QueryProfileResponse {
@@ -18,7 +17,6 @@ pub struct QueryProfileResponse {
 }
 
 /** DtagTransferRequest query models **/
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QueryIncomingDtagTransferRequestResponse {
@@ -27,7 +25,6 @@ pub struct QueryIncomingDtagTransferRequestResponse {
 }
 
 /** AppLinks query models **/
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QueryApplicationLinksResponse {
@@ -48,7 +45,6 @@ pub struct QueryApplicationLinkByClientIDResponse {
 }
 
 /** ChainLinks query models **/
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QueryChainLinksResponse {
@@ -63,7 +59,6 @@ pub struct QueryUserChainLinkResponse {
 }
 
 /** UserBlocks query models **/
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QueryBlocksResponse {
@@ -72,7 +67,6 @@ pub struct QueryBlocksResponse {
 }
 
 /** Relationships query models **/
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct QueryRelationshipsResponse {
