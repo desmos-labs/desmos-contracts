@@ -12,7 +12,7 @@ use crate::{profiles::query::ProfilesQuery, subspaces::query::SubspacesQuery};
 //          "method": {}
 //      }
 // }
-Reference: https://serde.rs/enum-representations.html#adjacently-tagged
+// Reference: https://serde.rs/enum-representations.html#adjacently-tagged
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case", tag = "route", content = "query_data")]
 pub enum DesmosQuery {
