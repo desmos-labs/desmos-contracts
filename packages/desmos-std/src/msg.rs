@@ -4,6 +4,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::{profiles::msg::ProfilesMsg, subspaces::msg::SubspacesMsg};
 
+// Use serde tag in order to produce the certain json format
+// ## Example
+// {
+//      "route": "profiles",
+//      "msg_data": {
+//          "method": {}
+//      }
+// }
+// https://serde.rs/enum-representations.html#adjacently-tagged
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case", tag = "route", content = "msg_data")]
 pub enum DesmosMsg {

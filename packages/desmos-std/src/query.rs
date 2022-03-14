@@ -4,6 +4,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::{profiles::query::ProfilesQuery, subspaces::query::SubspacesQuery};
 
+// Use serde tag in order to produce the certain json format
+// ## Example
+// {
+//      "route": "profiles",
+//      "query_data": {
+//          "method": {}
+//      }
+// }
+// https://serde.rs/enum-representations.html#adjacently-tagged
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case", tag = "route", content = "query_data")]
 pub enum DesmosQuery {
