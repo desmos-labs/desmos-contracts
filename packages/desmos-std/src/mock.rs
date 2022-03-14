@@ -1,7 +1,13 @@
-use crate::{
-    profiles::mock::MockProfilesQuerier, query::DesmosQuery,
-    relationships::mock::MockRelationshipsQuerier, subspaces::mock::MockSubspacesQuerier,
-};
+#[cfg(feature = "profiles")]
+use crate::profiles::mock::MockProfilesQuerier;
+
+#[cfg(feature = "relationships")]
+use crate::relationships::mock::MockRelationshipsQuerier;
+
+#[cfg(feature = "subspaces")]
+use crate::subspaces::mock::MockSubspacesQuerier;
+
+use crate::query::DesmosQuery;
 use cosmwasm_std::{
     testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
     Coin, CustomQuery, OwnedDeps, SystemResult,
@@ -16,8 +22,11 @@ pub fn mock_dependencies_with_custom_querier(
     let contract_addr = MOCK_CONTRACT_ADDR;
     let custom_querier = MockQuerier::<DesmosQuery>::new(&[(contract_addr, contract_balance)])
         .with_custom_handler(|query| match query {
+            #[cfg(feature = "profiles")]
             DesmosQuery::Profiles(query) => SystemResult::Ok(MockProfilesQuerier::query(query)),
+            #[cfg(feature = "subspaces")]
             DesmosQuery::Subspaces(query) => SystemResult::Ok(MockSubspacesQuerier::query(query)),
+            #[cfg(feature = "relationships")]
             DesmosQuery::Relationships(query) => {
                 SystemResult::Ok(MockRelationshipsQuerier::query(query))
             }
@@ -32,24 +41,29 @@ pub fn mock_dependencies_with_custom_querier(
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        mock::mock_dependencies_with_custom_querier,
-        profiles::{
-            mock::MockProfilesQueries, models_query::QueryProfileResponse, querier::ProfilesQuerier,
-        },
-        relationships::{
-            mock::MockRelationshipsQueries, models_query::QueryRelationshipsResponse,
-            querier::RelationshipsQuerier,
-        },
-        subspaces::{
-            mock::MockSubspacesQueries, querier::SubspacesQuerier,
-            query_types::QuerySubspaceResponse,
-        },
+    use crate::mock::mock_dependencies_with_custom_querier;
+
+    #[cfg(feature = "relationships")]
+    use crate::relationships::{
+        mock::MockRelationshipsQueries, models_query::QueryRelationshipsResponse,
+        querier::RelationshipsQuerier,
     };
+
+    #[cfg(feature = "profiles")]
+    use crate::profiles::{
+        mock::MockProfilesQueries, models_query::QueryProfileResponse, querier::ProfilesQuerier,
+    };
+
+    #[cfg(feature = "subspaces")]
+    use crate::subspaces::{
+        mock::MockSubspacesQueries, querier::SubspacesQuerier, query_types::QuerySubspaceResponse,
+    };
+
     use cosmwasm_std::{Addr, Uint64};
     use std::ops::Deref;
 
     #[test]
+    #[cfg(feature = "profiles")]
     fn test_profiles_querier_mock() {
         let owned_deps = mock_dependencies_with_custom_querier(&[]);
         let deps = owned_deps.as_ref();
@@ -62,6 +76,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "subspaces")]
     fn test_subspaces_querier() {
         let owned_deps = mock_dependencies_with_custom_querier(&[]);
         let deps = owned_deps.as_ref();
@@ -74,6 +89,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "relationships")]
     fn test_relationships_querier() {
         let owned_deps = mock_dependencies_with_custom_querier(&[]);
         let deps = owned_deps.as_ref();

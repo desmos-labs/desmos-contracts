@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "profiles")]
 use crate::profiles::query::ProfilesQuery;
-#[cfg(feature = "subspaces")]
-use crate::subspaces::query::SubspacesQuery;
 #[cfg(feature = "relationships")]
 use crate::relationships::query::RelationshipsQuery;
+#[cfg(feature = "subspaces")]
+use crate::subspaces::query::SubspacesQuery;
 
 // Use the serde `rename_all` tag in order to produce the following json file structure
 // ## Example
@@ -23,8 +23,10 @@ use crate::relationships::query::RelationshipsQuery;
 pub enum DesmosQuery {
     #[cfg(feature = "profiles")]
     Profiles(ProfilesQuery),
+
     #[cfg(feature = "subspaces")]
     Subspaces(SubspacesQuery),
+
     #[cfg(feature = "relationships")]
     Relationships(RelationshipsQuery),
 }
@@ -45,6 +47,7 @@ impl From<SubspacesQuery> for DesmosQuery {
     }
 }
 
+#[cfg(feature = "relationships")]
 impl From<RelationshipsQuery> for DesmosQuery {
     fn from(query: RelationshipsQuery) -> Self {
         Self::Relationships(query)
@@ -53,13 +56,18 @@ impl From<RelationshipsQuery> for DesmosQuery {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "profiles")]
+    use crate::profiles::query::ProfilesQuery;
+    use crate::query::DesmosQuery;
+    #[cfg(feature = "relationships")]
     use crate::relationships::query::RelationshipsQuery;
-    use crate::{
-        profiles::query::ProfilesQuery, query::DesmosQuery, subspaces::query::SubspacesQuery,
-    };
+    #[cfg(feature = "subspaces")]
+    use crate::subspaces::query::SubspacesQuery;
+
     use cosmwasm_std::{Addr, Uint64};
 
     #[test]
+    #[cfg(feature = "profiles")]
     fn test_from_profiles_query() {
         let query = ProfilesQuery::Profile {
             user: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
@@ -69,6 +77,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "subspaces")]
     fn test_from_subspaces_query() {
         let query = SubspacesQuery::Subspaces {
             pagination: Default::default(),
@@ -78,6 +87,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "relationships")]
     fn test_from_relationships_query() {
         let query = RelationshipsQuery::Relationships {
             user: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),

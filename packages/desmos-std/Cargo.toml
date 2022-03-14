@@ -21,3 +21,6 @@ cosmwasm-schema = { version = "1.0.0-beta" }
 profiles = []
 subspaces = []
 relationships = []
+query = []
+msg = []
+mocks = []
