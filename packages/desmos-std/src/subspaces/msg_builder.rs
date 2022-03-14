@@ -1,6 +1,5 @@
-use cosmwasm_std::{Addr, Uint64};
-
 use crate::subspaces::msg::SubspacesMsg;
+use cosmwasm_std::{Addr, Uint64};
 
 pub struct SubspacesMsgBuilder;
 

@@ -2,6 +2,7 @@ use cosmwasm_std::CustomQuery;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::relationships::query::RelationshipsQuery;
 use crate::{profiles::query::ProfilesQuery, subspaces::query::SubspacesQuery};
 
 // Use the serde `rename_all` tag in order to produce the following json file structure
@@ -17,6 +18,7 @@ use crate::{profiles::query::ProfilesQuery, subspaces::query::SubspacesQuery};
 #[serde(rename_all = "snake_case", tag = "route", content = "query_data")]
 pub enum DesmosQuery {
     Profiles(ProfilesQuery),
+    Relationships(RelationshipsQuery),
     Subspaces(SubspacesQuery),
 }
 

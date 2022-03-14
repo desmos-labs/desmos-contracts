@@ -1,5 +1,6 @@
 use crate::{
-    profiles::mock::MockProfilesQuerier, query::DesmosQuery, subspaces::mock::MockSubspacesQuerier,
+    profiles::mock::MockProfilesQuerier, query::DesmosQuery,
+    relationships::mock::MockRelationshipsQuerier, subspaces::mock::MockSubspacesQuerier,
 };
 use cosmwasm_std::{
     testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
@@ -17,6 +18,9 @@ pub fn mock_dependencies_with_custom_querier(
         .with_custom_handler(|query| match query {
             DesmosQuery::Profiles(query) => SystemResult::Ok(MockProfilesQuerier::query(query)),
             DesmosQuery::Subspaces(query) => SystemResult::Ok(MockSubspacesQuerier::query(query)),
+            DesmosQuery::Relationships(query) => {
+                SystemResult::Ok(MockRelationshipsQuerier::query(query))
+            }
         });
     OwnedDeps::<_, _, _, DesmosQuery> {
         storage: MockStorage::default(),
@@ -33,13 +37,16 @@ mod tests {
         profiles::{
             mock::MockProfilesQueries, models_query::QueryProfileResponse, querier::ProfilesQuerier,
         },
+        relationships::{
+            mock::MockRelationshipsQueries, models_query::QueryRelationshipsResponse,
+            querier::RelationshipsQuerier,
+        },
         subspaces::{
             mock::MockSubspacesQueries, querier::SubspacesQuerier,
             query_types::QuerySubspaceResponse,
         },
     };
-    use cosmwasm_std::Addr;
-    use cosmwasm_std::Uint64;
+    use cosmwasm_std::{Addr, Uint64};
     use std::ops::Deref;
 
     #[test]
@@ -63,6 +70,21 @@ mod tests {
         let expected = QuerySubspaceResponse {
             subspace: MockSubspacesQueries::get_mock_subspace(),
         };
-        assert_eq!(response, expected);
+        assert_eq!(expected, response);
+    }
+
+    #[test]
+    fn test_relationships_querier() {
+        let owned_deps = mock_dependencies_with_custom_querier(&[]);
+        let deps = owned_deps.as_ref();
+        let querier = RelationshipsQuerier::new(deps.querier.deref());
+        let response = querier
+            .query_relationships(Addr::unchecked(""), Uint64::new(1), None)
+            .unwrap();
+        let expected = QueryRelationshipsResponse {
+            relationships: vec![MockRelationshipsQueries::get_mock_relationship()],
+            pagination: Default::default(),
+        };
+        assert_eq!(expected, response)
     }
 }

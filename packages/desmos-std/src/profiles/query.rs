@@ -1,5 +1,5 @@
 use crate::types::PageRequest;
-use cosmwasm_std::{Addr, Uint64};
+use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -11,16 +11,6 @@ pub enum ProfilesQuery {
     },
     IncomingDtagTransferRequests {
         receiver: Addr,
-        pagination: Option<PageRequest>,
-    },
-    Relationships {
-        user: Addr,
-        subspace_id: Uint64,
-        pagination: Option<PageRequest>,
-    },
-    Blocks {
-        user: Addr,
-        subspace_id: Uint64,
         pagination: Option<PageRequest>,
     },
     ChainLinks {

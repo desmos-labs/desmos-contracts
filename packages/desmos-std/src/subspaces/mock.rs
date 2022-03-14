@@ -92,9 +92,6 @@ impl MockSubspacesQuerier {
                     details: vec![permission],
                 })
             }
-            _ => to_binary(&ContractResult::<Binary>::Err(
-                "not supported query".to_string(),
-            )),
         };
         response.into()
     }

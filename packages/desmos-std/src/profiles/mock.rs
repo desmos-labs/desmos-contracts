@@ -1,16 +1,14 @@
 use crate::profiles::{
     models_app_links::{AppLinkResult, ApplicationLink, CallData, Data, OracleRequest},
-    models_blocks::UserBlock,
     models_chain_links::{ChainConfig, ChainLink, ChainLinkAddr, Proof, Signature},
     models_common::PubKey,
     models_dtag_requests::DtagTransferRequest,
     models_profile::{Account, Pictures, Profile},
     models_query::{
-        QueryApplicationLinkByClientIDResponse, QueryApplicationLinksResponse, QueryBlocksResponse,
+        QueryApplicationLinkByClientIDResponse, QueryApplicationLinksResponse,
         QueryChainLinksResponse, QueryIncomingDtagTransferRequestResponse, QueryProfileResponse,
-        QueryRelationshipsResponse, QueryUserApplicationLinkResponse, QueryUserChainLinkResponse,
+        QueryUserApplicationLinkResponse, QueryUserChainLinkResponse,
     },
-    models_relationships::Relationship,
     query::ProfilesQuery,
 };
 use cosmwasm_std::{to_binary, Addr, Binary, ContractResult, Uint64};
@@ -51,23 +49,6 @@ impl MockProfilesQueries {
             dtag_to_trade: "goldrake".to_string(),
             sender: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
             receiver: Addr::unchecked("desmos1rfv0f7mx7w9d3jv3h803u38vqym9ygg344asm3"),
-        }
-    }
-
-    pub fn get_mock_relationship() -> Relationship {
-        Relationship {
-            creator: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
-            recipient: Addr::unchecked("desmos1rfv0f7mx7w9d3jv3h803u38vqym9ygg344asm3"),
-            subspace_id: Uint64::new(1),
-        }
-    }
-
-    pub fn get_mock_user_block() -> UserBlock {
-        UserBlock {
-            blocker: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
-            blocked: Addr::unchecked("desmos1rfv0f7mx7w9d3jv3h803u38vqym9ygg344asm3"),
-            reason: "test".to_string(),
-            subspace_id: Uint64::new(1),
         }
     }
 
@@ -140,20 +121,6 @@ impl MockProfilesQuerier {
                     pagination: Default::default(),
                 })
             }
-            ProfilesQuery::Relationships { .. } => {
-                let relationship = MockProfilesQueries::get_mock_relationship();
-                to_binary(&QueryRelationshipsResponse {
-                    relationships: vec![relationship],
-                    pagination: Default::default(),
-                })
-            }
-            ProfilesQuery::Blocks { .. } => {
-                let block = MockProfilesQueries::get_mock_user_block();
-                to_binary(&QueryBlocksResponse {
-                    blocks: vec![block],
-                    pagination: Default::default(),
-                })
-            }
             ProfilesQuery::ChainLinks { .. } => {
                 let chain_link = MockProfilesQueries::get_mock_chain_link();
                 to_binary(&QueryChainLinksResponse {
@@ -182,9 +149,6 @@ impl MockProfilesQuerier {
                 let app_link = MockProfilesQueries::get_mock_application_link();
                 to_binary(&QueryApplicationLinkByClientIDResponse { link: app_link })
             }
-            _ => to_binary(&ContractResult::<Binary>::Err(
-                "not supported query".to_string(),
-            )),
         };
         response.into()
     }
@@ -196,13 +160,12 @@ mod tests {
         mock::{MockProfilesQuerier, MockProfilesQueries},
         models_query::{
             QueryApplicationLinkByClientIDResponse, QueryApplicationLinksResponse,
-            QueryBlocksResponse, QueryChainLinksResponse, QueryIncomingDtagTransferRequestResponse,
-            QueryProfileResponse, QueryRelationshipsResponse, QueryUserApplicationLinkResponse,
-            QueryUserChainLinkResponse,
+            QueryChainLinksResponse, QueryIncomingDtagTransferRequestResponse,
+            QueryProfileResponse, QueryUserApplicationLinkResponse, QueryUserChainLinkResponse,
         },
         query::ProfilesQuery,
     };
-    use cosmwasm_std::{to_binary, Addr, Uint64};
+    use cosmwasm_std::{to_binary, Addr};
 
     #[test]
     fn test_query_profile() {
@@ -225,36 +188,6 @@ mod tests {
         let response = MockProfilesQuerier::query(&query);
         let expected = to_binary(&QueryIncomingDtagTransferRequestResponse {
             requests: vec![MockProfilesQueries::get_mock_dtag_transfer_request()],
-            pagination: Default::default(),
-        });
-        assert_eq!(response.into_result().ok(), expected.ok())
-    }
-
-    #[test]
-    fn test_query_relationships() {
-        let query = ProfilesQuery::Relationships {
-            user: Addr::unchecked(""),
-            subspace_id: Uint64::new(1),
-            pagination: Default::default(),
-        };
-        let response = MockProfilesQuerier::query(&query);
-        let expected = to_binary(&QueryRelationshipsResponse {
-            relationships: vec![MockProfilesQueries::get_mock_relationship()],
-            pagination: Default::default(),
-        });
-        assert_eq!(response.into_result().ok(), expected.ok())
-    }
-
-    #[test]
-    fn test_query_blocks() {
-        let query = ProfilesQuery::Blocks {
-            user: Addr::unchecked(""),
-            subspace_id: Uint64::new(1),
-            pagination: Default::default(),
-        };
-        let response = MockProfilesQuerier::query(&query);
-        let expected = to_binary(&QueryBlocksResponse {
-            blocks: vec![MockProfilesQueries::get_mock_user_block()],
             pagination: Default::default(),
         });
         assert_eq!(response.into_result().ok(), expected.ok())

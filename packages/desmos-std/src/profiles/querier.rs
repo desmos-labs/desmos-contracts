@@ -2,16 +2,15 @@ use crate::{
     profiles::{
         models_query::{
             QueryApplicationLinkByClientIDResponse, QueryApplicationLinksResponse,
-            QueryBlocksResponse, QueryChainLinksResponse, QueryIncomingDtagTransferRequestResponse,
-            QueryProfileResponse, QueryRelationshipsResponse, QueryUserApplicationLinkResponse,
-            QueryUserChainLinkResponse,
+            QueryChainLinksResponse, QueryIncomingDtagTransferRequestResponse,
+            QueryProfileResponse, QueryUserApplicationLinkResponse, QueryUserChainLinkResponse,
         },
         query::ProfilesQuery,
     },
     query::DesmosQuery,
     types::PageRequest,
 };
-use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult, Uint64};
+use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult};
 
 pub struct ProfilesQuerier<'a> {
     querier: QuerierWrapper<'a, DesmosQuery>,
@@ -31,22 +30,6 @@ impl<'a> ProfilesQuerier<'a> {
         Ok(res)
     }
 
-    pub fn query_relationships(
-        &self,
-        user: Addr,
-        subspace_id: Uint64,
-        pagination: Option<PageRequest>,
-    ) -> StdResult<QueryRelationshipsResponse> {
-        let request = DesmosQuery::Profiles(ProfilesQuery::Relationships {
-            user,
-            subspace_id,
-            pagination,
-        });
-
-        let res: QueryRelationshipsResponse = self.querier.query(&request.into())?;
-        Ok(res)
-    }
-
     pub fn query_incoming_dtag_transfer_requests(
         &self,
         receiver: Addr,
@@ -58,22 +41,6 @@ impl<'a> ProfilesQuerier<'a> {
         });
 
         let res: QueryIncomingDtagTransferRequestResponse = self.querier.query(&request.into())?;
-        Ok(res)
-    }
-
-    pub fn query_blocks(
-        &self,
-        user: Addr,
-        subspace_id: Uint64,
-        pagination: Option<PageRequest>,
-    ) -> StdResult<QueryBlocksResponse> {
-        let request = DesmosQuery::Profiles(ProfilesQuery::Blocks {
-            user,
-            subspace_id,
-            pagination,
-        });
-
-        let res: QueryBlocksResponse = self.querier.query(&request.into())?;
         Ok(res)
     }
 
@@ -150,15 +117,13 @@ mod tests {
             mock::MockProfilesQueries,
             models_query::{
                 QueryApplicationLinkByClientIDResponse, QueryApplicationLinksResponse,
-                QueryBlocksResponse, QueryChainLinksResponse,
-                QueryIncomingDtagTransferRequestResponse, QueryProfileResponse,
-                QueryRelationshipsResponse, QueryUserApplicationLinkResponse,
-                QueryUserChainLinkResponse,
+                QueryChainLinksResponse, QueryIncomingDtagTransferRequestResponse,
+                QueryProfileResponse, QueryUserApplicationLinkResponse, QueryUserChainLinkResponse,
             },
             querier::ProfilesQuerier,
         },
     };
-    use cosmwasm_std::{Addr, Uint64};
+    use cosmwasm_std::Addr;
     use std::ops::Deref;
 
     #[test]
@@ -186,40 +151,6 @@ mod tests {
             .unwrap();
         let expected = QueryIncomingDtagTransferRequestResponse {
             requests: vec![MockProfilesQueries::get_mock_dtag_transfer_request()],
-            pagination: Default::default(),
-        };
-
-        assert_eq!(response, expected)
-    }
-
-    #[test]
-    fn test_query_relationships() {
-        let owned_deps = mock_dependencies_with_custom_querier(&[]);
-        let deps = owned_deps.as_ref();
-        let profiles_querier = ProfilesQuerier::new(deps.querier.deref());
-
-        let response = profiles_querier
-            .query_relationships(Addr::unchecked(""), Uint64::new(0), None)
-            .unwrap();
-        let expected = QueryRelationshipsResponse {
-            relationships: vec![MockProfilesQueries::get_mock_relationship()],
-            pagination: Default::default(),
-        };
-
-        assert_eq!(response, expected)
-    }
-
-    #[test]
-    fn test_query_blocks() {
-        let owned_deps = mock_dependencies_with_custom_querier(&[]);
-        let deps = owned_deps.as_ref();
-        let profiles_querier = ProfilesQuerier::new(deps.querier.deref());
-
-        let response = profiles_querier
-            .query_blocks(Addr::unchecked(""), Uint64::new(0), None)
-            .unwrap();
-        let expected = QueryBlocksResponse {
-            blocks: vec![MockProfilesQueries::get_mock_user_block()],
             pagination: Default::default(),
         };
 
