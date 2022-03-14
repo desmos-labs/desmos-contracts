@@ -2,8 +2,12 @@ use cosmwasm_std::CustomQuery;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "profiles")]
+use crate::profiles::query::ProfilesQuery;
+#[cfg(feature = "subspaces")]
+use crate::subspaces::query::SubspacesQuery;
+#[cfg(feature = "relationships")]
 use crate::relationships::query::RelationshipsQuery;
-use crate::{profiles::query::ProfilesQuery, subspaces::query::SubspacesQuery};
 
 // Use the serde `rename_all` tag in order to produce the following json file structure
 // ## Example
@@ -17,19 +21,24 @@ use crate::{profiles::query::ProfilesQuery, subspaces::query::SubspacesQuery};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case", tag = "route", content = "query_data")]
 pub enum DesmosQuery {
+    #[cfg(feature = "profiles")]
     Profiles(ProfilesQuery),
-    Relationships(RelationshipsQuery),
+    #[cfg(feature = "subspaces")]
     Subspaces(SubspacesQuery),
+    #[cfg(feature = "relationships")]
+    Relationships(RelationshipsQuery),
 }
 
 impl CustomQuery for DesmosQuery {}
 
+#[cfg(feature = "profiles")]
 impl From<ProfilesQuery> for DesmosQuery {
     fn from(query: ProfilesQuery) -> Self {
         Self::Profiles(query)
     }
 }
 
+#[cfg(feature = "subspaces")]
 impl From<SubspacesQuery> for DesmosQuery {
     fn from(query: SubspacesQuery) -> Self {
         Self::Subspaces(query)
