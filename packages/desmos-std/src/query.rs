@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{profiles::query::ProfilesQuery, subspaces::query::SubspacesQuery};
 
-// Use serde tag in order to produce the certain json format
+// Use the serde `rename_all` tag in order to produce the following json file structure
 // ## Example
 // {
 //      "route": "profiles",
