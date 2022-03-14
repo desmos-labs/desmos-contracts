@@ -12,7 +12,7 @@ use crate::{profiles::msg::ProfilesMsg, subspaces::msg::SubspacesMsg};
 //          "method": {}
 //      }
 // }
-// https://serde.rs/enum-representations.html#adjacently-tagged
+// Reference: https://serde.rs/enum-representations.html#adjacently-tagged
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case", tag = "route", content = "msg_data")]
 pub enum DesmosMsg {
