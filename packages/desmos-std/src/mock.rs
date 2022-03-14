@@ -1,6 +1,5 @@
 use crate::{
     profiles::mock::MockProfilesQuerier, query::DesmosQuery, subspaces::mock::MockSubspacesQuerier,
-    types::DesmosRoute,
 };
 use cosmwasm_std::{
     testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
@@ -14,13 +13,11 @@ pub fn mock_dependencies_with_custom_querier(
     contract_balance: &[Coin],
 ) -> OwnedDeps<MockStorage, MockApi, MockQuerier<DesmosQuery>, impl CustomQuery> {
     let contract_addr = MOCK_CONTRACT_ADDR;
-    let custom_querier: MockQuerier<DesmosQuery> =
-        MockQuerier::<DesmosQuery>::new(&[(contract_addr, contract_balance)]).with_custom_handler(
-            |query| match query.route {
-                DesmosRoute::Profiles => SystemResult::Ok(MockProfilesQuerier::query(query)),
-                DesmosRoute::Subspaces => SystemResult::Ok(MockSubspacesQuerier::query(query)),
-            },
-        );
+    let custom_querier = MockQuerier::<DesmosQuery>::new(&[(contract_addr, contract_balance)])
+        .with_custom_handler(|query| match query {
+            DesmosQuery::Profiles(query) => SystemResult::Ok(MockProfilesQuerier::query(query)),
+            DesmosQuery::Subspaces(query) => SystemResult::Ok(MockSubspacesQuerier::query(query)),
+        });
     OwnedDeps::<_, _, _, DesmosQuery> {
         storage: MockStorage::default(),
         api: MockApi::default(),
