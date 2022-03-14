@@ -36,15 +36,22 @@ impl From<SubspacesQuery> for DesmosQuery {
     }
 }
 
+impl From<RelationshipsQuery> for DesmosQuery {
+    fn from(query: RelationshipsQuery) -> Self {
+        Self::Relationships(query)
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::relationships::query::RelationshipsQuery;
     use crate::{
         profiles::query::ProfilesQuery, query::DesmosQuery, subspaces::query::SubspacesQuery,
     };
-    use cosmwasm_std::Addr;
+    use cosmwasm_std::{Addr, Uint64};
 
     #[test]
-    fn test_from_profiles_msg() {
+    fn test_from_profiles_query() {
         let query = ProfilesQuery::Profile {
             user: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
         };
@@ -53,11 +60,22 @@ mod tests {
     }
 
     #[test]
-    fn test_from_subspaces_msg() {
+    fn test_from_subspaces_query() {
         let query = SubspacesQuery::Subspaces {
             pagination: Default::default(),
         };
         let expected = DesmosQuery::Subspaces(query.clone());
         assert_eq!(expected, DesmosQuery::from(query));
+    }
+
+    #[test]
+    fn test_from_relationships_query() {
+        let query = RelationshipsQuery::Relationships {
+            user: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
+            subspace_id: Uint64::new(1),
+            pagination: None,
+        };
+        let expected = DesmosQuery::Relationships(query.clone());
+        assert_eq!(expected, DesmosQuery::from(query))
     }
 }
