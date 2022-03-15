@@ -15,6 +15,6 @@ pub struct UserBlock {
 #[serde(rename_all = "snake_case")]
 pub struct Relationship {
     pub creator: Addr,
-    pub recipient: Addr,
+    pub counterparty: Addr,
     pub subspace_id: Uint64,
 }

@@ -14,7 +14,7 @@ use crate::profiles::{
 use cosmwasm_std::{to_binary, Addr, Binary, ContractResult, Uint64};
 
 /**
-This file contains some useful mocks of the Desmos x/profiles modules types ready made to be used
+This file contains some useful mocks of the Desmos x/profiles module's types ready made to be used
 in any test
  **/
 

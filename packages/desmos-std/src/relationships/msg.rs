@@ -1,4 +1,4 @@
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -7,23 +7,23 @@ use serde::{Deserialize, Serialize};
 pub enum RelationshipsMsg {
     CreateRelationship {
         sender: Addr,
-        receiver: Addr,
-        subspace: String,
+        counterparty: Addr,
+        subspace_id: Uint64,
     },
     DeleteRelationship {
         user: Addr,
         counterparty: Addr,
-        subspace: String,
+        subspace_id: Uint64,
     },
     BlockUser {
         blocker: Addr,
         blocked: Addr,
         reason: String,
-        subspace: String,
+        subspace_id: Uint64,
     },
     UnblockUser {
         blocker: Addr,
         blocked: Addr,
-        subspace: String,
+        subspace_id: Uint64,
     },
 }

@@ -93,8 +93,8 @@ mod tests {
     fn test_from_relationships_msg() {
         let msg = RelationshipsMsg::CreateRelationship {
             sender: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            receiver: Addr::unchecked("cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t"),
-            subspace: "1".to_string(),
+            counterparty: Addr::unchecked("cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t"),
+            subspace_id: Uint64::new(1),
         };
         let expected = DesmosMsg::Relationships(msg.clone());
         assert_eq!(expected, DesmosMsg::from(msg))
