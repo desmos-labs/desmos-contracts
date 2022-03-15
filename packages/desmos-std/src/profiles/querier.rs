@@ -3,7 +3,7 @@ use crate::{
         models_query::{
             QueryApplicationLinkByClientIDResponse, QueryApplicationLinksResponse,
             QueryChainLinksResponse, QueryIncomingDtagTransferRequestResponse,
-            QueryProfileResponse, QueryUserApplicationLinkResponse, QueryUserChainLinkResponse,
+            QueryProfileResponse,
         },
         query::ProfilesQuery,
     },
@@ -47,54 +47,36 @@ impl<'a> ProfilesQuerier<'a> {
     pub fn query_chain_links(
         &self,
         user: Addr,
-        pagination: Option<PageRequest>,
-    ) -> StdResult<QueryChainLinksResponse> {
-        let request = DesmosQuery::Profiles(ProfilesQuery::ChainLinks { user, pagination });
-
-        let res: QueryChainLinksResponse = self.querier.query(&request.into())?;
-        Ok(res)
-    }
-
-    pub fn query_user_chain_link(
-        &self,
-        user: Addr,
         chain_name: String,
         target: String,
-    ) -> StdResult<QueryUserChainLinkResponse> {
-        let request = DesmosQuery::Profiles(ProfilesQuery::UserChainLink {
+        pagination: Option<PageRequest>,
+    ) -> StdResult<QueryChainLinksResponse> {
+        let request = DesmosQuery::Profiles(ProfilesQuery::ChainLinks {
             user,
             chain_name,
             target,
+            pagination,
         });
 
-        let res: QueryUserChainLinkResponse = self.querier.query(&request.into())?;
+        let res: QueryChainLinksResponse = self.querier.query(&request.into())?;
         Ok(res)
     }
 
     pub fn query_application_links(
         &self,
         user: Addr,
-        pagination: Option<PageRequest>,
-    ) -> StdResult<QueryApplicationLinksResponse> {
-        let request = DesmosQuery::Profiles(ProfilesQuery::AppLinks { user, pagination });
-
-        let res: QueryApplicationLinksResponse = self.querier.query(&request.into())?;
-        Ok(res)
-    }
-
-    pub fn query_user_application_link(
-        &self,
-        user: Addr,
         application: String,
         username: String,
-    ) -> StdResult<QueryUserApplicationLinkResponse> {
-        let request = DesmosQuery::Profiles(ProfilesQuery::UserAppLinks {
+        pagination: Option<PageRequest>,
+    ) -> StdResult<QueryApplicationLinksResponse> {
+        let request = DesmosQuery::Profiles(ProfilesQuery::AppLinks {
             user,
             application,
             username,
+            pagination,
         });
 
-        let res: QueryUserApplicationLinkResponse = self.querier.query(&request.into())?;
+        let res: QueryApplicationLinksResponse = self.querier.query(&request.into())?;
         Ok(res)
     }
 
@@ -118,7 +100,7 @@ mod tests {
             models_query::{
                 QueryApplicationLinkByClientIDResponse, QueryApplicationLinksResponse,
                 QueryChainLinksResponse, QueryIncomingDtagTransferRequestResponse,
-                QueryProfileResponse, QueryUserApplicationLinkResponse, QueryUserChainLinkResponse,
+                QueryProfileResponse,
             },
             querier::ProfilesQuerier,
         },
@@ -164,27 +146,16 @@ mod tests {
         let profiles_querier = ProfilesQuerier::new(deps.querier.deref());
 
         let response = profiles_querier
-            .query_chain_links(Addr::unchecked(""), None)
+            .query_chain_links(
+                Addr::unchecked(""),
+                "cosmos".to_string(),
+                "cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2".to_string(),
+                None,
+            )
             .unwrap();
         let expected = QueryChainLinksResponse {
             links: vec![MockProfilesQueries::get_mock_chain_link()],
             pagination: Default::default(),
-        };
-
-        assert_eq!(response, expected)
-    }
-
-    #[test]
-    fn test_query_user_chain_link() {
-        let owned_deps = mock_dependencies_with_custom_querier(&[]);
-        let deps = owned_deps.as_ref();
-        let profiles_querier = ProfilesQuerier::new(deps.querier.deref());
-
-        let response = profiles_querier
-            .query_user_chain_link(Addr::unchecked(""), "".to_string(), "".to_string())
-            .unwrap();
-        let expected = QueryUserChainLinkResponse {
-            link: MockProfilesQueries::get_mock_chain_link(),
         };
 
         assert_eq!(response, expected)
@@ -197,27 +168,16 @@ mod tests {
         let profiles_querier = ProfilesQuerier::new(deps.querier.deref());
 
         let response = profiles_querier
-            .query_application_links(Addr::unchecked(""), None)
+            .query_application_links(
+                Addr::unchecked(""),
+                "twitter".to_string(),
+                "goldrake".to_string(),
+                None,
+            )
             .unwrap();
         let expected = QueryApplicationLinksResponse {
             links: vec![MockProfilesQueries::get_mock_application_link()],
             pagination: Default::default(),
-        };
-
-        assert_eq!(response, expected)
-    }
-
-    #[test]
-    fn test_query_user_app_links() {
-        let owned_deps = mock_dependencies_with_custom_querier(&[]);
-        let deps = owned_deps.as_ref();
-        let profiles_querier = ProfilesQuerier::new(deps.querier.deref());
-
-        let response = profiles_querier
-            .query_user_application_link(Addr::unchecked(""), "".to_string(), "".to_string())
-            .unwrap();
-        let expected = QueryUserApplicationLinkResponse {
-            link: MockProfilesQueries::get_mock_application_link(),
         };
 
         assert_eq!(response, expected)

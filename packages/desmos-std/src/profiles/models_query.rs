@@ -33,12 +33,6 @@ pub struct QueryApplicationLinksResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub struct QueryUserApplicationLinkResponse {
-    pub link: ApplicationLink,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
 pub struct QueryApplicationLinkByClientIDResponse {
     pub link: ApplicationLink,
 }
@@ -49,10 +43,4 @@ pub struct QueryApplicationLinkByClientIDResponse {
 pub struct QueryChainLinksResponse {
     pub links: Vec<ChainLink>,
     pub pagination: PageResponse,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
-pub struct QueryUserChainLinkResponse {
-    pub link: ChainLink,
 }

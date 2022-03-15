@@ -15,21 +15,15 @@ pub enum ProfilesQuery {
     },
     ChainLinks {
         user: Addr,
-        pagination: Option<PageRequest>,
-    },
-    UserChainLink {
-        user: Addr,
         chain_name: String,
         target: String,
+        pagination: Option<PageRequest>,
     },
     AppLinks {
         user: Addr,
-        pagination: Option<PageRequest>,
-    },
-    UserAppLinks {
-        user: Addr,
         application: String,
         username: String,
+        pagination: Option<PageRequest>,
     },
     ApplicationLinkByChainID {
         client_id: String,
