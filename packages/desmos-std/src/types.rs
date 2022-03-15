@@ -5,16 +5,16 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PageRequest {
-    key: Option<Binary>,
-    offset: Uint64,
-    limit: Uint64,
-    count_total: bool,
-    reverse: bool,
+    pub key: Option<Binary>,
+    pub offset: Uint64,
+    pub limit: Uint64,
+    pub count_total: bool,
+    pub reverse: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub struct PageResponse {
-    next_key: Option<Binary>,
-    total: Uint64,
+    pub next_key: Option<Binary>,
+    pub total: Uint64,
 }
