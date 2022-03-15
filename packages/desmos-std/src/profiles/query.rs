@@ -14,15 +14,15 @@ pub enum ProfilesQuery {
         pagination: Option<PageRequest>,
     },
     ChainLinks {
-        user: Addr,
-        chain_name: String,
-        target: String,
+        user: Option<Addr>,
+        chain_name: Option<String>,
+        target: Option<String>,
         pagination: Option<PageRequest>,
     },
     AppLinks {
-        user: Addr,
-        application: String,
-        username: String,
+        user: Option<Addr>,
+        application: Option<String>,
+        username: Option<String>,
         pagination: Option<PageRequest>,
     },
     ApplicationLinkByChainID {

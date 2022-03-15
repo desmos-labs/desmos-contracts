@@ -185,9 +185,9 @@ mod tests {
     #[test]
     fn test_query_chain_links() {
         let query = ProfilesQuery::ChainLinks {
-            user: Addr::unchecked(""),
-            chain_name: "".to_string(),
-            target: "".to_string(),
+            user: Some(Addr::unchecked("")),
+            chain_name: Some("".to_string()),
+            target: Some("".to_string()),
             pagination: Default::default(),
         };
         let response = MockProfilesQuerier::query(&query);
@@ -201,9 +201,9 @@ mod tests {
     #[test]
     fn test_query_app_links() {
         let query = ProfilesQuery::AppLinks {
-            user: Addr::unchecked(""),
-            application: "".to_string(),
-            username: "".to_string(),
+            user: Some(Addr::unchecked("")),
+            application: Some("".to_string()),
+            username: Some("".to_string()),
             pagination: Default::default(),
         };
         let response = MockProfilesQuerier::query(&query);

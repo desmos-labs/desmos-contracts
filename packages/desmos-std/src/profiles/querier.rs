@@ -46,9 +46,9 @@ impl<'a> ProfilesQuerier<'a> {
 
     pub fn query_chain_links(
         &self,
-        user: Addr,
-        chain_name: String,
-        target: String,
+        user: Option<Addr>,
+        chain_name: Option<String>,
+        target: Option<String>,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryChainLinksResponse> {
         let request = DesmosQuery::Profiles(ProfilesQuery::ChainLinks {
@@ -64,9 +64,9 @@ impl<'a> ProfilesQuerier<'a> {
 
     pub fn query_application_links(
         &self,
-        user: Addr,
-        application: String,
-        username: String,
+        user: Option<Addr>,
+        application: Option<String>,
+        username: Option<String>,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryApplicationLinksResponse> {
         let request = DesmosQuery::Profiles(ProfilesQuery::AppLinks {
@@ -147,9 +147,9 @@ mod tests {
 
         let response = profiles_querier
             .query_chain_links(
-                Addr::unchecked(""),
-                "cosmos".to_string(),
-                "cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2".to_string(),
+                Some(Addr::unchecked("")),
+                Some("cosmos".to_string()),
+                Some("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2".to_string()),
                 None,
             )
             .unwrap();
@@ -169,9 +169,9 @@ mod tests {
 
         let response = profiles_querier
             .query_application_links(
-                Addr::unchecked(""),
-                "twitter".to_string(),
-                "goldrake".to_string(),
+                Some(Addr::unchecked("")),
+                Some("twitter".to_string()),
+                Some("goldrake".to_string()),
                 None,
             )
             .unwrap();
