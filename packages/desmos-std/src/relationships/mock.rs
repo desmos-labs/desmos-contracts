@@ -6,7 +6,7 @@ use crate::relationships::{
 use cosmwasm_std::{to_binary, Addr, Binary, ContractResult, Uint64};
 
 /**
-This file contains some useful mocks of the Desmos x/profiles modules types ready made to be used
+This file contains some useful mocks of the Desmos x/relationships module's types ready made to be used
 in any test
  **/
 
@@ -16,7 +16,7 @@ impl MockRelationshipsQueries {
     pub fn get_mock_relationship() -> Relationship {
         Relationship {
             creator: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
-            recipient: Addr::unchecked("desmos1rfv0f7mx7w9d3jv3h803u38vqym9ygg344asm3"),
+            counterparty: Addr::unchecked("desmos1rfv0f7mx7w9d3jv3h803u38vqym9ygg344asm3"),
             subspace_id: Uint64::new(1),
         }
     }

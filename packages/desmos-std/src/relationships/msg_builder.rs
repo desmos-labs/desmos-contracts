@@ -1,5 +1,5 @@
 use crate::relationships::msg::RelationshipsMsg;
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint64};
 
 pub struct RelationshipsMsgBuilder {}
 
@@ -19,13 +19,13 @@ impl RelationshipsMsgBuilder {
     pub fn create_relationship(
         &self,
         sender: Addr,
-        receiver: Addr,
-        subspace: String,
+        counterparty: Addr,
+        subspace_id: Uint64,
     ) -> RelationshipsMsg {
         RelationshipsMsg::CreateRelationship {
             sender,
-            receiver,
-            subspace,
+            counterparty,
+            subspace_id,
         }
     }
 
@@ -33,12 +33,12 @@ impl RelationshipsMsgBuilder {
         &self,
         user: Addr,
         counterparty: Addr,
-        subspace: String,
+        subspace_id: Uint64,
     ) -> RelationshipsMsg {
         RelationshipsMsg::DeleteRelationship {
             user,
             counterparty,
-            subspace,
+            subspace_id,
         }
     }
 
@@ -47,21 +47,26 @@ impl RelationshipsMsgBuilder {
         blocker: Addr,
         blocked: Addr,
         reason: String,
-        subspace: String,
+        subspace_id: Uint64,
     ) -> RelationshipsMsg {
         RelationshipsMsg::BlockUser {
             blocker,
             blocked,
             reason,
-            subspace,
+            subspace_id,
         }
     }
 
-    pub fn unblock_user(&self, blocker: Addr, blocked: Addr, subspace: String) -> RelationshipsMsg {
+    pub fn unblock_user(
+        &self,
+        blocker: Addr,
+        blocked: Addr,
+        subspace_id: Uint64,
+    ) -> RelationshipsMsg {
         RelationshipsMsg::UnblockUser {
             blocker,
             blocked,
-            subspace,
+            subspace_id,
         }
     }
 }
@@ -69,7 +74,7 @@ impl RelationshipsMsgBuilder {
 #[cfg(test)]
 mod tests {
     use crate::relationships::{msg::RelationshipsMsg, msg_builder::RelationshipsMsgBuilder};
-    use cosmwasm_std::Addr;
+    use cosmwasm_std::{Addr, Uint64};
 
     #[test]
     fn test_create_relationship() {
@@ -77,12 +82,12 @@ mod tests {
         let msg = builder.create_relationship(
             Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
             Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            "1".to_string(),
+            Uint64::new(1),
         );
         let expected = RelationshipsMsg::CreateRelationship {
             sender: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
-            receiver: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            subspace: "1".to_string(),
+            counterparty: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
+            subspace_id: Uint64::new(1),
         };
         assert_eq!(expected, msg)
     }
@@ -93,12 +98,12 @@ mod tests {
         let msg = builder.delete_relationship(
             Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
             Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            "1".to_string(),
+            Uint64::new(1),
         );
         let expected = RelationshipsMsg::DeleteRelationship {
             user: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
             counterparty: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            subspace: "1".to_string(),
+            subspace_id: Uint64::new(1),
         };
         assert_eq!(expected, msg)
     }
@@ -110,13 +115,13 @@ mod tests {
             Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
             Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
             "test".to_string(),
-            "1".to_string(),
+            Uint64::new(1),
         );
         let expected = RelationshipsMsg::BlockUser {
             blocker: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
             blocked: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
             reason: "test".to_string(),
-            subspace: "1".to_string(),
+            subspace_id: Uint64::new(1),
         };
         assert_eq!(expected, msg)
     }
@@ -127,12 +132,12 @@ mod tests {
         let msg = builder.unblock_user(
             Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
             Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            "1".to_string(),
+            Uint64::new(1),
         );
         let expected = RelationshipsMsg::UnblockUser {
             blocker: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
             blocked: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            subspace: "1".to_string(),
+            subspace_id: Uint64::new(1),
         };
         assert_eq!(expected, msg)
     }

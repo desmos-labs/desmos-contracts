@@ -10,7 +10,7 @@ use crate::subspaces::{
 };
 
 /**
-This file contains some useful mocks of the Desmos x/subspaces modules types ready made to be used
+This file contains some useful mocks of the Desmos x/subspaces module's types ready made to be used
 in any test
  **/
 
