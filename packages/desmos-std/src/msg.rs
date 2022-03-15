@@ -64,21 +64,15 @@ impl From<RelationshipsMsg> for DesmosMsg {
 
 #[cfg(test)]
 mod tests {
-    use crate::msg::DesmosMsg;
-
-    #[cfg(feature = "profiles")]
-    use crate::profiles::msg::ProfilesMsg;
-
-    #[cfg(feature = "relationships")]
-    use crate::relationships::msg::RelationshipsMsg;
-
-    #[cfg(feature = "subspaces")]
-    use crate::subspaces::msg::SubspacesMsg;
-
-    use cosmwasm_std::Addr;
+    use crate::{
+        msg::DesmosMsg,
+        profiles::msg::ProfilesMsg,
+        relationships::msg::RelationshipsMsg,
+        subspaces::msg::SubspacesMsg,
+    };
+    use cosmwasm_std::{Addr, Uint64};
 
     #[test]
-    #[cfg(feature = "profiles")]
     fn test_from_profile_msg() {
         let msg = ProfilesMsg::RequestDtagTransfer {
             receiver: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
@@ -89,7 +83,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "relationships")]
     fn test_from_relationships_msg() {
         let msg = RelationshipsMsg::CreateRelationship {
             sender: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
@@ -101,7 +94,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "subspaces")]
     fn test_from_subspaces_msg() {
         let msg = SubspacesMsg::CreateSubspace {
             name: "test".to_string(),

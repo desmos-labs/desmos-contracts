@@ -41,29 +41,23 @@ pub fn mock_dependencies_with_custom_querier(
 
 #[cfg(test)]
 mod tests {
-    use crate::mock::mock_dependencies_with_custom_querier;
-
-    #[cfg(feature = "relationships")]
-    use crate::relationships::{
-        mock::MockRelationshipsQueries, models_query::QueryRelationshipsResponse,
-        querier::RelationshipsQuerier,
+    use crate::{
+        mock::mock_dependencies_with_custom_querier,
+        relationships::{
+            mock::MockRelationshipsQueries, models_query::QueryRelationshipsResponse,
+            querier::RelationshipsQuerier,
+        },
+        profiles::{
+            mock::MockProfilesQueries, models_query::QueryProfileResponse, querier::ProfilesQuerier,
+        },
+        subspaces::{
+            mock::MockSubspacesQueries, querier::SubspacesQuerier, query_types::QuerySubspaceResponse,
+        },
     };
-
-    #[cfg(feature = "profiles")]
-    use crate::profiles::{
-        mock::MockProfilesQueries, models_query::QueryProfileResponse, querier::ProfilesQuerier,
-    };
-
-    #[cfg(feature = "subspaces")]
-    use crate::subspaces::{
-        mock::MockSubspacesQueries, querier::SubspacesQuerier, query_types::QuerySubspaceResponse,
-    };
-
     use cosmwasm_std::{Addr, Uint64};
     use std::ops::Deref;
 
     #[test]
-    #[cfg(feature = "profiles")]
     fn test_profiles_querier_mock() {
         let owned_deps = mock_dependencies_with_custom_querier(&[]);
         let deps = owned_deps.as_ref();
@@ -76,7 +70,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "subspaces")]
     fn test_subspaces_querier() {
         let owned_deps = mock_dependencies_with_custom_querier(&[]);
         let deps = owned_deps.as_ref();
@@ -89,7 +82,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "relationships")]
     fn test_relationships_querier() {
         let owned_deps = mock_dependencies_with_custom_querier(&[]);
         let deps = owned_deps.as_ref();

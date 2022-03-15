@@ -56,18 +56,15 @@ impl From<RelationshipsQuery> for DesmosQuery {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "profiles")]
-    use crate::profiles::query::ProfilesQuery;
-    use crate::query::DesmosQuery;
-    #[cfg(feature = "relationships")]
-    use crate::relationships::query::RelationshipsQuery;
-    #[cfg(feature = "subspaces")]
-    use crate::subspaces::query::SubspacesQuery;
-
+    use crate::{
+        query::DesmosQuery,
+        profiles::query::ProfilesQuery,
+        relationships::query::RelationshipsQuery,
+        subspaces::query::SubspacesQuery,
+    };
     use cosmwasm_std::{Addr, Uint64};
 
     #[test]
-    #[cfg(feature = "profiles")]
     fn test_from_profiles_query() {
         let query = ProfilesQuery::Profile {
             user: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
@@ -77,7 +74,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "subspaces")]
     fn test_from_subspaces_query() {
         let query = SubspacesQuery::Subspaces {
             pagination: Default::default(),
@@ -87,7 +83,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "relationships")]
     fn test_from_relationships_query() {
         let query = RelationshipsQuery::Relationships {
             user: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
