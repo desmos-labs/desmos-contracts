@@ -57,10 +57,8 @@ impl From<RelationshipsQuery> for DesmosQuery {
 #[cfg(test)]
 mod tests {
     use crate::{
-        query::DesmosQuery,
-        profiles::query::ProfilesQuery,
-        relationships::query::RelationshipsQuery,
-        subspaces::query::SubspacesQuery,
+        profiles::query::ProfilesQuery, query::DesmosQuery,
+        relationships::query::RelationshipsQuery, subspaces::query::SubspacesQuery,
     };
     use cosmwasm_std::{Addr, Uint64};
 

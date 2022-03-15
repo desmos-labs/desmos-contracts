@@ -65,9 +65,7 @@ impl From<RelationshipsMsg> for DesmosMsg {
 #[cfg(test)]
 mod tests {
     use crate::{
-        msg::DesmosMsg,
-        profiles::msg::ProfilesMsg,
-        relationships::msg::RelationshipsMsg,
+        msg::DesmosMsg, profiles::msg::ProfilesMsg, relationships::msg::RelationshipsMsg,
         subspaces::msg::SubspacesMsg,
     };
     use cosmwasm_std::{Addr, Uint64};

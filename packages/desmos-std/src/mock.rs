@@ -43,15 +43,16 @@ pub fn mock_dependencies_with_custom_querier(
 mod tests {
     use crate::{
         mock::mock_dependencies_with_custom_querier,
+        profiles::{
+            mock::MockProfilesQueries, models_query::QueryProfileResponse, querier::ProfilesQuerier,
+        },
         relationships::{
             mock::MockRelationshipsQueries, models_query::QueryRelationshipsResponse,
             querier::RelationshipsQuerier,
         },
-        profiles::{
-            mock::MockProfilesQueries, models_query::QueryProfileResponse, querier::ProfilesQuerier,
-        },
         subspaces::{
-            mock::MockSubspacesQueries, querier::SubspacesQuerier, query_types::QuerySubspaceResponse,
+            mock::MockSubspacesQueries, querier::SubspacesQuerier,
+            query_types::QuerySubspaceResponse,
         },
     };
     use cosmwasm_std::{Addr, Uint64};
