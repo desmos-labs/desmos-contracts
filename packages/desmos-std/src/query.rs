@@ -83,7 +83,12 @@ mod tests {
     #[test]
     fn test_from_relationships_query() {
         let query = RelationshipsQuery::Relationships {
-            user: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
+            user: Some(Addr::unchecked(
+                "cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2",
+            )),
+            counterparty: Some(Addr::unchecked(
+                "desmos1rfv0f7mx7w9d3jv3h803u38vqym9ygg344asm3",
+            )),
             subspace_id: Uint64::new(1),
             pagination: None,
         };

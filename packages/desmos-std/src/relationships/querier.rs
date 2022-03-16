@@ -21,13 +21,15 @@ impl<'a> RelationshipsQuerier<'a> {
 
     pub fn query_relationships(
         &self,
-        user: Addr,
         subspace_id: Uint64,
+        user: Option<Addr>,
+        counterparty: Option<Addr>,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryRelationshipsResponse> {
         let request = DesmosQuery::Relationships(RelationshipsQuery::Relationships {
-            user,
             subspace_id,
+            user,
+            counterparty,
             pagination,
         });
 
@@ -37,13 +39,15 @@ impl<'a> RelationshipsQuerier<'a> {
 
     pub fn query_blocks(
         &self,
-        user: Addr,
         subspace_id: Uint64,
+        blocker: Option<Addr>,
+        blocked: Option<Addr>,
         pagination: Option<PageRequest>,
     ) -> StdResult<QueryBlocksResponse> {
         let request = DesmosQuery::Relationships(RelationshipsQuery::Blocks {
-            user,
             subspace_id,
+            blocker,
+            blocked,
             pagination,
         });
 
@@ -72,7 +76,12 @@ mod tests {
         let relationships_querier = RelationshipsQuerier::new(deps.querier.deref());
 
         let response = relationships_querier
-            .query_relationships(Addr::unchecked(""), Uint64::new(0), None)
+            .query_relationships(
+                Uint64::new(0),
+                Some(Addr::unchecked("")),
+                Some(Addr::unchecked("")),
+                None,
+            )
             .unwrap();
         let expected = QueryRelationshipsResponse {
             relationships: vec![MockRelationshipsQueries::get_mock_relationship()],
@@ -89,7 +98,12 @@ mod tests {
         let relationships_querier = RelationshipsQuerier::new(deps.querier.deref());
 
         let response = relationships_querier
-            .query_blocks(Addr::unchecked(""), Uint64::new(0), None)
+            .query_blocks(
+                Uint64::new(0),
+                Some(Addr::unchecked("")),
+                Some(Addr::unchecked("")),
+                None,
+            )
             .unwrap();
         let expected = QueryBlocksResponse {
             blocks: vec![MockRelationshipsQueries::get_mock_user_block()],

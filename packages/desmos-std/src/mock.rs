@@ -88,7 +88,12 @@ mod tests {
         let deps = owned_deps.as_ref();
         let querier = RelationshipsQuerier::new(deps.querier.deref());
         let response = querier
-            .query_relationships(Addr::unchecked(""), Uint64::new(1), None)
+            .query_relationships(
+                Uint64::new(1),
+                Some(Addr::unchecked("")),
+                Some(Addr::unchecked("")),
+                None,
+            )
             .unwrap();
         let expected = QueryRelationshipsResponse {
             relationships: vec![MockRelationshipsQueries::get_mock_relationship()],

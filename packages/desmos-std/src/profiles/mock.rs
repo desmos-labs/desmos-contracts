@@ -7,7 +7,6 @@ use crate::profiles::{
     models_query::{
         QueryApplicationLinkByClientIDResponse, QueryApplicationLinksResponse,
         QueryChainLinksResponse, QueryIncomingDtagTransferRequestResponse, QueryProfileResponse,
-        QueryUserApplicationLinkResponse, QueryUserChainLinkResponse,
     },
     query::ProfilesQuery,
 };
@@ -128,22 +127,12 @@ impl MockProfilesQuerier {
                     pagination: Default::default(),
                 })
             }
-            ProfilesQuery::UserChainLink { .. } => {
-                let user_chain_link = MockProfilesQueries::get_mock_chain_link();
-                to_binary(&QueryUserChainLinkResponse {
-                    link: user_chain_link,
-                })
-            }
             ProfilesQuery::AppLinks { .. } => {
                 let app_link = MockProfilesQueries::get_mock_application_link();
                 to_binary(&QueryApplicationLinksResponse {
                     links: vec![app_link],
                     pagination: Default::default(),
                 })
-            }
-            ProfilesQuery::UserAppLinks { .. } => {
-                let app_link = MockProfilesQueries::get_mock_application_link();
-                to_binary(&QueryUserApplicationLinkResponse { link: app_link })
             }
             ProfilesQuery::ApplicationLinkByChainID { .. } => {
                 let app_link = MockProfilesQueries::get_mock_application_link();
@@ -161,7 +150,7 @@ mod tests {
         models_query::{
             QueryApplicationLinkByClientIDResponse, QueryApplicationLinksResponse,
             QueryChainLinksResponse, QueryIncomingDtagTransferRequestResponse,
-            QueryProfileResponse, QueryUserApplicationLinkResponse, QueryUserChainLinkResponse,
+            QueryProfileResponse,
         },
         query::ProfilesQuery,
     };
@@ -196,7 +185,9 @@ mod tests {
     #[test]
     fn test_query_chain_links() {
         let query = ProfilesQuery::ChainLinks {
-            user: Addr::unchecked(""),
+            user: Some(Addr::unchecked("")),
+            chain_name: Some("".to_string()),
+            target: Some("".to_string()),
             pagination: Default::default(),
         };
         let response = MockProfilesQuerier::query(&query);
@@ -208,43 +199,17 @@ mod tests {
     }
 
     #[test]
-    fn test_query_user_chain_link() {
-        let query = ProfilesQuery::UserChainLink {
-            user: Addr::unchecked(""),
-            chain_name: "cosmos".to_string(),
-            target: "".to_string(),
-        };
-        let response = MockProfilesQuerier::query(&query);
-        let expected = to_binary(&QueryUserChainLinkResponse {
-            link: MockProfilesQueries::get_mock_chain_link(),
-        });
-        assert_eq!(response.into_result().ok(), expected.ok())
-    }
-
-    #[test]
     fn test_query_app_links() {
         let query = ProfilesQuery::AppLinks {
-            user: Addr::unchecked(""),
+            user: Some(Addr::unchecked("")),
+            application: Some("".to_string()),
+            username: Some("".to_string()),
             pagination: Default::default(),
         };
         let response = MockProfilesQuerier::query(&query);
         let expected = to_binary(&QueryApplicationLinksResponse {
             links: vec![MockProfilesQueries::get_mock_application_link()],
             pagination: Default::default(),
-        });
-        assert_eq!(response.into_result().ok(), expected.ok())
-    }
-
-    #[test]
-    fn test_query_user_app_links() {
-        let query = ProfilesQuery::UserAppLinks {
-            user: Addr::unchecked(""),
-            application: "".to_string(),
-            username: "".to_string(),
-        };
-        let response = MockProfilesQuerier::query(&query);
-        let expected = to_binary(&QueryUserApplicationLinkResponse {
-            link: MockProfilesQueries::get_mock_application_link(),
         });
         assert_eq!(response.into_result().ok(), expected.ok())
     }

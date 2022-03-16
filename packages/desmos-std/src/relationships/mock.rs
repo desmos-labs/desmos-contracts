@@ -67,7 +67,8 @@ mod tests {
     #[test]
     fn test_query_relationships() {
         let query = RelationshipsQuery::Relationships {
-            user: Addr::unchecked(""),
+            user: Some(Addr::unchecked("")),
+            counterparty: Some(Addr::unchecked("")),
             subspace_id: Uint64::new(1),
             pagination: Default::default(),
         };
@@ -82,7 +83,8 @@ mod tests {
     #[test]
     fn test_query_blocks() {
         let query = RelationshipsQuery::Blocks {
-            user: Addr::unchecked(""),
+            blocker: Some(Addr::unchecked("")),
+            blocked: Some(Addr::unchecked("")),
             subspace_id: Uint64::new(1),
             pagination: Default::default(),
         };

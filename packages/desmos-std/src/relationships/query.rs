@@ -7,13 +7,15 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum RelationshipsQuery {
     Relationships {
-        user: Addr,
         subspace_id: Uint64,
+        user: Option<Addr>,
+        counterparty: Option<Addr>,
         pagination: Option<PageRequest>,
     },
     Blocks {
-        user: Addr,
         subspace_id: Uint64,
+        blocker: Option<Addr>,
+        blocked: Option<Addr>,
         pagination: Option<PageRequest>,
     },
 }

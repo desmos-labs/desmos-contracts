@@ -23,7 +23,7 @@ impl RelationshipsMsgBuilder {
         subspace_id: Uint64,
     ) -> RelationshipsMsg {
         RelationshipsMsg::CreateRelationship {
-            sender,
+            signer: sender,
             counterparty,
             subspace_id,
         }
@@ -36,7 +36,7 @@ impl RelationshipsMsgBuilder {
         subspace_id: Uint64,
     ) -> RelationshipsMsg {
         RelationshipsMsg::DeleteRelationship {
-            user,
+            signer: user,
             counterparty,
             subspace_id,
         }
@@ -85,7 +85,7 @@ mod tests {
             Uint64::new(1),
         );
         let expected = RelationshipsMsg::CreateRelationship {
-            sender: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
+            signer: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
             counterparty: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
             subspace_id: Uint64::new(1),
         };
@@ -101,7 +101,7 @@ mod tests {
             Uint64::new(1),
         );
         let expected = RelationshipsMsg::DeleteRelationship {
-            user: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
+            signer: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
             counterparty: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
             subspace_id: Uint64::new(1),
         };
