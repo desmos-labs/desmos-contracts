@@ -70,7 +70,7 @@ mod tests {
     #[test]
     fn test_from_relationships_msg() {
         let msg = RelationshipsMsg::CreateRelationship {
-            sender: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
+            signer: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
             counterparty: Addr::unchecked("cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t"),
             subspace_id: Uint64::new(1),
         };

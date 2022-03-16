@@ -6,12 +6,12 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum RelationshipsMsg {
     CreateRelationship {
-        sender: Addr,
+        signer: Addr,
         counterparty: Addr,
         subspace_id: Uint64,
     },
     DeleteRelationship {
-        user: Addr,
+        signer: Addr,
         counterparty: Addr,
         subspace_id: Uint64,
     },
