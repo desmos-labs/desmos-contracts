@@ -2,7 +2,9 @@ use cosmwasm_std::{CosmosMsg, CustomMsg};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{profiles::msg::ProfilesMsg, subspaces::msg::SubspacesMsg};
+use crate::{
+    profiles::msg::ProfilesMsg, relationships::msg::RelationshipsMsg, subspaces::msg::SubspacesMsg,
+};
 
 // Use the serde `rename_all` tag in order to produce the following json file structure
 // ## Example
@@ -18,6 +20,7 @@ use crate::{profiles::msg::ProfilesMsg, subspaces::msg::SubspacesMsg};
 pub enum DesmosMsg {
     Profiles(ProfilesMsg),
     Subspaces(SubspacesMsg),
+    Relationships(RelationshipsMsg),
 }
 
 impl Into<CosmosMsg<DesmosMsg>> for DesmosMsg {
@@ -40,19 +43,38 @@ impl From<SubspacesMsg> for DesmosMsg {
     }
 }
 
+impl From<RelationshipsMsg> for DesmosMsg {
+    fn from(msg: RelationshipsMsg) -> Self {
+        Self::Relationships(msg)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{msg::DesmosMsg, profiles::msg::ProfilesMsg, subspaces::msg::SubspacesMsg};
-    use cosmwasm_std::Addr;
+    use crate::{
+        msg::DesmosMsg, profiles::msg::ProfilesMsg, relationships::msg::RelationshipsMsg,
+        subspaces::msg::SubspacesMsg,
+    };
+    use cosmwasm_std::{Addr, Uint64};
 
     #[test]
     fn test_from_profile_msg() {
-        let msg = ProfilesMsg::CreateRelationship {
-            sender: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            receiver: Addr::unchecked("cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t"),
-            subspace: "1".to_string(),
+        let msg = ProfilesMsg::RequestDtagTransfer {
+            receiver: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
+            sender: Addr::unchecked("cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t"),
         };
         let expected = DesmosMsg::Profiles(msg.clone());
+        assert_eq!(expected, DesmosMsg::from(msg))
+    }
+
+    #[test]
+    fn test_from_relationships_msg() {
+        let msg = RelationshipsMsg::CreateRelationship {
+            signer: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
+            counterparty: Addr::unchecked("cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t"),
+            subspace_id: Uint64::new(1),
+        };
+        let expected = DesmosMsg::Relationships(msg.clone());
         assert_eq!(expected, DesmosMsg::from(msg))
     }
 

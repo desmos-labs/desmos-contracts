@@ -101,55 +101,6 @@ impl ProfilesMsgBuilder {
             timeout_timestamp,
         }
     }
-
-    pub fn create_relationship(
-        &self,
-        sender: Addr,
-        receiver: Addr,
-        subspace: String,
-    ) -> ProfilesMsg {
-        ProfilesMsg::CreateRelationship {
-            sender,
-            receiver,
-            subspace,
-        }
-    }
-
-    pub fn delete_relationship(
-        &self,
-        user: Addr,
-        counterparty: Addr,
-        subspace: String,
-    ) -> ProfilesMsg {
-        ProfilesMsg::DeleteRelationship {
-            user,
-            counterparty,
-            subspace,
-        }
-    }
-
-    pub fn block_user(
-        &self,
-        blocker: Addr,
-        blocked: Addr,
-        reason: String,
-        subspace: String,
-    ) -> ProfilesMsg {
-        ProfilesMsg::BlockUser {
-            blocker,
-            blocked,
-            reason,
-            subspace,
-        }
-    }
-
-    pub fn unblock_user(&self, blocker: Addr, blocked: Addr, subspace: String) -> ProfilesMsg {
-        ProfilesMsg::UnblockUser {
-            blocker,
-            blocked,
-            subspace,
-        }
-    }
 }
 
 #[cfg(test)]
@@ -332,72 +283,6 @@ mod tests {
             source_channel: "123".to_string(),
             timeout_height: timeout_height,
             timeout_timestamp: Uint64::new(1),
-        };
-        assert_eq!(expected, msg)
-    }
-
-    #[test]
-    fn test_create_relationship() {
-        let builder = ProfilesMsgBuilder::default();
-        let msg = builder.create_relationship(
-            Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
-            Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            "1".to_string(),
-        );
-        let expected = ProfilesMsg::CreateRelationship {
-            sender: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
-            receiver: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            subspace: "1".to_string(),
-        };
-        assert_eq!(expected, msg)
-    }
-
-    #[test]
-    fn test_delete_relationship() {
-        let builder = ProfilesMsgBuilder::default();
-        let msg = builder.delete_relationship(
-            Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
-            Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            "1".to_string(),
-        );
-        let expected = ProfilesMsg::DeleteRelationship {
-            user: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
-            counterparty: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            subspace: "1".to_string(),
-        };
-        assert_eq!(expected, msg)
-    }
-
-    #[test]
-    fn test_block_user() {
-        let builder = ProfilesMsgBuilder::default();
-        let msg = builder.block_user(
-            Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
-            Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            "test".to_string(),
-            "1".to_string(),
-        );
-        let expected = ProfilesMsg::BlockUser {
-            blocker: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
-            blocked: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            reason: "test".to_string(),
-            subspace: "1".to_string(),
-        };
-        assert_eq!(expected, msg)
-    }
-
-    #[test]
-    fn test_unblock_user() {
-        let builder = ProfilesMsgBuilder::default();
-        let msg = builder.unblock_user(
-            Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
-            Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            "1".to_string(),
-        );
-        let expected = ProfilesMsg::UnblockUser {
-            blocker: Addr::unchecked("cosmos18xnmlzqrqr6zt526pnczxe65zk3f4xgmndpxn2"),
-            blocked: Addr::unchecked("cosmos1qzskhrcjnkdz2ln4yeafzsdwht8ch08j4wed69"),
-            subspace: "1".to_string(),
         };
         assert_eq!(expected, msg)
     }

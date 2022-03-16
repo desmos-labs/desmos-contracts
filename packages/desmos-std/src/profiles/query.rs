@@ -1,5 +1,5 @@
 use crate::types::PageRequest;
-use cosmwasm_std::{Addr, Uint64};
+use cosmwasm_std::Addr;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -13,33 +13,17 @@ pub enum ProfilesQuery {
         receiver: Addr,
         pagination: Option<PageRequest>,
     },
-    Relationships {
-        user: Addr,
-        subspace_id: Uint64,
-        pagination: Option<PageRequest>,
-    },
-    Blocks {
-        user: Addr,
-        subspace_id: Uint64,
-        pagination: Option<PageRequest>,
-    },
     ChainLinks {
-        user: Addr,
+        user: Option<Addr>,
+        chain_name: Option<String>,
+        target: Option<String>,
         pagination: Option<PageRequest>,
-    },
-    UserChainLink {
-        user: Addr,
-        chain_name: String,
-        target: String,
     },
     AppLinks {
-        user: Addr,
+        user: Option<Addr>,
+        application: Option<String>,
+        username: Option<String>,
         pagination: Option<PageRequest>,
-    },
-    UserAppLinks {
-        user: Addr,
-        application: String,
-        username: String,
     },
     ApplicationLinkByChainID {
         client_id: String,
