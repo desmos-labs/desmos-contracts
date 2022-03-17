@@ -2,9 +2,14 @@ use cosmwasm_std::{CosmosMsg, CustomMsg};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    profiles::msg::ProfilesMsg, relationships::msg::RelationshipsMsg, subspaces::msg::SubspacesMsg,
-};
+#[cfg(feature = "profiles")]
+use crate::profiles::msg::ProfilesMsg;
+
+#[cfg(feature = "subspaces")]
+use crate::subspaces::msg::SubspacesMsg;
+
+#[cfg(feature = "relationships")]
+use crate::relationships::msg::RelationshipsMsg;
 
 // Use the serde `rename_all` tag in order to produce the following json file structure
 // ## Example
@@ -18,8 +23,13 @@ use crate::{
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case", tag = "route", content = "msg_data")]
 pub enum DesmosMsg {
+    #[cfg(feature = "profiles")]
     Profiles(ProfilesMsg),
+
+    #[cfg(feature = "subspaces")]
     Subspaces(SubspacesMsg),
+
+    #[cfg(feature = "relationships")]
     Relationships(RelationshipsMsg),
 }
 
@@ -31,18 +41,21 @@ impl Into<CosmosMsg<DesmosMsg>> for DesmosMsg {
 
 impl CustomMsg for DesmosMsg {}
 
+#[cfg(feature = "profiles")]
 impl From<ProfilesMsg> for DesmosMsg {
     fn from(msg: ProfilesMsg) -> Self {
         Self::Profiles(msg)
     }
 }
 
+#[cfg(feature = "subspaces")]
 impl From<SubspacesMsg> for DesmosMsg {
     fn from(msg: SubspacesMsg) -> Self {
         Self::Subspaces(msg)
     }
 }
 
+#[cfg(feature = "relationships")]
 impl From<RelationshipsMsg> for DesmosMsg {
     fn from(msg: RelationshipsMsg) -> Self {
         Self::Relationships(msg)
