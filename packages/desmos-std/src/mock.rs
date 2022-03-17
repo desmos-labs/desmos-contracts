@@ -8,10 +8,7 @@ use crate::relationships::mock::MockRelationshipsQuerier;
 use crate::subspaces::mock::MockSubspacesQuerier;
 
 use crate::query::DesmosQuery;
-use cosmwasm_std::{
-    testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR},
-    Coin, CustomQuery, OwnedDeps, SystemResult,
-};
+use cosmwasm_std::{testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR}, Coin, CustomQuery, OwnedDeps, SystemResult, SystemError};
 use std::marker::PhantomData;
 
 /// Replacement for cosmwasm_std::testing::mock_dependencies
@@ -30,6 +27,7 @@ pub fn mock_dependencies_with_custom_querier(
             DesmosQuery::Relationships(query) => {
                 SystemResult::Ok(MockRelationshipsQuerier::query(query))
             }
+            _ => SystemResult::Err(SystemError::Unknown {})
         });
     OwnedDeps::<_, _, _, DesmosQuery> {
         storage: MockStorage::default(),
