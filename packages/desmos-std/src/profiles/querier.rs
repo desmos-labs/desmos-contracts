@@ -1,3 +1,5 @@
+use crate::iter::page_iterator::{Page, PageIterator};
+use crate::profiles::models_app_links::ApplicationLink;
 use crate::{
     profiles::{
         models_query::{
@@ -11,8 +13,6 @@ use crate::{
     types::PageRequest,
 };
 use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult, Uint64};
-use crate::iter::page_iterator::{Page, PageIterator};
-use crate::profiles::models_app_links::ApplicationLink;
 
 pub struct ProfilesQuerier<'a> {
     querier: QuerierWrapper<'a, DesmosQuery>,
@@ -83,18 +83,26 @@ impl<'a> ProfilesQuerier<'a> {
     }
 
     pub fn query_application_links_it(&self, user: Addr) -> PageIterator<ApplicationLink> {
-        PageIterator::new(Box::new(move |offset, items| {
-            let response = self.query_application_links(Some(user.clone()), None, None, Some(PageRequest {
-                key: None,
-                offset: Uint64::from(offset),
-                limit: Uint64::from(items),
-                reverse: false,
-                count_total: false,
-            }))?;
-            Ok(Page {
-                items: response.links
-            })
-        }), 10)
+        PageIterator::new(
+            Box::new(move |offset, items| {
+                let response = self.query_application_links(
+                    Some(user.clone()),
+                    None,
+                    None,
+                    Some(PageRequest {
+                        key: None,
+                        offset: Uint64::from(offset),
+                        limit: Uint64::from(items),
+                        reverse: false,
+                        count_total: false,
+                    }),
+                )?;
+                Ok(Page {
+                    items: response.links,
+                })
+            }),
+            10,
+        )
     }
 
     pub fn query_application_link_by_client_id(
@@ -206,14 +214,16 @@ mod tests {
         let deps = owned_deps.as_ref();
         let profiles_querier = ProfilesQuerier::new(deps.querier.deref());
 
-        let mut iterator = profiles_querier
-            .query_application_links_it(Addr::unchecked(""));
+        let mut iterator = profiles_querier.query_application_links_it(Addr::unchecked(""));
 
         let first = iterator.next();
         let second = iterator.next();
 
         assert!(first.is_some());
-        assert_eq!(first.unwrap().unwrap(), MockProfilesQueries::get_mock_application_link());
+        assert_eq!(
+            first.unwrap().unwrap(),
+            MockProfilesQueries::get_mock_application_link()
+        );
         assert!(second.is_none());
     }
 

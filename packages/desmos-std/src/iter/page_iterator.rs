@@ -7,7 +7,7 @@ pub type Fetcher<'a, T> = Box<dyn Fn(u64, u64) -> StdResult<Page<T>> + 'a>;
 /// A page of a elements.
 pub struct Page<T> {
     /// List of elements present in the page.
-    pub items: Vec<T>
+    pub items: Vec<T>,
 }
 
 /// Iterator that fetch paginated elements and allow to iterate over
@@ -56,7 +56,7 @@ impl<'a, T: Clone> Iterator for PageIterator<'a, T> {
         }
 
         // If we have a page and we have iterate over all the items let's check
-        // if we need to fetch a new page or  we have iterate over all the possible items
+        // if we need to fetch a new page or we have iterate over all the possible items
         if let Some(page) = &self.current_page {
             if page.items.len() == self.page_item_index {
                 // If the previously fetched page had less then
@@ -84,7 +84,7 @@ impl<'a, T: Clone> Iterator for PageIterator<'a, T> {
                 match fetch_result {
                     Ok(page) => {
                         // No items on the new page so no more items, flag the iterator as consumed.
-                        if page.items.len() == 0 {
+                        if page.items.is_empty() {
                             self.consumed = true;
                             None
                         } else {
@@ -105,7 +105,7 @@ impl<'a, T: Clone> Iterator for PageIterator<'a, T> {
                         // Set the iterator as consumed to prevent other invocations.
                         self.consumed = true;
                         Some(Err(e))
-                    },
+                    }
                 }
             }
             Some(page) => {
@@ -121,8 +121,8 @@ impl<'a, T: Clone> Iterator for PageIterator<'a, T> {
 
 #[cfg(test)]
 mod test {
-    use cosmwasm_std::StdError;
     use crate::iter::page_iterator::{Page, PageIterator};
+    use cosmwasm_std::StdError;
 
     #[test]
     fn test_iterations_without_errors() {
@@ -150,10 +150,8 @@ mod test {
 
     #[test]
     fn test_iterations_with_error() {
-        let mut it = PageIterator::<i32>::new(
-            Box::new(|_, _| {
-                Err(StdError::generic_err("ERROR :("))
-            }), 10);
+        let mut it =
+            PageIterator::<i32>::new(Box::new(|_, _| Err(StdError::generic_err("ERROR :("))), 10);
 
         let item = it.next();
 
@@ -168,12 +166,7 @@ mod test {
 
     #[test]
     fn test_iterations_with_partial_page() {
-        let it = PageIterator::new(
-            Box::new(|_, _| {
-                Ok(Page {
-                    items: vec![1, 2],
-                })
-            }), 10);
+        let it = PageIterator::new(Box::new(|_, _| Ok(Page { items: vec![1, 2] })), 10);
 
         let mut it_counter = 0;
         for element in it {
@@ -183,5 +176,4 @@ mod test {
 
         assert_eq!(2, it_counter);
     }
-
 }
