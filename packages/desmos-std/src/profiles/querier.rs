@@ -82,13 +82,29 @@ impl<'a> ProfilesQuerier<'a> {
         Ok(res)
     }
 
-    pub fn query_application_links_it(&self, user: Addr) -> PageIterator<ApplicationLink> {
+    /// Queries all the application links returning an iterator
+    /// that allow to iterate over them.
+    ///
+    /// * `user` - Address of the user of interest, if is None will be
+    /// fetched all the application links stored on chain.
+    /// * `application` - If provided filters the app-links created with the provided
+    /// application value.
+    /// * `username` - If provided filters the app-links created with the provided
+    /// username value.
+    /// * `page_size` - Size of each page that is fetched from the iterator.
+    pub fn query_application_links_it(
+        &self,
+        user: Option<Addr>,
+        application: Option<String>,
+        username: Option<String>,
+        page_size: u64,
+    ) -> PageIterator<ApplicationLink> {
         PageIterator::new(
             Box::new(move |offset, items| {
                 let response = self.query_application_links(
-                    Some(user.clone()),
-                    None,
-                    None,
+                    user.clone(),
+                    application.clone(),
+                    username.clone(),
                     Some(PageRequest {
                         key: None,
                         offset: Uint64::from(offset),
@@ -101,7 +117,7 @@ impl<'a> ProfilesQuerier<'a> {
                     items: response.links,
                 })
             }),
-            10,
+            page_size,
         )
     }
 
@@ -214,7 +230,8 @@ mod tests {
         let deps = owned_deps.as_ref();
         let profiles_querier = ProfilesQuerier::new(deps.querier.deref());
 
-        let mut iterator = profiles_querier.query_application_links_it(Addr::unchecked(""));
+        let mut iterator =
+            profiles_querier.query_application_links_it(Some(Addr::unchecked("")), None, None, 10);
 
         let first = iterator.next();
         let second = iterator.next();
