@@ -76,7 +76,7 @@ jobs:
       - name: Run cargo clippy
         run: cargo clippy
   build:
-    name: Build
+    name: Test features build
     runs-on: ubuntu-latest
     env:
       working-directory: ./packages/desmos-std
