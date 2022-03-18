@@ -34,6 +34,23 @@ impl<'a, T: Clone> PageIterator<'a, T> {
     /// * `fetch_page` - Function that fetch a page given an offset and the amount of items to
     /// fetch from the given offset
     /// * `page_size` - Size of each page.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use desmos_std::iter::page_iterator::{PageIterator, Page};
+    ///
+    /// // Creates an iterator that return the numbers from 0 to 99.
+    /// let it = PageIterator::new(Box::new(|offset: u64, items: u64| {    ///
+    ///     Ok(Page {
+    ///         items: if offset >= 100 {
+    ///             Vec::new()
+    ///         } else {
+    ///             (offset..offset + items).collect()
+    ///         }
+    ///     })
+    /// }), 10);
+    /// ```
     pub fn new(fetch_page: Fetcher<'a, T>, page_size: u64) -> PageIterator<'a, T> {
         PageIterator {
             fetch_page,
