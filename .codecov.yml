@@ -39,3 +39,4 @@ ignore:
   - "src/lib.rs"
   - "src/types.rs"
   - "src/state.rs"
+  - "packages/desmos-std/**/mock*.rs"
