@@ -1,5 +1,3 @@
-use crate::iter::page_iterator::{Page, PageIterator};
-use crate::profiles::models_app_links::ApplicationLink;
 use crate::{
     profiles::{
         models_query::{
@@ -12,7 +10,7 @@ use crate::{
     query::DesmosQuery,
     types::PageRequest,
 };
-use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult, Uint64};
+use cosmwasm_std::{Addr, Querier, QuerierWrapper, StdResult};
 
 pub struct ProfilesQuerier<'a> {
     querier: QuerierWrapper<'a, DesmosQuery>,
@@ -80,45 +78,6 @@ impl<'a> ProfilesQuerier<'a> {
 
         let res: QueryApplicationLinksResponse = self.querier.query(&request.into())?;
         Ok(res)
-    }
-
-    /// Queries all the application links returning an iterator
-    /// that allow to iterate over them.
-    ///
-    /// * `user` - Address of the user of interest, if is None will be
-    /// fetched all the application links stored on chain.
-    /// * `application` - If provided filters the app-links created with the provided
-    /// application value.
-    /// * `username` - If provided filters the app-links created with the provided
-    /// username value.
-    /// * `page_size` - Size of each page that is fetched from the iterator.
-    pub fn query_application_links_it(
-        &self,
-        user: Option<Addr>,
-        application: Option<String>,
-        username: Option<String>,
-        page_size: u64,
-    ) -> PageIterator<ApplicationLink> {
-        PageIterator::new(
-            Box::new(move |offset, items| {
-                let response = self.query_application_links(
-                    user.clone(),
-                    application.clone(),
-                    username.clone(),
-                    Some(PageRequest {
-                        key: None,
-                        offset: Uint64::from(offset),
-                        limit: Uint64::from(items),
-                        reverse: false,
-                        count_total: false,
-                    }),
-                )?;
-                Ok(Page {
-                    items: response.links,
-                })
-            }),
-            page_size,
-        )
     }
 
     pub fn query_application_link_by_client_id(
@@ -222,26 +181,6 @@ mod tests {
         };
 
         assert_eq!(response, expected)
-    }
-
-    #[test]
-    fn test_query_app_links_it() {
-        let owned_deps = mock_dependencies_with_custom_querier(&[]);
-        let deps = owned_deps.as_ref();
-        let profiles_querier = ProfilesQuerier::new(deps.querier.deref());
-
-        let mut iterator =
-            profiles_querier.query_application_links_it(Some(Addr::unchecked("")), None, None, 10);
-
-        let first = iterator.next();
-        let second = iterator.next();
-
-        assert!(first.is_some());
-        assert_eq!(
-            first.unwrap().unwrap(),
-            MockProfilesQueries::get_mock_application_link()
-        );
-        assert!(second.is_none());
     }
 
     #[test]
