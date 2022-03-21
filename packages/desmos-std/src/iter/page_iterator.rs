@@ -81,11 +81,10 @@ impl<'a, T: Clone, K: Clone> Iterator for PageIterator<'a, T, K> {
             || self.current_page.as_ref().unwrap().items.len() == self.page_item_index
         {
             // Get the next page key
-            let next_key = self.current_page.as_ref().map_or(None, |page| {
-                page.next_page_key
-                    .as_ref()
-                    .map_or(None, |key| Some(key.clone()))
-            });
+            let next_key = self
+                .current_page
+                .as_ref()
+                .and_then(|page| page.next_page_key.as_ref().cloned());
 
             if next_key.is_none() && self.current_page.is_some() {
                 // We have fetched at least on page but there isn't a new page to fetch,
