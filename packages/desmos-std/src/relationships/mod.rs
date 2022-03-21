@@ -1,4 +1,4 @@
-#[cfg(all(not(target_arch = "wasm32"), feature = "query"))]
+#[cfg(all(not(target_arch = "wasm32"), feature = "mocks"))]
 pub mod mock;
 
 pub mod models;
