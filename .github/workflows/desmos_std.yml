@@ -127,6 +127,18 @@ jobs:
         run: cargo build --no-default-features --features msg
         working-directory: ${{env.working-directory}}
 
+      - name: Build feature (msg+profiles)
+        run: cargo build --no-default-features --features msg,profiles
+        working-directory: ${{env.working-directory}}
+
+      - name: Build feature (msg+relationships)
+        run: cargo build --no-default-features --features msg,relationships
+        working-directory: ${{env.working-directory}}
+z
+      - name: Build feature (msg+subspaces)
+        run: cargo build --no-default-features --features msg,subspaces
+        working-directory: ${{env.working-directory}}
+
       - name: Build feature (mocks)
         run: cargo build --no-default-features --features mocks
         working-directory: ${{env.working-directory}}
