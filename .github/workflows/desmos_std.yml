@@ -134,7 +134,7 @@ jobs:
       - name: Build feature (msg+relationships)
         run: cargo build --no-default-features --features msg,relationships
         working-directory: ${{env.working-directory}}
-z
+
       - name: Build feature (msg+subspaces)
         run: cargo build --no-default-features --features msg,subspaces
         working-directory: ${{env.working-directory}}
