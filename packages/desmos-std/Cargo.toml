@@ -1,7 +1,7 @@
 [package]
 name = "desmos-std"
 version = "0.1.0"
-authors = ["Leonardo Bragagnolo <leonardo@forbole.com>", "Paul Chen <paul@forbole.com>"]
+authors = ["Leonardo Bragagnolo <leonardo@forbole.com>", "Paul Chen <paul@forbole.com>", "Manuel Turetta <manuel@forbole.com>"]
 edition = "2018"
 description = "Desmos network standards for smart contracts development"
 license = "Apache-2.0"
@@ -24,4 +24,4 @@ subspaces = []
 relationships = []
 query = []
 msg = []
-mocks = []
+mocks = ["query"]

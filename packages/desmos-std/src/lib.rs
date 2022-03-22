@@ -1,5 +1,4 @@
-#[cfg(not(target_arch = "wasm32"))]
-#[cfg(feature = "mocks")]
+#[cfg(all(not(target_arch = "wasm32"), feature = "mocks"))]
 pub mod mock;
 
 #[cfg(feature = "profiles")]
