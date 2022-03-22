@@ -183,6 +183,28 @@ mod test {
     }
 
     #[test]
+    fn test_iterations_with_empty_page() {
+        // Create an that just return an empty page
+        let mut it: PageIterator<i32, i32> = PageIterator::new(
+            Box::new(|_, _| {
+                Ok(Page {
+                    items: Vec::new(),
+                    next_page_key: None,
+                })
+            }),
+            10,
+        );
+
+        // First items should be None since we returned an empty page
+        let first = it.next();
+        assert!(first.is_none());
+
+        // Second items should also be None since the page don't contains any element
+        let second = it.next();
+        assert!(second.is_none());
+    }
+
+    #[test]
     fn test_iterations_with_partial_page() {
         // Create an iterator that just return a page of 2 elements
         // even if we requested a page of 10 elements.
