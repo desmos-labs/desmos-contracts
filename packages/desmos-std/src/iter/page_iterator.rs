@@ -5,7 +5,7 @@ use cosmwasm_std::StdResult;
 /// If the first argument is None means that this function should fetch the first page.
 pub type Fetcher<'a, T, K> = Box<dyn Fn(Option<K>, u64) -> StdResult<Page<T, K>> + 'a>;
 
-/// A page of a elements.
+/// A page of elements.
 pub struct Page<T, K> {
     /// List of elements present in the page.
     pub items: Vec<T>,
