@@ -230,4 +230,37 @@ mod test {
         let third = it.next();
         assert_eq!(None, third)
     }
+
+    #[test]
+    fn test_iterations_with_second_partial_page() {
+        // Create an iterator that just return a page of 2 elements
+        // even if we requested a page of 10 elements.
+        let it: PageIterator<u64, u64> = PageIterator::new(
+            Box::new(|key, limit| {
+                let range_start = key.unwrap_or(0);
+                let range_end = if range_start == 0 {
+                    range_start + limit
+                } else {
+                    range_start + 2
+                };
+                Ok(Page {
+                    items: (range_start..range_end).collect(),
+                    next_page_key: if range_start == 0 {
+                        Some(range_end)
+                    } else {
+                        None
+                    },
+                })
+            }),
+            10,
+        );
+
+        let mut total_count = 0;
+        for element in it {
+            element.unwrap();
+            total_count += 1;
+        }
+        // We should have 12 elements
+        assert_eq!(12, total_count);
+    }
 }
