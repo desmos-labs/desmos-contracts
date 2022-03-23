@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "contracts/example"
 ]
 
 [profile.release.package.desmos-std]
