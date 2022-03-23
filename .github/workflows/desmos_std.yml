@@ -4,11 +4,6 @@ name: Package-desmos
 on:
   pull_request:
 
-defaults:
-  run:
-    shell: bash
-    working-directory: packages/desmos-std
-
 jobs:
   test:
     name: Test Suite
