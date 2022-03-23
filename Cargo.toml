@@ -1,6 +1,5 @@
 [workspace]
 members = [
-  "packages/desmos-std",
 ]
 
 [profile.release.package.desmos-std]
