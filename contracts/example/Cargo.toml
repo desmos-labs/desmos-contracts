@@ -5,7 +5,7 @@ authors = ["Manuel Turetta <manuel.turetta94@gmail.com>"]
 edition = "2018"
 
 exclude = [
-  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+  # These files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
   "contract.wasm",
   "hash.txt",
 ]
