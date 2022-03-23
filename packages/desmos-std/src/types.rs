@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub struct PageRequest {
     pub key: Option<Binary>,
-    pub offset: Uint64,
+    pub offset: Option<Uint64>,
     pub limit: Uint64,
     pub count_total: bool,
     pub reverse: bool,

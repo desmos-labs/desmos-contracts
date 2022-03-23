@@ -16,4 +16,5 @@ pub mod msg;
 #[cfg(feature = "query")]
 pub mod query;
 
+pub mod iter;
 pub mod types;
