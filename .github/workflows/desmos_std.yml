@@ -28,6 +28,7 @@ jobs:
         env:
           RUST_BACKTRACE: 1
   coverage:
+    if: ${{ false }}
     name: Upload coverage
     runs-on: ubuntu-latest
     steps:
