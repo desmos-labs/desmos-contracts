@@ -6,5 +6,3 @@ A collection of smart contracts built in [CosmWasm](https://www.cosmwasm.com/) f
 
 | Contracts | Tests | Crates.io |
 | ------------- | ------ | ------ |
-| filter-posts | ![Contract-Filter-posts](https://github.com/desmos-labs/desmos-contracts/workflows/Contract-Filter-posts/badge.svg) | [![cw-desmos-filter-posts on crates.io](https://img.shields.io/crates/v/cw-desmos-filter-posts.svg)](https://crates.io/crates/cw-desmos-filter-posts)
-| dummy-tokenomics | ![Contract-dummy-tokenomics](https://github.com/desmos-labs/desmos-contracts/workflows/Contract-dummy-tokenomics/badge.svg) | [![cw-desmos-dummy-tokenomics on crates.io](https://img.shields.io/crates/v/cw-desmos-dummy-tokenomics.svg)](https://crates.io/crates/cw-desmos-dummy-tokenomics)
