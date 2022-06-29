@@ -4,7 +4,7 @@
 
 - June 27, 2022: Initial draft;
 - June 28, 2022: Second review;
-- June 29, 2022: Third review;
+- June 29, 2022: Third review.
 
 ## Status
 DRAFTED
