@@ -1,4 +1,4 @@
-# ADR 001: POAP
+# ADR 001: POAP-Contract
 
 ## Changelog
 
@@ -175,4 +175,3 @@ pub struct EventInfoResponse {
 - https://github.com/CosmWasm/cw-nfts/blob/main/packages/cw721/README.md
 - https://github.com/CosmWasm/cw-nfts/tree/main/contracts/cw721-base
 - https://github.com/public-awesome/launchpad/tree/main/contracts/minter
--
