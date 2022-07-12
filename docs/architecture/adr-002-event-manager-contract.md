@@ -2,7 +2,8 @@
 
 ## Changelog
 
-- July 11, 2022: Initial draft;
+- July 11, 2022: Initial draft started;
+- July 12, 2022: Initial draft finished.
 
 ## Status
 DRAFTED
@@ -59,6 +60,36 @@ pub enum ExecuteMsg{
 }
 ```
 
+##### TryMint
+With the `TryMint{}` message the user call the contract to try minting the POAP. It is called `TryMint`
+because in order to be able to mint, the user must meet 3 conditions:
+1. Create a post
+2. Like a post
+3. Comment a post
+
+The conditions can be checked using the `Posts Bindings` queries to directly interact with the Desmos chain
+and retrieve the information needed.
+
+##### MintTo
+With the `MintTo{user}` message the admin of the contract can bypass the 3 checks and mint to a user (that still need to have a profile) the POAP.
+
+##### EditAdmin
+With the `EditAdmin{new_admin}` message, the current admin can choose another admin to which give the control
+of the contract.
+
 ### Query
+```rust
+pub enum QueryMsg {
+  ManagerInfo{},
+  EventInfo{}
+}
+```
+
+#### ManagerInfo
+With the `ManagerInfo{}` query the user get the manager info such as the amdin, the POAP contract address and the subspace to which the contract is attached.
+
+#### EventInfo
+The `EventInfo{}` query is inherited from the `POAP-Contract` and returns all the information about the Event.
 
 ## References
+- [POAP-Contract](https://github.com/desmos-labs/desmos-contracts/blob/leonardo/adr-001/docs/architecture/adr-001-poap-contract.md)
