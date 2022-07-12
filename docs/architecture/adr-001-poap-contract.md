@@ -4,7 +4,8 @@
 
 - June 27, 2022: Initial draft;
 - June 28, 2022: Second review;
-- June 29, 2022: Third review.
+- June 29, 2022: Third review;
+- July 12, 2022: Fourth review.
 
 ## Status
 DRAFTED
@@ -109,7 +110,11 @@ pub enum ExecuteMsg {
   EnableMint{},
   Mint{},
   MintTo{recipient: String},
-  UpdateTimes { start_time: Timestamp, end_time: Timestamp }
+  UpdateEventInfo {
+    start_time: Timestamp,
+    end_time: Timestamp,
+    admin: Addr,
+  }
 }
 ```
 
@@ -122,8 +127,8 @@ With the `Mint{}` message a user can mint its own POAP.
 #### MintTo
 With the `MintTo{recipient}` the event's creator can mint the token for a specific recipient.
 
-#### UpdateTimes
-With the `Updatetimes{start_time, end_time}` message the event's creator can change the time frame of the event.
+#### UpdateEventInfo
+With the `UpdateEventInfo{start_time, end_time, admin}` message the event's creator can change the time frame of the event if it's not already started or finished.
 
 ### Query
 All the queries below, except for the `EventInfo` one are inherited from [cw721-base queries](https://github.com/CosmWasm/cw-nfts/blob/1e992ccf640f07a384d6442625d6780a8e48ef1e/contracts/cw721-base/src/msg.rs#L76).
