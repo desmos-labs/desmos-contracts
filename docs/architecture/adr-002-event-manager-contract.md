@@ -38,13 +38,13 @@ Here below the specifications for the contract's messages:
 ```rust
 pub struct InstantiateMsg {
   pub admin: Addr,
-  pub poap_contract: Addr,
+  pub poap_instantiate_msg: POAPContractInstantiateMsg,
   pub subspace_id: u64,
 }
 ```
 
 * The `admin` identifies the user that controls the contract;
-* The `poap_contract` that the event manager control;
+* The `poap_instantiate_msg` instantiate the poap contract that the manager controls;
 * The `subspace_id` identifies the dApp where the contract lives;
 
 #### Execute
