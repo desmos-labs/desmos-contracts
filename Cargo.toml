@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "contracts/example"
+    "contracts/example",
+    "contracts/poap"
 ]
 
 [profile.release.package.desmos-std]
