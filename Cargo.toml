@@ -4,10 +4,6 @@ members = [
     "contracts/poap"
 ]
 
-[profile.release.package.desmos-std]
-codegen-units = 1
-incremental = false
-
 [profile.release]
 opt-level = 3
 debug = false
