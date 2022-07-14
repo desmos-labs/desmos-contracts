@@ -58,8 +58,7 @@ pub enum ExecuteMsg{
 ```
 
 ##### Claim
-With the `Claim{post_id}` message the user call the contract to try claiming the POAP. The claim will be successful only if the user match the minting requirements explained above.
-The requirements can be checked using the `Posts` bindings queries to directly interact with the Desmos chain
+With the `Claim{post_id}` message the user call the contract to try claiming the POAP. The claim will be successful only if the user match the minting requirements explained above. The `post_id` passed with the message is the ID of the post comment made by the user. The requirements can be checked using the `Posts` bindings queries to directly interact with the Desmos chain
 and retrieve the information needed.
 
 ##### MintTo
