@@ -132,10 +132,37 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        _ => Err(ContractError::CustomError {
-            val: "Unsupported operation".to_string()
-        })
+        ExecuteMsg::EnableMint {} => execute_set_mint_enabled(deps, info, true),
+        ExecuteMsg::DisableMint {} => execute_set_mint_enabled(deps, info, false),
+        _ => Err(ContractError::Unauthorized {}),
     }
+}
+
+fn execute_set_mint_enabled(
+    deps: DepsMut,
+    info: MessageInfo,
+    mint_enabled: bool,
+) -> Result<Response, ContractError> {
+    let mut config = CONFIG.load(deps.storage)?;
+
+    // Check that the sender is the admin
+    if info.sender != config.admin {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    config.mint_enabled = mint_enabled;
+    // Save the new configurations
+    CONFIG.save(deps.storage, &config)?;
+
+    let action = if mint_enabled {
+        "enable mint"
+    } else {
+        "disable mint"
+    };
+
+    Ok(Response::new()
+        .add_attribute("action", action)
+        .add_attribute("sender", info.sender))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
