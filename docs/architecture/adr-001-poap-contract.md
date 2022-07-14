@@ -6,6 +6,7 @@
 - June 28, 2022: Second review;
 - June 29, 2022: Third review;
 - July 12, 2022: Fourth review.
+- July 14, 2022: Fifth review.
 
 ## Status
 DRAFTED
@@ -41,12 +42,16 @@ pub struct InstantiateMsg {
 pub cw721_code_id: u64,
 pub cw721_instantiate_msg: Cw721InstantiateMsg,
 pub event_info: EventInfo,
+pub admin: String,
+pub minter: String,
 }
 ```
 
 * The `cw721_code_id` refers to a previously uploaded `CW721-base` contract on the chain;
 * The `cw721_instantiate_msg` contains the info to instantiate the `CW721-base`;
-* The `event_info` contains the event info.
+* The `event_info` contains the event info;
+* The `admin` is the admin of the contract;
+* The `minter` is the address of the user or contract that has the ability to mint.
 
 #### Cw721InstantiateMsg
 The following message instantiate the [CW721-base contract](https://github.com/CosmWasm/cw-nfts/tree/main/contracts/cw721-base):
@@ -69,7 +74,6 @@ The `EventInfo` are used to instantiate the contract state with the information 
 ```rust
 pub struct EventInfo {
     pub creator: Addr,
-    pub admin: Addr,
     pub start_time: Timestamp,
     pub end_time: Timestamp,
     pub per_address_limit: u32,
@@ -80,7 +84,6 @@ pub struct EventInfo {
 ```
 
 * The `creator` field identifies the address of the event's creator;
-* The `admin` field identifies an optional admin for the contract, if not specified, the creator is the admin;
 * The `start_time` identifies the start time of the event;
 * The `end_time` identifies the end time of the event;
 * The `per_address_limit` identifies the max num of tokens that can be minted by an address;
@@ -108,57 +111,91 @@ pub struct EventInfo {
 ```rust
 pub enum ExecuteMsg {
   EnableMint{},
+  DisableMint{},
   Mint{},
   MintTo{recipient: String},
   UpdateEventInfo {
     start_time: Timestamp,
     end_time: Timestamp,
-    admin: Addr,
-  }
+  },
+  UpdateAdmin{new_admin: String},
+  UpdateMinter{new_minter: String}
 }
 ```
 
 #### EnableMint
-With the `EnableMint{}` message the creator or admin can enable the minting from any of the users.
+With the `EnableMint{}` message the admin can enable the `Mint{}` message for everyone.
+
+#### DisableMint
+With the `DisableMint{}` message the admin can disable the `Mint{}` message for everyone.
 
 #### Mint
-With the `Mint{}` message a user can mint its own POAP.
+If enabled, the `Mint{}` message allows users to mint their own POAP.
 
 #### MintTo
-With the `MintTo{recipient}` the event's creator can mint the token for a specific recipient.
+With the `MintTo{recipient}` message the contract's admin or the minter can mint the POAP for a specific recipient.
 
 #### UpdateEventInfo
-With the `UpdateEventInfo{start_time, end_time, admin}` message the event's creator can change the time frame of the event if it's not already started or finished.
+With the `UpdateEventInfo{start_time, end_time}` message the event's creator can change the time frame of the event if it's not already started or finished.
+
+#### UpdateAdmin
+With the `UpdateAdmin{new_admin}` message the contract's admin can transfer the admin rights to another user.
+
+#### UpdateMinter
+With the `UpdateMinter{new_minter}` message the contract's admin can choose another minter to which give the minting
+rights.
 
 ### Query
-All the queries below, except for the `EventInfo` one are inherited from [cw721-base queries](https://github.com/CosmWasm/cw-nfts/blob/1e992ccf640f07a384d6442625d6780a8e48ef1e/contracts/cw721-base/src/msg.rs#L76).
+All the queries below, except for the `EventInfo`, `Admin` and `MintStatus` are inherited from [cw721-base queries](https://github.com/CosmWasm/cw-nfts/blob/1e992ccf640f07a384d6442625d6780a8e48ef1e/contracts/cw721-base/src/msg.rs#L76).
 ```rust
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
+
+    /// Inherited from CW721-base
     OwnerOf {
         token_id: String,
         include_expired: Option<bool>,
     },
+
+    /// Inherited from CW721-base
     NumTokens {},
+
+    /// Inherited from CW721-base
     ContractInfo {},
+
+    /// Inherited from CW721-base
     NftInfo {
         token_id: String,
     },
+
+    /// Inherited from CW721-base
     AllNftInfo {
         token_id: String,
         include_expired: Option<bool>,
     },
+
+    /// Inherited from CW721-base
     Tokens {
         owner: String,
         start_after: Option<String>,
         limit: Option<u32>,
     },
+
+    /// Inherited from CW721-base
     AllTokens {
         start_after: Option<String>,
         limit: Option<u32>,
     },
+
+    /// Return the event info
     EventInfo {},
+
+    /// Return the address of the current admin
+    Admin {},
+
+    /// Return the status of mint, enabled or disabled.
+    MintStatus{}
 }
 ```
 
@@ -168,7 +205,6 @@ This query will return all the useful information of the event associated to the
 ```rust
 pub struct EventInfoResponse {
   pub creator: Addr,
-  pub admin: Addr,
   pub start_time: Timestamp,
   pub end_time: Timestamp,
   pub event_uri: String,
