@@ -138,6 +138,7 @@ pub fn execute(
         ExecuteMsg::EnableMint {} => execute_set_mint_enabled(deps, info, true),
         ExecuteMsg::DisableMint {} => execute_set_mint_enabled(deps, info, false),
         ExecuteMsg::UpdateAdmin { new_admin } => execute_update_admin(deps, info, new_admin),
+        ExecuteMsg::UpdateMinter { new_minter } => execute_update_minter(deps, info, new_admin),
         _ => Err(ContractError::Unauthorized {}),
     }
 }
@@ -189,6 +190,28 @@ fn execute_update_admin(
     Ok(Response::new()
         .add_attribute("action", "update admin")
         .add_attribute("new admin", &admin_address))
+}
+
+fn execute_update_minter(
+    deps: DepsMut,
+    info: MessageInfo,
+    minter_address: String,
+) -> Result<Response, ContractError> {
+    let mut config = CONFIG.load(deps.storage)?;
+
+    // Check that the sender is the admin
+    if info.sender != config.admin {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    // Update the minter address.
+    let new_minter = deps.api.addr_validate(&minter_address)?;
+    config.minter = new_minter;
+    CONFIG.save(deps.storage, &config)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "update minter")
+        .add_attribute("new minter", &minter_address))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
