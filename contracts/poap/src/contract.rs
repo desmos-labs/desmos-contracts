@@ -1,14 +1,16 @@
+use crate::error::ContractError;
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::state::{Config, EventInfo, CONFIG, CW721_ADDRESS, EVENT_INFO};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, StdError, Addr, SubMsg, WasmMsg, ReplyOn, Reply};
+use cosmwasm_std::{
+    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, ReplyOn, Response, StdError,
+    StdResult, SubMsg, WasmMsg,
+};
 use cw2::set_contract_version;
-use schemars::_serde_json::to_string;
-use url::Url;
-use crate::error::ContractError;
-use crate::msg::{CountResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{CONFIG, Config, CW721_ADDRESS, State, STATE};
 use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
 use cw_utils::parse_reply_instantiate_data;
+use url::Url;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:poap";
@@ -26,13 +28,19 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     // Validate the admin address
-    let admin = match msg.event_info.admin {
+    let admin = match msg.admin {
         // Fallback to sender if the admin is not defined
-        None => info.sender,
+        None => info.sender.clone(),
         // Admin defined, make sure that is a valid address
-        Some(admin_address) => {
-            deps.api.addr_validate(&admin_address)?
-        }
+        Some(admin_address) => deps.api.addr_validate(&admin_address)?,
+    };
+
+    // Validate the minter address
+    let minter = match msg.minter {
+        // Fallback to sender if the minter is not defined
+        None => info.sender.clone(),
+        // Minter defined, make sure that is a valid address
+        Some(minter_address) => deps.api.addr_validate(&minter_address)?,
     };
 
     // Check that start time is lower then end time
@@ -46,36 +54,39 @@ pub fn instantiate(
     // Check that the end time is in the future
     if env.block.time.le(&msg.event_info.end_time) {
         return Err(ContractError::EndTimeAlreadyPassed {
-            end: msg.event_info.end_time
+            end: msg.event_info.end_time,
         });
     }
 
     // Check that the poap uri is valid IPFS url
-    let ipfs_url = Url::parse(&msg.event_info.base_poap_uri).map_err(|err| {
-        ContractError::InvalidPoapUri {}
-    })?;
+    let ipfs_url = Url::parse(&msg.event_info.base_poap_uri)
+        .map_err(|_err| ContractError::InvalidPoapUri {})?;
     if ipfs_url.scheme() != "ipfs" {
         return Err(ContractError::InvalidPoapUri {});
     }
 
     // Check event uri
-    let event_url = Url::parse(&msg.event_info.event_uri).map_err(|err| {
-        ContractError::InvalidEventUri {}
-    })?;
+    Url::parse(&msg.event_info.event_uri).map_err(|_err| ContractError::InvalidEventUri {})?;
 
     let config = Config {
         creator: info.sender.clone(),
-        admin,
+        admin: admin.clone(),
+        minter: minter.clone(),
+        per_address_limit: msg.event_info.per_address_limit,
+        cw721_code_id: msg.cw721_code_id.u64(),
+        mint_enabled: false,
+    };
+    // Save the received event info.
+    CONFIG.save(deps.storage, &config)?;
+
+    let event_info = EventInfo {
         start_time: msg.event_info.start_time,
         end_time: msg.event_info.end_time,
-        per_address_limit: msg.event_info.per_address_limit,
-        base_poap_uri: msg.event_info.base_poap_uri,
-        event_uri: msg.event_info.event_uri,
-        cw721_code_id: msg.cw721_code_id.u64(),
+        base_poap_uri: msg.event_info.base_poap_uri.clone(),
+        event_uri: msg.event_info.event_uri.clone(),
     };
-
-    // Save the received event info.
-    CONFIG.save(deps.storage, &config);
+    // Save the event info
+    EVENT_INFO.save(deps.storage, &event_info)?;
 
     // Submessage to instantiate cw721 contract
     let sub_msgs: Vec<SubMsg> = vec![SubMsg {
@@ -85,28 +96,32 @@ pub fn instantiate(
             msg: to_binary(&Cw721InstantiateMsg {
                 name: msg.cw721_initiate_msg.name,
                 symbol: msg.cw721_initiate_msg.symbol,
-                minter: env.contract.address.to_string()
+                minter: env.contract.address.to_string(),
             })?,
             funds: info.funds,
-            label: "poap cw721".to_string()
-        }.into(),
+            label: "poap cw721".to_string(),
+        }
+        .into(),
         id: INSTANTIATE_CW721_REPLY_ID,
         gas_limit: None,
-        reply_on: ReplyOn::Success
+        reply_on: ReplyOn::Success,
     }];
 
     Ok(Response::new()
         .add_attribute("method", "instantiate")
         .add_attribute("creator", &info.sender)
         .add_attribute("admin", &admin)
-        .add_attribute("start_time", msg.event_info.start_time)
-        .add_attribute("end_time", msg.event_info.end_time)
-        .add_attribute("per_address_limit", msg.event_info.per_address_limit)
+        .add_attribute("minter", &minter)
+        .add_attribute("start_time", msg.event_info.start_time.to_string())
+        .add_attribute("end_time", msg.event_info.end_time.to_string())
+        .add_attribute(
+            "per_address_limit",
+            msg.event_info.per_address_limit.to_string(),
+        )
         .add_attribute("base_poap_uri", &msg.event_info.base_poap_uri)
         .add_attribute("event_uri", &msg.event_info.event_uri)
-        .add_attribute("cw721_code_id", &msg.cw721_code_id)
-        .add_submessages(sub_msgs)
-    )
+        .add_attribute("cw721_code_id", &msg.cw721_code_id.to_string())
+        .add_submessages(sub_msgs))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -124,7 +139,7 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         _ => Err(StdError::generic_err("Query operation not supported")),
     }
@@ -133,7 +148,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 // Reply callback triggered from cw721 contract instantiation
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
-    if msg.id != INSTANTIATE_SG721_REPLY_ID {
+    if msg.id != INSTANTIATE_CW721_REPLY_ID {
         return Err(ContractError::InvalidReplyID {});
     }
 
@@ -146,4 +161,3 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
         Err(_) => Err(ContractError::InstantiateCw721Error {}),
     }
 }
-

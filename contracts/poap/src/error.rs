@@ -15,13 +15,13 @@ pub enum ContractError {
     #[error("Instantiate cw721 error")]
     InstantiateCw721Error {},
 
-    #[error("The start time ({0}) is after the end time ({1})")]
+    #[error("The start time ({start}) is after the end time ({end})")]
     StartTimeAfterEndTime {
         start: Timestamp,
         end: Timestamp
     },
 
-    #[error("The end_time is already passed {0}")]
+    #[error("The end_time is already passed {end}")]
     EndTimeAlreadyPassed {
         end: Timestamp
     },
