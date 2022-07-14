@@ -6,7 +6,6 @@ use cw_storage_plus::Item;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
-    pub creator: Addr,
     pub admin: Addr,
     pub minter: Addr,
     pub mint_enabled: bool,
@@ -16,6 +15,7 @@ pub struct Config {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct EventInfo {
+    pub creator: Addr,
     pub start_time: Timestamp,
     pub end_time: Timestamp,
     pub base_poap_uri: String,

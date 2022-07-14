@@ -72,7 +72,6 @@ pub fn instantiate(
     Url::parse(&msg.event_info.event_uri).map_err(|_err| ContractError::InvalidEventUri {})?;
 
     let config = Config {
-        creator: creator.clone(),
         admin: admin.clone(),
         minter: minter.clone(),
         per_address_limit: msg.event_info.per_address_limit,
@@ -83,6 +82,7 @@ pub fn instantiate(
     CONFIG.save(deps.storage, &config)?;
 
     let event_info = EventInfo {
+        creator: creator.clone(),
         start_time: msg.event_info.start_time,
         end_time: msg.event_info.end_time,
         base_poap_uri: msg.event_info.base_poap_uri.clone(),
