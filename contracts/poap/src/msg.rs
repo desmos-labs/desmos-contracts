@@ -1,7 +1,7 @@
 use cosmwasm_std::{Timestamp, Uint64};
+use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -29,27 +29,20 @@ pub enum ExecuteMsg {
     /// Can be called from any user, mint must be enabled.
     Mint {},
     /// Can be called from minter or admin, bypass mint enable flag.
-    MintTo {
-        recipient: String,
-    },
+    MintTo { recipient: String },
     /// Admin command.
-    UpdateAdmin {
-        new_admin: String,
-    },
+    UpdateAdmin { new_admin: String },
     /// Admin command.
-    UpdateMinter {
-        new_minter: String,
-    },
+    UpdateMinter { new_minter: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum QueryMsg {
-}
-
+pub enum QueryMsg {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct EventInfo {
+    pub creator: String,
     pub start_time: Timestamp,
     pub end_time: Timestamp,
     pub per_address_limit: u32,

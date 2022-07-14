@@ -43,6 +43,9 @@ pub fn instantiate(
         Some(minter_address) => deps.api.addr_validate(&minter_address)?,
     };
 
+    // Validate the creator address
+    let creator = deps.api.addr_validate(&msg.event_info.creator)?;
+
     // Check that start time is lower then end time
     if msg.event_info.start_time.ge(&msg.event_info.end_time) {
         return Err(ContractError::StartTimeAfterEndTime {
@@ -69,7 +72,7 @@ pub fn instantiate(
     Url::parse(&msg.event_info.event_uri).map_err(|_err| ContractError::InvalidEventUri {})?;
 
     let config = Config {
-        creator: info.sender.clone(),
+        creator: creator.clone(),
         admin: admin.clone(),
         minter: minter.clone(),
         per_address_limit: msg.event_info.per_address_limit,
@@ -109,9 +112,9 @@ pub fn instantiate(
 
     Ok(Response::new()
         .add_attribute("method", "instantiate")
-        .add_attribute("creator", &info.sender)
-        .add_attribute("admin", &admin)
-        .add_attribute("minter", &minter)
+        .add_attribute("creator", creator)
+        .add_attribute("admin", admin)
+        .add_attribute("minter", minter)
         .add_attribute("start_time", msg.event_info.start_time.to_string())
         .add_attribute("end_time", msg.event_info.end_time.to_string())
         .add_attribute(
