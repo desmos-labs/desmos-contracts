@@ -16,19 +16,17 @@ pub enum ContractError {
     InstantiateCw721Error {},
 
     #[error("The start time ({start}) is after the end time ({end})")]
-    StartTimeAfterEndTime {
-        start: Timestamp,
-        end: Timestamp
-    },
+    StartTimeAfterEndTime { start: Timestamp, end: Timestamp },
 
     #[error("The end_time is already passed {end}")]
-    EndTimeAlreadyPassed {
-        end: Timestamp
-    },
+    EndTimeAlreadyPassed { end: Timestamp },
 
     #[error("Invalid base poap URI (must be an IPFS URI)")]
     InvalidPoapUri {},
 
     #[error("Invalid event URI")]
     InvalidEventUri {},
+
+    #[error("Mint operation is disabled")]
+    MintDisabled {},
 }

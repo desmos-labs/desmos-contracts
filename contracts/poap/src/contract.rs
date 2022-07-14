@@ -1,14 +1,16 @@
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{Config, EventInfo, CONFIG, CW721_ADDRESS, EVENT_INFO};
+use crate::state::{Config, EventInfo, CONFIG, CW721_ADDRESS, EVENT_INFO, NEXT_POAP_ID};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Reply, ReplyOn, Response, StdError,
-    StdResult, SubMsg, WasmMsg,
+    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, ReplyOn,
+    Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 use cw2::set_contract_version;
-use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
+use cw721_base::{
+    msg::ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg, MintMsg,
+};
 use cw_utils::parse_reply_instantiate_data;
 use url::Url;
 
@@ -137,9 +139,16 @@ pub fn execute(
     match msg {
         ExecuteMsg::EnableMint {} => execute_set_mint_enabled(deps, info, true),
         ExecuteMsg::DisableMint {} => execute_set_mint_enabled(deps, info, false),
+        ExecuteMsg::Mint {} => {
+            let recipient_addr = info.sender.clone();
+            execute_mint(deps, info, "mint", recipient_addr, false, false)
+        }
+        ExecuteMsg::MintTo { recipient } => {
+            let recipient_addr = deps.api.addr_validate(&recipient)?;
+            execute_mint(deps, info, "mint to", recipient_addr, true, true)
+        }
         ExecuteMsg::UpdateAdmin { new_admin } => execute_update_admin(deps, info, new_admin),
-        ExecuteMsg::UpdateMinter { new_minter } => execute_update_minter(deps, info, new_admin),
-        _ => Err(ContractError::Unauthorized {}),
+        ExecuteMsg::UpdateMinter { new_minter } => execute_update_minter(deps, info, new_minter),
     }
 }
 
@@ -168,6 +177,57 @@ fn execute_set_mint_enabled(
     Ok(Response::new()
         .add_attribute("action", action)
         .add_attribute("sender", info.sender))
+}
+
+fn execute_mint(
+    deps: DepsMut,
+    info: MessageInfo,
+    action: &str,
+    recipient_addr: Addr,
+    bypass_mint_enable: bool,
+    check_is_minter: bool,
+) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    let event_info = EVENT_INFO.load(deps.storage)?;
+
+    // Check if the mint is enabled
+    if bypass_mint_enable == false && config.mint_enabled == false {
+        return Err(ContractError::MintDisabled {});
+    }
+
+    // Check if who is performing the action is the minter
+    if check_is_minter == true && info.sender != config.minter {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    // Get the nex poap id
+    let poap_id = NEXT_POAP_ID.may_load(deps.storage)?.unwrap_or(1);
+
+    // Create the cw721 message to send to mint the poap
+    let mint_msg = Cw721ExecuteMsg::Mint(MintMsg::<Empty> {
+        token_id: poap_id.to_string(),
+        owner: recipient_addr.to_string(),
+        token_uri: Some(format!("{}/{}", event_info.base_poap_uri, poap_id)),
+        extension: Empty {},
+    });
+
+    let cw721_address = CW721_ADDRESS.load(deps.storage)?;
+    let response_msg = CosmosMsg::Wasm(WasmMsg::Execute {
+        contract_addr: cw721_address.to_string(),
+        msg: to_binary(&mint_msg)?,
+        funds: vec![],
+    });
+
+    // Update the next poap id state
+    let new_poap_id = poap_id + 1;
+    NEXT_POAP_ID.save(deps.storage, &new_poap_id)?;
+
+    Ok(Response::new()
+        .add_attribute("action", action)
+        .add_attribute("sender", info.sender)
+        .add_attribute("recipient", recipient_addr.to_string())
+        .add_attribute("poap_id", poap_id.to_string())
+        .add_message(response_msg))
 }
 
 fn execute_update_admin(
