@@ -155,13 +155,13 @@ pub enum QueryMsg {
     /// Return the event info
     EventInfo {},
 
-    /// Return the configuration info such as admin, minter, mint status (enabled/disabled), cw721 address
+    /// Return the configuration info as a ConfigResponse
     Config{}
 }
 ```
 
 #### EventInfo
-This query will return all the useful information of the event associated to the POAPs.
+This query returns all the useful information of the event associated to the POAPs.
 
 ```rust
 pub struct EventInfoResponse {
@@ -169,6 +169,19 @@ pub struct EventInfoResponse {
   pub start_time: Timestamp,
   pub end_time: Timestamp,
   pub event_uri: String,
+}
+```
+
+#### Config
+This query returns the contract's configuration
+```rust
+pub struct QueryConfigResponse {
+    pub admin: String,
+    pub minter: String,
+    pub mint_enabled: bool,
+    pub per_address_limit: u32,
+    pub cw721_contract_code: Uint64,
+    pub cw721_contract: String,
 }
 ```
 
