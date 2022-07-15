@@ -30,6 +30,9 @@ pub enum ContractError {
     #[error("Mint operation is disabled")]
     MintDisabled {},
 
-    #[error("Event terminated can't mint POAP")]
+    #[error("Event already started")]
+    EventStarted {},
+
+    #[error("Event already terminated")]
     EventTerminated {},
 }

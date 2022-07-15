@@ -41,6 +41,12 @@ pub enum ExecuteMsg {
     Mint {},
     /// Can be called from minter or admin, bypass mint enable flag.
     MintTo { recipient: String },
+    /// Message that allows the event's creator to change the time frame of the event
+    /// if it's not already started or finished.
+    UpdateEventInfo {
+        start_time: Timestamp,
+        end_time: Timestamp,
+    },
     /// Admin command.
     UpdateAdmin { new_admin: String },
     /// Admin command.

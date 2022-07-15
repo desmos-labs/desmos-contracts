@@ -3,11 +3,12 @@ use crate::msg::{
     ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryEventInfoResponse, QueryMsg,
 };
 use crate::state::{Config, EventInfo, CONFIG, CW721_ADDRESS, EVENT_INFO, NEXT_POAP_ID};
+use crate::ContractError::{EndTimeAlreadyPassed, StartTimeAfterEndTime};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, ReplyOn,
-    Response, StdResult, SubMsg, WasmMsg,
+    Response, StdResult, SubMsg, Timestamp, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw721_base::{
@@ -149,6 +150,10 @@ pub fn execute(
             let recipient_addr = deps.api.addr_validate(&recipient)?;
             execute_mint(deps, env, info, "mint to", recipient_addr, true, true)
         }
+        ExecuteMsg::UpdateEventInfo {
+            start_time,
+            end_time,
+        } => execute_update_event_info(deps, env, info, start_time, end_time),
         ExecuteMsg::UpdateAdmin { new_admin } => execute_update_admin(deps, info, new_admin),
         ExecuteMsg::UpdateMinter { new_minter } => execute_update_minter(deps, info, new_minter),
     }
@@ -236,6 +241,55 @@ fn execute_mint(
         .add_attribute("recipient", recipient_addr.to_string())
         .add_attribute("poap_id", poap_id.to_string())
         .add_message(response_msg))
+}
+
+fn execute_update_event_info(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    start_time: Timestamp,
+    end_time: Timestamp,
+) -> Result<Response, ContractError> {
+    let mut event_info = EVENT_INFO.load(deps.storage)?;
+
+    // Check that is the event creator that is changing the event time frame
+    if event_info.creator != info.sender {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    // Check that the event is not ended
+    if env.block.time.ge(&event_info.end_time) {
+        return Err(ContractError::EventTerminated {});
+    }
+
+    // Check that the event is not started
+    if env.block.time.ge(&event_info.start_time) {
+        return Err(ContractError::EventStarted {});
+    }
+
+    // Check that the start time is before the end time
+    if start_time.ge(&end_time) {
+        return Err(StartTimeAfterEndTime {
+            start: start_time,
+            end: end_time,
+        });
+    }
+
+    // Check that the end time is not already passed
+    if env.block.time.ge(&end_time) {
+        return Err(EndTimeAlreadyPassed { end: end_time });
+    }
+
+    // Update the event info
+    event_info.start_time = start_time;
+    event_info.end_time = end_time;
+    EVENT_INFO.save(deps.storage, &event_info)?;
+
+    Ok(Response::new()
+        .add_attribute("action", "update event info")
+        .add_attribute("sender", &info.sender)
+        .add_attribute("new start time", event_info.start_time.to_string())
+        .add_attribute("new end time", event_info.end_time.to_string()))
 }
 
 fn execute_update_admin(
