@@ -18,8 +18,11 @@ pub enum ContractError {
     #[error("The start time ({start}) is after the end time ({end})")]
     StartTimeAfterEndTime { start: Timestamp, end: Timestamp },
 
-    #[error("The end_time is already passed {end}")]
-    EndTimeAlreadyPassed { end: Timestamp },
+    #[error("End time is already passed current: {current_time} end: {end_time}")]
+    EndTimeAlreadyPassed {
+        current_time: Timestamp,
+        end_time: Timestamp,
+    },
 
     #[error("Invalid base poap URI (must be an IPFS URI)")]
     InvalidPoapUri {},
@@ -39,6 +42,9 @@ pub enum ContractError {
     #[error("Event already started")]
     EventStarted {},
 
-    #[error("Event already terminated")]
-    EventTerminated {},
+    #[error("Event already terminated current time: {current_time} end time: {end_time}")]
+    EventTerminated {
+        current_time: Timestamp,
+        end_time: Timestamp,
+    },
 }

@@ -64,7 +64,8 @@ pub fn instantiate(
     // Check that the end time is in the future
     if !msg.event_info.end_time.gt(&env.block.time) {
         return Err(ContractError::EndTimeAlreadyPassed {
-            end: msg.event_info.end_time,
+            current_time: env.block.time,
+            end_time: msg.event_info.end_time,
         });
     }
 
@@ -207,7 +208,10 @@ fn execute_mint(
 
     // Check if the event is terminated
     if env.block.time.gt(&event_info.end_time) {
-        return Err(ContractError::EventTerminated {});
+        return Err(ContractError::EventTerminated {
+            current_time: env.block.time,
+            end_time: event_info.end_time,
+        });
     }
 
     // Check if the mint is enabled
@@ -253,7 +257,7 @@ fn execute_mint(
     NEXT_POAP_ID.save(deps.storage, &new_poap_id)?;
     // Save the new mint count for the sender's address
     let new_mint_count = mint_count + 1;
-    MINTER_ADDRESS.save(deps.storage, info.sender.clone(), &new_mint_count);
+    MINTER_ADDRESS.save(deps.storage, info.sender.clone(), &new_mint_count)?;
 
     Ok(Response::new()
         .add_attribute("action", action)
@@ -279,7 +283,10 @@ fn execute_update_event_info(
 
     // Check that the event is not ended
     if env.block.time.ge(&event_info.end_time) {
-        return Err(ContractError::EventTerminated {});
+        return Err(ContractError::EventTerminated {
+            current_time: env.block.time,
+            end_time: event_info.end_time,
+        });
     }
 
     // Check that the event is not started
@@ -297,7 +304,10 @@ fn execute_update_event_info(
 
     // Check that the end time is not already passed
     if env.block.time.ge(&end_time) {
-        return Err(EndTimeAlreadyPassed { end: end_time });
+        return Err(EndTimeAlreadyPassed {
+            current_time: env.block.time,
+            end_time,
+        });
     }
 
     // Update the event info
