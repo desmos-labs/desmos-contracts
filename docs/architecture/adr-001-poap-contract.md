@@ -67,7 +67,7 @@ pub struct Cw721InstatiateMsg {
 In the `POAP` contract case:
 * The `name` identifies the event name;
 * The `symbol` identifies the event logo (if exists);
-* The `minter` identifies the `POAP` contract address.
+* The `minter` identifies the `POAP` contract address. During the initialisation this field will be overwritten by the actual contract address.
 
 ##### EventInfo
 The `EventInfo` are used to instantiate the contract state with the information of the event.
@@ -152,10 +152,10 @@ All the queries below, except for the `EventInfo`, `Admin` and `MintStatus` are 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    /// Return the event info
+    /// Return the event info as a  QueryEventInfoResponse
     EventInfo {},
 
-    /// Return the configuration info as a ConfigResponse
+    /// Return the configuration info as a QueryConfigResponse
     Config{}
 }
 ```
@@ -164,7 +164,7 @@ pub enum QueryMsg {
 This query returns all the useful information of the event associated to the POAPs.
 
 ```rust
-pub struct EventInfoResponse {
+pub struct QueryEventInfoResponse {
   pub creator: Addr,
   pub start_time: Timestamp,
   pub end_time: Timestamp,
