@@ -132,7 +132,7 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
@@ -141,11 +141,11 @@ pub fn execute(
         ExecuteMsg::DisableMint {} => execute_set_mint_enabled(deps, info, false),
         ExecuteMsg::Mint {} => {
             let recipient_addr = info.sender.clone();
-            execute_mint(deps, info, "mint", recipient_addr, false, false)
+            execute_mint(deps, env, info, "mint", recipient_addr, false, false)
         }
         ExecuteMsg::MintTo { recipient } => {
             let recipient_addr = deps.api.addr_validate(&recipient)?;
-            execute_mint(deps, info, "mint to", recipient_addr, true, true)
+            execute_mint(deps, env, info, "mint to", recipient_addr, true, true)
         }
         ExecuteMsg::UpdateAdmin { new_admin } => execute_update_admin(deps, info, new_admin),
         ExecuteMsg::UpdateMinter { new_minter } => execute_update_minter(deps, info, new_minter),
@@ -181,6 +181,7 @@ fn execute_set_mint_enabled(
 
 fn execute_mint(
     deps: DepsMut,
+    env: Env,
     info: MessageInfo,
     action: &str,
     recipient_addr: Addr,
@@ -189,6 +190,11 @@ fn execute_mint(
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     let event_info = EVENT_INFO.load(deps.storage)?;
+
+    // Check if the event is terminated
+    if env.block.time.gt(&event_info.end_time) {
+        return Err(ContractError::EventTerminated {});
+    }
 
     // Check if the mint is enabled
     if bypass_mint_enable == false && config.mint_enabled == false {
