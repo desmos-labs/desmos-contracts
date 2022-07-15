@@ -100,8 +100,7 @@ pub struct EventInfo {
   "city": "city where the event will be taking place",
   "country": "country where the event will be taking place",
   "start_date": "Start date for your event",
-  "end_date": "End date for your event",
-  "expiry_date": "From this day onward, no attendees will be able to mint POAPs from your event",
+  "end_date": "End date for your event, no attendees will be able to mint POAPs from your event",
   "year": <number>,
   "event_url": "Event URL",
   "virtual_event": true or false,
@@ -131,10 +130,11 @@ With the `EnableMint{}` message the admin can enable the `Mint{}` message for ev
 With the `DisableMint{}` message the admin can disable the `Mint{}` message for everyone.
 
 #### Mint
-If enabled, the `Mint{}` message allows users to mint their own POAP.
+If enabled, the `Mint{}` message allows users to mint their own POAP.  It's disabled after the event's end.
 
 #### MintTo
 With the `MintTo{recipient}` message the contract's admin or the minter can mint the POAP for a specific recipient.
+It's disabled after the event's end.
 
 #### UpdateEventInfo
 With the `UpdateEventInfo{start_time, end_time}` message the event's creator can change the time frame of the event if it's not already started or finished.
