@@ -4,7 +4,8 @@
 
 - July 11, 2022: Initial draft started;
 - July 12, 2022: Initial draft finished;
-- July 14, 2022: First review.
+- July 14, 2022: First review;
+- July 15, 2022: Second review.
 
 ## Status
 DRAFTED
@@ -37,6 +38,7 @@ Here below the specifications for the contract's messages:
 ```rust
 pub struct InstantiateMsg {
   pub admin: Addr,
+  pub poap_contract_code_id: u64,
   pub poap_instantiate_msg: POAPContractInstantiateMsg,
   pub subspace_id: u64,
   pub cosmoverse_post_id: u64
@@ -44,6 +46,7 @@ pub struct InstantiateMsg {
 ```
 
 * The `admin` identifies the user that controls the contract;
+* The `poap_contract_code_id` identifies the code id of the contract necessary for the instantiation;
 * The `poap_instantiate_msg` instantiate the poap contract that the manager controls;
 * The `subspace_id` identifies the dApp where the contract lives;
 * THe `cosmoverse_post_id` identifies the cosmoverse post to wich the user will react.
@@ -71,26 +74,21 @@ of the contract.
 ### Query
 ```rust
 pub enum QueryMsg {
-  /// Return a ManagerInfoResponse containing the useful information of the Manager contract
-  ManagerInfo{},
-
-  /// Inherited from the POAP Contract
-  EventInfo{}
+  /// Return a ConfigResponse containing the configuration info of the Manager contract
+  Config{},
 }
 ```
 
 #### ManagerInfo
 The `ManagerInfo{}` query returns the contract's information inside a `ManagerInfoResponse`.
 ```rust
-pub struct ManagerInfoResponse {
+pub struct ConfigResponse {
   pub admin: Addr,
+  pub poap_contract_address: Addr,
   pub subspace_id: u64,
   pub cosmoverse_post_id: u64
 }
 ```
-
-#### EventInfo
-The `EventInfo{}` query is inherited from the `POAP-Contract` and returns all the information about the Event.
 
 ## References
 - [POAP-Contract](https://github.com/desmos-labs/desmos-contracts/blob/leonardo/adr-001/docs/architecture/adr-001-poap-contract.md)
