@@ -20,6 +20,17 @@ pub struct InstantiateMsg {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct EventInfo {
+    pub creator: String,
+    pub start_time: Timestamp,
+    pub end_time: Timestamp,
+    pub per_address_limit: u32,
+    pub base_poap_uri: String,
+    pub event_uri: String,
+    pub cw721_code_id: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Admin command.
@@ -38,15 +49,16 @@ pub enum ExecuteMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum QueryMsg {}
+pub enum QueryMsg {
+    Config {},
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct EventInfo {
-    pub creator: String,
-    pub start_time: Timestamp,
-    pub end_time: Timestamp,
+pub struct QueryConfigResponse {
+    pub admin: String,
+    pub minter: String,
+    pub mint_enabled: bool,
     pub per_address_limit: u32,
-    pub base_poap_uri: String,
-    pub event_uri: String,
-    pub cw721_code_id: u64,
+    pub cw721_contract_code: Uint64,
+    pub cw721_contract: String,
 }

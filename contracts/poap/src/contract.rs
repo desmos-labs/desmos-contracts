@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::msg::{ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg};
 use crate::state::{Config, EventInfo, CONFIG, CW721_ADDRESS, EVENT_INFO, NEXT_POAP_ID};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -275,10 +275,24 @@ fn execute_update_minter(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(_deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        _ => Err(StdError::generic_err("Query operation not supported")),
+        QueryMsg::Config {} => to_binary(&query_config(deps)?),
     }
+}
+
+fn query_config(deps: Deps) -> StdResult<QueryConfigResponse> {
+    let config = CONFIG.load(deps.storage)?;
+    let cw721_address = CW721_ADDRESS.load(deps.storage)?;
+
+    Ok(QueryConfigResponse {
+        admin: config.admin.to_string(),
+        minter: config.minter.to_string(),
+        mint_enabled: config.mint_enabled,
+        per_address_limit: config.per_address_limit,
+        cw721_contract_code: config.cw721_code_id.into(),
+        cw721_contract: cw721_address.to_string(),
+    })
 }
 
 // Reply callback triggered from cw721 contract instantiation
