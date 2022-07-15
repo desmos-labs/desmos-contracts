@@ -50,7 +50,10 @@ pub enum ExecuteMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
+    /// Returns the configuration info as a [`QueryConfigResponse`].
     Config {},
+    /// Returns the event info as a [`QueryEventInfoResponse`].
+    EventInfo {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -61,4 +64,12 @@ pub struct QueryConfigResponse {
     pub per_address_limit: u32,
     pub cw721_contract_code: Uint64,
     pub cw721_contract: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct QueryEventInfoResponse {
+    pub creator: String,
+    pub start_time: Timestamp,
+    pub end_time: Timestamp,
+    pub event_uri: String,
 }

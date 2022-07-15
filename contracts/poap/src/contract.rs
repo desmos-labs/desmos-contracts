@@ -1,5 +1,7 @@
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg};
+use crate::msg::{
+    ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryEventInfoResponse, QueryMsg,
+};
 use crate::state::{Config, EventInfo, CONFIG, CW721_ADDRESS, EVENT_INFO, NEXT_POAP_ID};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -284,6 +286,7 @@ fn execute_update_minter(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
+        QueryMsg::EventInfo {} => to_binary(&query_event_info(deps)?),
     }
 }
 
@@ -298,6 +301,17 @@ fn query_config(deps: Deps) -> StdResult<QueryConfigResponse> {
         per_address_limit: config.per_address_limit,
         cw721_contract_code: config.cw721_code_id.into(),
         cw721_contract: cw721_address.to_string(),
+    })
+}
+
+fn query_event_info(deps: Deps) -> StdResult<QueryEventInfoResponse> {
+    let event_info = EVENT_INFO.load(deps.storage)?;
+
+    Ok(QueryEventInfoResponse {
+        creator: event_info.creator.to_string(),
+        start_time: event_info.start_time,
+        end_time: event_info.end_time,
+        event_uri: event_info.event_uri,
     })
 }
 
