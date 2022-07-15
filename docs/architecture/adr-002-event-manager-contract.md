@@ -79,8 +79,8 @@ pub enum QueryMsg {
 }
 ```
 
-#### ManagerInfo
-The `ManagerInfo{}` query returns the contract's information inside a `ManagerInfoResponse`.
+#### Config
+The `Config{}` query returns the contract's information inside a `ConfigResponse`.
 ```rust
 pub struct ConfigResponse {
   pub admin: Addr,
