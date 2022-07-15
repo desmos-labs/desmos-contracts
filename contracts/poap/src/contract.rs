@@ -53,8 +53,8 @@ pub fn instantiate(
     // Validate the creator address
     let creator = deps.api.addr_validate(&msg.event_info.creator)?;
 
-    // Check that start time is lower then end time
-    if msg.event_info.start_time.ge(&msg.event_info.end_time) {
+    // Check that start time is before the end time
+    if !msg.event_info.end_time.gt(&msg.event_info.start_time) {
         return Err(ContractError::StartTimeAfterEndTime {
             start: msg.event_info.start_time,
             end: msg.event_info.end_time,
@@ -62,7 +62,7 @@ pub fn instantiate(
     }
 
     // Check that the end time is in the future
-    if env.block.time.le(&msg.event_info.end_time) {
+    if !msg.event_info.end_time.gt(&env.block.time) {
         return Err(ContractError::EndTimeAlreadyPassed {
             end: msg.event_info.end_time,
         });
