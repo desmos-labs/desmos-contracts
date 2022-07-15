@@ -6,7 +6,8 @@
 - June 28, 2022: Second review;
 - June 29, 2022: Third review;
 - July 12, 2022: Fourth review.
-- July 14, 2022: Fifth review.
+- July 14, 2022: Fifth review;
+- July 15, 2022: Sixth review.
 
 ## Status
 DRAFTED
@@ -151,51 +152,11 @@ All the queries below, except for the `EventInfo`, `Admin` and `MintStatus` are 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-
-    /// Inherited from CW721-base
-    OwnerOf {
-        token_id: String,
-        include_expired: Option<bool>,
-    },
-
-    /// Inherited from CW721-base
-    NumTokens {},
-
-    /// Inherited from CW721-base
-    ContractInfo {},
-
-    /// Inherited from CW721-base
-    NftInfo {
-        token_id: String,
-    },
-
-    /// Inherited from CW721-base
-    AllNftInfo {
-        token_id: String,
-        include_expired: Option<bool>,
-    },
-
-    /// Inherited from CW721-base
-    Tokens {
-        owner: String,
-        start_after: Option<String>,
-        limit: Option<u32>,
-    },
-
-    /// Inherited from CW721-base
-    AllTokens {
-        start_after: Option<String>,
-        limit: Option<u32>,
-    },
-
     /// Return the event info
     EventInfo {},
 
-    /// Return the address of the current admin
-    Admin {},
-
-    /// Return the status of mint, enabled or disabled.
-    MintStatus{}
+    /// Return the configuration info such as admin, minter, mint status (enabled/disabled), cw721 address
+    Config{}
 }
 ```
 
