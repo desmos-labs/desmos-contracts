@@ -7,7 +7,7 @@ use crate::state::{Config, EventInfo, CONFIG, CW721_ADDRESS, EVENT_INFO, NEXT_PO
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, ReplyOn,
-    Response, StdError, StdResult, SubMsg, WasmMsg,
+    Response, StdResult, SubMsg, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw721_base::{
@@ -199,12 +199,12 @@ fn execute_mint(
     }
 
     // Check if the mint is enabled
-    if bypass_mint_enable == false && config.mint_enabled == false {
+    if !bypass_mint_enable && !config.mint_enabled {
         return Err(ContractError::MintDisabled {});
     }
 
     // Check if who is performing the action is the minter
-    if check_is_minter == true && info.sender != config.minter {
+    if check_is_minter && info.sender != config.minter {
         return Err(ContractError::Unauthorized {});
     }
 
