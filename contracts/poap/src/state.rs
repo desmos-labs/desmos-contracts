@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::{Addr, Timestamp};
-use cw_storage_plus::Item;
+use cw_storage_plus::{Item, Map};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
@@ -26,3 +26,4 @@ pub const CONFIG: Item<Config> = Item::new("config");
 pub const EVENT_INFO: Item<EventInfo> = Item::new("event_info");
 pub const CW721_ADDRESS: Item<Addr> = Item::new("cw721_address");
 pub const NEXT_POAP_ID: Item<u64> = Item::new("nex_poap_id");
+pub const MINTER_ADDRESS: Map<Addr, u32> = Map::new("minter_address");

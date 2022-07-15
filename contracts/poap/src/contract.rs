@@ -2,7 +2,9 @@ use crate::error::ContractError;
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryEventInfoResponse, QueryMsg,
 };
-use crate::state::{Config, EventInfo, CONFIG, CW721_ADDRESS, EVENT_INFO, NEXT_POAP_ID};
+use crate::state::{
+    Config, EventInfo, CONFIG, CW721_ADDRESS, EVENT_INFO, MINTER_ADDRESS, NEXT_POAP_ID,
+};
 use crate::ContractError::{EndTimeAlreadyPassed, StartTimeAfterEndTime};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -75,6 +77,11 @@ pub fn instantiate(
 
     // Check event uri
     Url::parse(&msg.event_info.event_uri).map_err(|_err| ContractError::InvalidEventUri {})?;
+
+    // Check pre address limit
+    if msg.event_info.per_address_limit == 0 {
+        return Err(ContractError::InvalidPerAddressLimit {});
+    }
 
     let config = Config {
         admin: admin.clone(),
@@ -213,6 +220,16 @@ fn execute_mint(
         return Err(ContractError::Unauthorized {});
     }
 
+    // Check per address limit
+    let mint_count = (MINTER_ADDRESS
+        .key(info.sender.clone())
+        .may_load(deps.storage)?)
+    .unwrap_or(0);
+
+    if mint_count >= config.per_address_limit {
+        return Err(ContractError::MaxPerAddressLimitExceeded {});
+    }
+
     // Get the nex poap id
     let poap_id = NEXT_POAP_ID.may_load(deps.storage)?.unwrap_or(1);
 
@@ -234,6 +251,9 @@ fn execute_mint(
     // Update the next poap id state
     let new_poap_id = poap_id + 1;
     NEXT_POAP_ID.save(deps.storage, &new_poap_id)?;
+    // Save the new mint count for the sender's address
+    let new_mint_count = mint_count + 1;
+    MINTER_ADDRESS.save(deps.storage, info.sender.clone(), &new_mint_count);
 
     Ok(Response::new()
         .add_attribute("action", action)
