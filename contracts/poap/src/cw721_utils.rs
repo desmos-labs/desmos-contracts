@@ -23,11 +23,25 @@ fn cw721_instantiate(
     Cw721Contract::<'static, Extension, Empty>::default().instantiate(deps, env, info, msg)
 }
 
+fn failing_cw721_instantiate(
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    _msg: Cw721InstantiateMsg,
+) -> Result<Response, StdError> {
+    Err(StdError::generic_err("cw721 initialization failed"))
+}
+
 fn cw721_query(deps: Deps, env: Env, msg: Cw721QueryMsg) -> StdResult<Binary> {
     Cw721Contract::<'static, Extension, Empty>::default().query(deps, env, msg)
 }
 
 pub fn contract_cw721() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(cw721_execute, cw721_instantiate, cw721_query);
+    Box::new(contract)
+}
+
+pub fn failing_cw721() -> Box<dyn Contract<Empty>> {
+    let contract = ContractWrapper::new(cw721_execute, failing_cw721_instantiate, cw721_query);
     Box::new(contract)
 }
