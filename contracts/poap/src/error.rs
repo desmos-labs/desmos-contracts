@@ -18,8 +18,8 @@ pub enum ContractError {
     #[error("The start time ({start}) is after the end time ({end})")]
     StartTimeAfterEndTime { start: Timestamp, end: Timestamp },
 
-    #[error("End time is already passed current: {current_time} end: {end_time}")]
-    EndTimeAlreadyPassed {
+    #[error("Event end time is before current time: {current_time} end: {end_time}")]
+    EndTimeBeforeCurrentTime {
         current_time: Timestamp,
         end_time: Timestamp,
     },
@@ -39,12 +39,28 @@ pub enum ContractError {
     #[error("Max minting limit per address exceeded")]
     MaxPerAddressLimitExceeded {},
 
-    #[error("Event already started")]
-    EventStarted {},
+    #[error("Event started, current time: {current_time}, start: {start_time}")]
+    EventStarted {
+        current_time: Timestamp,
+        start_time: Timestamp,
+    },
 
-    #[error("Event already terminated current time: {current_time} end time: {end_time}")]
+    #[error("Event not started, current time: {current_time}, start time: {start_time}")]
+    EventNotStarted {
+        current_time: Timestamp,
+        start_time: Timestamp,
+    },
+
+    #[error("Event terminated, current time: {current_time} end time: {end_time}")]
     EventTerminated {
         current_time: Timestamp,
+        end_time: Timestamp,
+    },
+
+    #[error("Event is in progress, current time: {current_time}, start time: {start_time} end time: {end_time}")]
+    EventInProgress {
+        current_time: Timestamp,
+        start_time: Timestamp,
         end_time: Timestamp,
     },
 }

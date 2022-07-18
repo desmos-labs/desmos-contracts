@@ -62,7 +62,7 @@ pub fn instantiate(
 
     // Check that the end time is in the future
     if !msg.event_info.end_time.gt(&env.block.time) {
-        return Err(ContractError::EndTimeAlreadyPassed {
+        return Err(ContractError::EndTimeBeforeCurrentTime {
             current_time: env.block.time,
             end_time: msg.event_info.end_time,
         });
@@ -205,8 +205,16 @@ fn execute_mint(
     let config = CONFIG.load(deps.storage)?;
     let event_info = EVENT_INFO.load(deps.storage)?;
 
-    // Check if the event is terminated
-    if env.block.time.gt(&event_info.end_time) {
+    // Check if the event is started
+    if !event_info.is_started(&env.block.time) {
+        return Err(ContractError::EventNotStarted {
+            current_time: env.block.time,
+            start_time: event_info.end_time,
+        });
+    }
+
+    // Check if the event is ended
+    if event_info.is_ended(&env.block.time) {
         return Err(ContractError::EventTerminated {
             current_time: env.block.time,
             end_time: event_info.end_time,
@@ -280,17 +288,13 @@ fn execute_update_event_info(
         return Err(ContractError::Unauthorized {});
     }
 
-    // Check that the event is not ended
-    if env.block.time.ge(&event_info.end_time) {
-        return Err(ContractError::EventTerminated {
+    // Check that the event is not in progress
+    if event_info.in_progress(&env.block.time) {
+        return Err(ContractError::EventInProgress {
             current_time: env.block.time,
+            start_time: event_info.start_time,
             end_time: event_info.end_time,
         });
-    }
-
-    // Check that the event is not started
-    if env.block.time.ge(&event_info.start_time) {
-        return Err(ContractError::EventStarted {});
     }
 
     // Check that the start time is before the end time
@@ -303,7 +307,7 @@ fn execute_update_event_info(
 
     // Check that the end time is not already passed
     if env.block.time.ge(&end_time) {
-        return Err(ContractError::EndTimeAlreadyPassed {
+        return Err(ContractError::EndTimeBeforeCurrentTime {
             current_time: env.block.time,
             end_time,
         });

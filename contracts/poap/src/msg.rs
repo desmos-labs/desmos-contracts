@@ -42,7 +42,7 @@ pub enum ExecuteMsg {
     /// Can be called from minter or admin, bypass mint enable flag.
     MintTo { recipient: String },
     /// Message that allows the event's creator to change the time frame of the event
-    /// if it's not already started or finished.
+    /// if it's not in progress
     UpdateEventInfo {
         start_time: Timestamp,
         end_time: Timestamp,
