@@ -7,10 +7,11 @@
 - June 29, 2022: Third review;
 - July 12, 2022: Fourth review.
 - July 14, 2022: Fifth review;
-- July 15, 2022: Sixth review.
+- July 15, 2022: Sixth review;
+- July 18, 2022: Accepted ADR.
 
 ## Status
-DRAFTED
+ACCEPTED (Not implemented)
 
 ## Abstract
 This ADR defines the architecture of a [**POAP**](https://academy.binance.com/en/glossary/proof-of-attendance-protocol-poap) generator contract.
