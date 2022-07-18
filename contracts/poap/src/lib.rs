@@ -1,4 +1,5 @@
 pub mod contract;
+mod cw721_utils;
 mod error;
 pub mod helpers;
 pub mod integration_tests;

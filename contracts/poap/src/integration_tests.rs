@@ -1,15 +1,10 @@
 #[cfg(test)]
 mod tests {
+    use crate::cw721_utils;
     use crate::helpers::CwTemplateContract;
     use crate::msg::{EventInfo, InstantiateMsg};
-    use cosmwasm_std::{
-        coins, Addr, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdError, StdResult,
-        Timestamp,
-    };
-    use cw721_base::{
-        ContractError as Cw721ContractError, Cw721Contract, ExecuteMsg as Cw721ExecuteMsg,
-        Extension, InstantiateMsg as Cw721InstantiateMsg, QueryMsg as Cw721QueryMsg,
-    };
+    use cosmwasm_std::{coins, Addr, Empty, Timestamp};
+    use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
     use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
 
     const CREATOR: &str = "desmos1jnpfa06xhflyjh6klwlrq8mk55s53czh6ncdm3";
@@ -19,34 +14,7 @@ mod tests {
     const CREATION_FEE: u128 = 1_000_000_000;
     const INITIAL_BALANCE: u128 = 2_000_000_000;
 
-    fn cw721_execute(
-        deps: DepsMut,
-        env: Env,
-        info: MessageInfo,
-        msg: Cw721ExecuteMsg<Extension>,
-    ) -> Result<Response, Cw721ContractError> {
-        Cw721Contract::<'static, Extension, Empty>::default().execute(deps, env, info, msg)
-    }
-
-    fn cw721_instantiate(
-        deps: DepsMut,
-        env: Env,
-        info: MessageInfo,
-        msg: Cw721InstantiateMsg,
-    ) -> Result<Response, StdError> {
-        Cw721Contract::<'static, Extension, Empty>::default().instantiate(deps, env, info, msg)
-    }
-
-    fn cw721_query(deps: Deps, env: Env, msg: Cw721QueryMsg) -> StdResult<Binary> {
-        Cw721Contract::<'static, Extension, Empty>::default().query(deps, env, msg)
-    }
-
-    pub fn contract_cw721() -> Box<dyn Contract<Empty>> {
-        let contract = ContractWrapper::new(cw721_execute, cw721_instantiate, cw721_query);
-        Box::new(contract)
-    }
-
-    pub fn contract_poap() -> Box<dyn Contract<Empty>> {
+    fn contract_poap() -> Box<dyn Contract<Empty>> {
         let contract = ContractWrapper::new(
             crate::contract::execute,
             crate::contract::instantiate,
@@ -55,6 +23,7 @@ mod tests {
         .with_reply(crate::contract::reply);
         Box::new(contract)
     }
+
     fn mock_app() -> App {
         AppBuilder::new().build(|router, _, storage| {
             router
@@ -78,7 +47,7 @@ mod tests {
 
     fn proper_instantiate() -> (App, CwTemplateContract) {
         let mut app = mock_app();
-        let cw721_code_id = app.store_code(contract_cw721());
+        let cw721_code_id = app.store_code(cw721_utils::contract_cw721());
         let poap_code_id = app.store_code(contract_poap());
 
         let block_info = app.block_info();
