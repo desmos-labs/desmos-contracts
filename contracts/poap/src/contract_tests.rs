@@ -366,4 +366,11 @@ fn mint_to_only_from_minter() {
     };
     let cosmos_msg = cw_template_contract.call(msg).unwrap();
     app.execute(Addr::unchecked(MINTER), cosmos_msg).unwrap();
+
+    // Test that minter can call mint to
+    let msg = ExecuteMsg::MintTo {
+        recipient: USER.to_string(),
+    };
+    let cosmos_msg = cw_template_contract.call(msg).unwrap();
+    app.execute(Addr::unchecked(ADMIN), cosmos_msg).unwrap();
 }

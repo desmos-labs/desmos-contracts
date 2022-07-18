@@ -200,7 +200,7 @@ fn execute_mint(
     action: &str,
     recipient_addr: Addr,
     bypass_mint_enable: bool,
-    check_is_minter: bool,
+    check_is_minter_or_admin: bool,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     let event_info = EVENT_INFO.load(deps.storage)?;
@@ -227,7 +227,7 @@ fn execute_mint(
     }
 
     // Check if who is performing the action is the minter
-    if check_is_minter && info.sender != config.minter {
+    if check_is_minter_or_admin && info.sender != config.minter && info.sender != config.admin {
         return Err(ContractError::Unauthorized {});
     }
 
