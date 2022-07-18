@@ -176,12 +176,12 @@ pub struct QueryEventInfoResponse {
 This query returns the contract's configuration
 ```rust
 pub struct QueryConfigResponse {
-    pub admin: String,
-    pub minter: String,
+    pub admin: Addr,
+    pub minter: Addr,
     pub mint_enabled: bool,
     pub per_address_limit: u32,
     pub cw721_contract_code: Uint64,
-    pub cw721_contract: String,
+    pub cw721_contract: Addr,
 }
 ```
 
