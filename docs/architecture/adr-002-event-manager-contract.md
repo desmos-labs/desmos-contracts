@@ -38,7 +38,7 @@ Here below the specifications for the contract's messages:
 #### Instantiate
 ```rust
 pub struct InstantiateMsg {
-  pub admin: Addr,
+  pub admin: String,
   pub poap_contract_code_id: u64,
   pub poap_instantiate_msg: POAPContractInstantiateMsg,
   pub subspace_id: u64,
