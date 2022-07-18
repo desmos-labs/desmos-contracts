@@ -5,7 +5,6 @@ use crate::msg::{
 use crate::state::{
     Config, EventInfo, CONFIG, CW721_ADDRESS, EVENT_INFO, MINTER_ADDRESS, NEXT_POAP_ID,
 };
-use crate::ContractError::{EndTimeAlreadyPassed, StartTimeAfterEndTime};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -296,7 +295,7 @@ fn execute_update_event_info(
 
     // Check that the start time is before the end time
     if start_time.ge(&end_time) {
-        return Err(StartTimeAfterEndTime {
+        return Err(ContractError::StartTimeAfterEndTime {
             start: start_time,
             end: end_time,
         });
@@ -304,7 +303,7 @@ fn execute_update_event_info(
 
     // Check that the end time is not already passed
     if env.block.time.ge(&end_time) {
-        return Err(EndTimeAlreadyPassed {
+        return Err(ContractError::EndTimeAlreadyPassed {
             current_time: env.block.time,
             end_time,
         });
