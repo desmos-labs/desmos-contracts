@@ -347,7 +347,7 @@ fn mint() {
 }
 
 #[test]
-fn mint_to_only_from_minter() {
+fn mint_to_only_for_minter_and_admin() {
     let (mut app, cw_template_contract) = proper_instantiate();
     // Change the chain time so that the event is started
     app.update_block(|block_info| block_info.time = Timestamp::from_seconds(EVENT_START_SECONDS));
@@ -366,4 +366,11 @@ fn mint_to_only_from_minter() {
     };
     let cosmos_msg = cw_template_contract.call(msg).unwrap();
     app.execute(Addr::unchecked(MINTER), cosmos_msg).unwrap();
+
+    // Test that minter can call mint to
+    let msg = ExecuteMsg::MintTo {
+        recipient: USER.to_string(),
+    };
+    let cosmos_msg = cw_template_contract.call(msg).unwrap();
+    app.execute(Addr::unchecked(ADMIN), cosmos_msg).unwrap();
 }
