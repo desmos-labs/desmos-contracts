@@ -77,7 +77,7 @@ pub fn instantiate(
         admin: admin.clone(),
         minter: minter.clone(),
         per_address_limit: msg.event_info.per_address_limit,
-        cw721_code_id: msg.cw721_code_id.u64(),
+        cw721_code_id: msg.cw721_code_id,
         mint_enabled: false,
     };
     // Save the received event info.
@@ -97,7 +97,7 @@ pub fn instantiate(
     let sub_msgs: Vec<SubMsg> = vec![SubMsg {
         msg: WasmMsg::Instantiate {
             admin: Some(admin.to_string()),
-            code_id: msg.cw721_code_id.u64(),
+            code_id: msg.cw721_code_id,
             msg: to_binary(&Cw721InstantiateMsg {
                 name: msg.cw721_initiate_msg.name,
                 symbol: msg.cw721_initiate_msg.symbol,
@@ -383,7 +383,7 @@ fn query_config(deps: Deps) -> StdResult<QueryConfigResponse> {
         minter: config.minter,
         mint_enabled: config.mint_enabled,
         per_address_limit: config.per_address_limit,
-        cw721_contract_code: config.cw721_code_id.into(),
+        cw721_contract_code: config.cw721_code_id,
         cw721_contract: cw721_address,
     })
 }

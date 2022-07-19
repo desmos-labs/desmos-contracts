@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Timestamp, Uint64};
+use cosmwasm_std::{Addr, Timestamp};
 use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -12,7 +12,7 @@ pub struct InstantiateMsg {
     /// if `None` will be the address of who initialized the contract.
     pub minter: String,
     /// Id of the CW721 contract to initialize together with this contract.
-    pub cw721_code_id: Uint64,
+    pub cw721_code_id: u64,
     /// Initialization message that will be sent to the CW721 contract.
     pub cw721_initiate_msg: Cw721InstantiateMsg,
     /// Information about the event.
@@ -68,7 +68,7 @@ pub struct QueryConfigResponse {
     pub minter: Addr,
     pub mint_enabled: bool,
     pub per_address_limit: u32,
-    pub cw721_contract_code: Uint64,
+    pub cw721_contract_code: u64,
     pub cw721_contract: Addr,
 }
 
