@@ -81,7 +81,7 @@ mod tests {
                 creator: CREATOR.to_string(),
                 start_time,
                 end_time,
-                per_address_limit: 10,
+                per_address_limit: 2,
                 base_poap_uri: "ipfs://popap-uri".to_string(),
                 event_uri: "ipfs://event-uri".to_string(),
                 cw721_code_id: 1,
@@ -436,6 +436,125 @@ mod tests {
             &vec![],
         );
         assert!(mint_result.is_err())
+    }
+
+    #[test]
+    fn mint_limit() {
+        let (mut app, poap_contract_addr) = proper_instantiate();
+
+        // Change the chain time so that the event is started
+        app.update_block(|block_info| {
+            block_info.time = Timestamp::from_seconds(EVENT_START_SECONDS)
+        });
+
+        // Enable mint
+        let msg = ExecuteMsg::EnableMint {};
+        app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
+
+        let msg = ExecuteMsg::Mint {};
+        // Mint the first poap
+        app.execute_contract(
+            Addr::unchecked(USER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
+        // Mint the second and last allowed poap
+        app.execute_contract(
+            Addr::unchecked(USER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
+
+        let result = app.execute_contract(
+            Addr::unchecked(USER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+        // Reached the per address limit.
+        assert!(result.is_err());
+
+        // Test also with the MintTo
+        let msg = ExecuteMsg::MintTo {
+            recipient: USER.to_string(),
+        };
+        let result = app.execute_contract(
+            Addr::unchecked(MINTER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn mint_to_limit() {
+        let (mut app, poap_contract_addr) = proper_instantiate();
+
+        // Change the chain time so that the event is started
+        app.update_block(|block_info| {
+            block_info.time = Timestamp::from_seconds(EVENT_START_SECONDS)
+        });
+
+        // Enable mint
+        let msg = ExecuteMsg::EnableMint {};
+        app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
+
+        let msg = ExecuteMsg::MintTo {
+            recipient: USER.to_string(),
+        };
+        // Mint the first poap
+        app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
+        // Mint the second and last allowed poap
+        app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
+
+        let result = app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+        // Should fail since the user have already received the max allowed poaps.
+        assert!(result.is_err());
+
+        // Test also with Mint from use
+        let msg = ExecuteMsg::Mint {};
+        let result = app.execute_contract(
+            Addr::unchecked(USER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+        // Should fail since the user have already received the max allowed poaps.
+        assert!(result.is_err());
     }
 
     #[test]
