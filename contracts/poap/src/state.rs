@@ -44,7 +44,7 @@ impl EventInfo {
     /// Checks if the event is in progress.
     /// * `timestamp` - Reference time used to check if the event is in progress.
     pub fn in_progress(&self, timestamp: &Timestamp) -> bool {
-        self.is_started(timestamp) && !self.is_ended(&timestamp)
+        self.is_started(timestamp) && !self.is_ended(timestamp)
     }
 }
 
