@@ -1,12 +1,14 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use poap::msg::InstantiateMsg as POAPInstantiateMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub admin: Option<String>,
-    pub poap_contract_code_id: u64,
+    pub poap_code_id: u64,
+    pub poap_instantiate_msg: POAPInstantiateMsg,
     pub subspace_id: u64,
-    pub cosmoverse_post_id: u64
+    pub event_post_id: u64
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
