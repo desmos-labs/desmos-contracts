@@ -288,12 +288,19 @@ fn execute_update_event_info(
         return Err(ContractError::Unauthorized {});
     }
 
-    // Check that the event is not in progress
-    if event_info.in_progress(&env.block.time) {
-        return Err(ContractError::EventInProgress {
+    // Check that the event is not ended
+    if event_info.is_ended(&env.block.time) {
+        return Err(ContractError::EventTerminated {
+            current_time: env.block.time,
+            end_time: event_info.end_time,
+        });
+    }
+
+    // Check that the event is not started
+    if event_info.is_started(&env.block.time) {
+        return Err(ContractError::EventStarted {
             current_time: env.block.time,
             start_time: event_info.start_time,
-            end_time: event_info.end_time,
         });
     }
 
