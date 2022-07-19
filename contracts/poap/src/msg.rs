@@ -1,4 +1,4 @@
-use cosmwasm_std::{Timestamp, Uint64};
+use cosmwasm_std::{Addr, Timestamp, Uint64};
 use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -64,17 +64,17 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct QueryConfigResponse {
-    pub admin: String,
-    pub minter: String,
+    pub admin: Addr,
+    pub minter: Addr,
     pub mint_enabled: bool,
     pub per_address_limit: u32,
     pub cw721_contract_code: Uint64,
-    pub cw721_contract: String,
+    pub cw721_contract: Addr,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct QueryEventInfoResponse {
-    pub creator: String,
+    pub creator: Addr,
     pub start_time: Timestamp,
     pub end_time: Timestamp,
     pub event_uri: String,

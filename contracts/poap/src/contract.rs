@@ -389,12 +389,12 @@ fn query_config(deps: Deps) -> StdResult<QueryConfigResponse> {
     let cw721_address = CW721_ADDRESS.load(deps.storage)?;
 
     Ok(QueryConfigResponse {
-        admin: config.admin.to_string(),
-        minter: config.minter.to_string(),
+        admin: config.admin,
+        minter: config.minter,
         mint_enabled: config.mint_enabled,
         per_address_limit: config.per_address_limit,
         cw721_contract_code: config.cw721_code_id.into(),
-        cw721_contract: cw721_address.to_string(),
+        cw721_contract: cw721_address,
     })
 }
 
@@ -402,7 +402,7 @@ fn query_event_info(deps: Deps) -> StdResult<QueryEventInfoResponse> {
     let event_info = EVENT_INFO.load(deps.storage)?;
 
     Ok(QueryEventInfoResponse {
-        creator: event_info.creator.to_string(),
+        creator: event_info.creator,
         start_time: event_info.start_time,
         end_time: event_info.end_time,
         event_uri: event_info.event_uri,
