@@ -15,7 +15,7 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg{
     Claim{post_id: u64},
-    MintTo{user: String},
+    MintTo{recipient: String},
     UpdateAdmin{new_admin: String}
 }
 

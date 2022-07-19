@@ -1,16 +1,18 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, wasm_instantiate, Addr, Deps, DepsMut, Env, MessageInfo, QueryResponse, Reply,
-    Response, StdResult, SubMsg,
+    to_binary, wasm_execute, wasm_instantiate, Addr, Deps, DepsMut, Env, MessageInfo,
+    QueryResponse, Reply, Response, StdResult, SubMsg,
 };
 use cw2::set_contract_version;
 use cw_utils::parse_reply_instantiate_data;
 
+use poap::msg::ExecuteMsg as POAPExecuteMsg;
+
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg};
-use crate::state::{Config, ADMIN, CONFIG, POAP_ADDRESS};
 use crate::reply::*;
+use crate::state::{Config, ADMIN, CONFIG, POAP_ADDRESS};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:poap-manager";
@@ -89,24 +91,45 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     let api = deps.api;
     match msg {
-        ExecuteMsg::Claim { .. } => claim(),
-        ExecuteMsg::MintTo { user } => mint_to(),
-        ExecuteMsg::UpdateAdmin { new_admin } => Ok(ADMIN.execute_update_admin(
-            deps,
-            info,
-            Some(api.addr_validate(&new_admin)?),
-        )?),
+        ExecuteMsg::Claim { post_id } => claim(deps, info, post_id),
+        ExecuteMsg::MintTo { recipient } => mint_to(deps, info, recipient),
+        ExecuteMsg::UpdateAdmin { new_admin } => {
+            Ok(ADMIN.execute_update_admin(deps, info, Some(api.addr_validate(&new_admin)?))?)
+        }
     }
 }
 
-fn claim() -> Result<Response, ContractError> {
-    Ok(Response::new())
+fn claim(deps: DepsMut, info: MessageInfo, post_id: u64) -> Result<Response, ContractError> {
+    let poap_address = POAP_ADDRESS.load(deps.storage)?;
+    if !check_validity(deps,post_id)? {
+        return Err(ContractError::Unauthorized{});
+    }
+    Ok(Response::new().add_submessage(SubMsg::reply_on_error(
+        wasm_execute(
+            poap_address,
+            &POAPExecuteMsg::MintTo { recipient: info.sender.into() },
+            info.funds,
+        )?,
+        MINT_TO_REPLY_ID,
+    )))
 }
 
-fn mint_to() -> Result<Response, ContractError> {
-    Ok(Response::new())
+fn check_validity(_deps: DepsMut, _post_id: u64) -> Result<bool, ContractError> {
+    // TODO build checking process
+    Ok(true)
 }
 
+fn mint_to(deps: DepsMut, info: MessageInfo, recipient: String) -> Result<Response, ContractError> {
+    let poap_address = POAP_ADDRESS.load(deps.storage)?;
+    Ok(Response::new().add_submessage(SubMsg::reply_on_error(
+        wasm_execute(
+            poap_address,
+            &POAPExecuteMsg::MintTo { recipient },
+            info.funds,
+        )?,
+        MINT_TO_REPLY_ID,
+    )))
+}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
