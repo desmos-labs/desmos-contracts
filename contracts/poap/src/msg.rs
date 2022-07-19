@@ -37,23 +37,25 @@ pub struct EventInfo {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    /// Admin command.
+    /// Allows the contract's admin to enable the [`ExecuteMsg::Mint`].
     EnableMint {},
-    /// Admin command.
+    /// Allows the contract's admin to disable the [`ExecuteMsg::Mint`].
     DisableMint {},
-    /// Can be called from any user, mint must be enabled.
+    /// If the mint is enabled, allow the user to mint the poap by themself.
+    /// It's disabled after the event's end.
     Mint {},
-    /// Can be called from minter or admin, bypass mint enable flag.
+    /// Allows the contract's admin or the minter to mint a POAP for a specific recipient.
+    /// It's disabled after the event's end.
     MintTo { recipient: String },
     /// Message that allows the event's creator to change the time frame of the event
-    /// if it's not in progress
+    /// if it's not started or finished.
     UpdateEventInfo {
         start_time: Timestamp,
         end_time: Timestamp,
     },
-    /// Admin command.
+    /// Allows the contract's admin to transfer the admin rights to another user.
     UpdateAdmin { new_admin: String },
-    /// Admin command.
+    /// Allows the contract's admin to transfer the minting rights to another user.
     UpdateMinter { new_minter: String },
 }
 
@@ -66,20 +68,33 @@ pub enum QueryMsg {
     EventInfo {},
 }
 
+/// Response to [`QueryMsg::Config`].
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct QueryConfigResponse {
+    /// Address of the contract administrator.
     pub admin: Addr,
+    /// Address of the entity that is allowed to use [`ExecuteMsg::MintTo`].
     pub minter: Addr,
+    /// Tells if the users can execute the [`ExecuteMsg::Mint`].
     pub mint_enabled: bool,
+    /// The maximus number of poap that an user can request.
     pub per_address_limit: u32,
+    /// Id of the cw721 contract that this contract has initialized.
     pub cw721_contract_code: u64,
+    /// Address of the cw721 contract that this contract is using to
+    /// mint the poaps.
     pub cw721_contract: Addr,
 }
 
+/// Response to [`QueryMsg::EventInfo`].
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct QueryEventInfoResponse {
+    /// Address of who created the event.
     pub creator: Addr,
+    /// Time at which the event starts.
     pub start_time: Timestamp,
+    /// Time at witch the event ends.
     pub end_time: Timestamp,
+    /// IPFS uri where is stored the event's metadata.
     pub event_uri: String,
 }

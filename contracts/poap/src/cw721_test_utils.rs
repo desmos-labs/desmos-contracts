@@ -36,11 +36,15 @@ fn cw721_query(deps: Deps, env: Env, msg: Cw721QueryMsg) -> StdResult<Binary> {
     Cw721Contract::<'static, String, Empty>::default().query(deps, env, msg)
 }
 
+/// Provides an instance of a cw721 contract.
+/// This instance can be used only during the integration tests.
 pub fn contract_cw721() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(cw721_execute, cw721_instantiate, cw721_query);
     Box::new(contract)
 }
 
+/// Provides an instance of a cw721 contract that fails during the initialization.
+/// This instance can be used only during the integration tests.
 pub fn failing_cw721() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(cw721_execute, failing_cw721_instantiate, cw721_query);
     Box::new(contract)
