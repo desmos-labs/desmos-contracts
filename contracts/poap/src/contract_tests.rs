@@ -467,4 +467,27 @@ mod tests {
         let mint_result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
         assert!(mint_result.is_ok());
     }
+
+    #[test]
+    fn invalid_event_info() {
+        let (mut app, cw_template_contract) = proper_instantiate();
+
+        // Start time eq end time
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(EVENT_START_SECONDS),
+            end_time: Timestamp::from_seconds(EVENT_START_SECONDS),
+        };
+        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
+        let result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
+        assert!(result.is_err());
+
+        // Start time is after end time
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(EVENT_START_SECONDS + 100),
+            end_time: Timestamp::from_seconds(EVENT_START_SECONDS),
+        };
+        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
+        let result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
+        assert!(result.is_err());
+    }
 }
