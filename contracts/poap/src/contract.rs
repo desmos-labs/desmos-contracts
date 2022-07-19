@@ -59,9 +59,9 @@ pub fn instantiate(
     }
 
     // Check that the poap uri is a valid IPFS url
-    let ipfs_url = Url::parse(&msg.event_info.base_poap_uri)
+    let poap_uri = Url::parse(&msg.event_info.base_poap_uri)
         .map_err(|_err| ContractError::InvalidPoapUri {})?;
-    if ipfs_url.scheme() != "ipfs" {
+    if poap_uri.scheme() != "ipfs" {
         return Err(ContractError::InvalidPoapUri {});
     }
 
@@ -226,12 +226,12 @@ fn execute_mint(
     }
 
     // Check per address limit
-    let mint_count = (MINTER_ADDRESS
+    let recipient_mint_count = (MINTER_ADDRESS
         .key(recipient_addr.clone())
         .may_load(deps.storage)?)
     .unwrap_or(0);
 
-    if mint_count >= config.per_address_limit {
+    if recipient_mint_count >= config.per_address_limit {
         return Err(ContractError::MaxPerAddressLimitExceeded {});
     }
 
@@ -257,8 +257,12 @@ fn execute_mint(
     let new_poap_id = poap_id + 1;
     NEXT_POAP_ID.save(deps.storage, &new_poap_id)?;
     // Save the new mint count for the sender's address
-    let new_mint_count = mint_count + 1;
-    MINTER_ADDRESS.save(deps.storage, recipient_addr.clone(), &new_mint_count)?;
+    let new_recipient_mint_count = recipient_mint_count + 1;
+    MINTER_ADDRESS.save(
+        deps.storage,
+        recipient_addr.clone(),
+        &new_recipient_mint_count,
+    )?;
 
     Ok(Response::new()
         .add_attribute("action", action)
