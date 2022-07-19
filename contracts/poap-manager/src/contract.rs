@@ -27,7 +27,7 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     // Validate the admin address
-    let admin = match msg.admin.clone() {
+    let admin = match &msg.admin {
         // Fallback to sender if the admin is not defined
         None => info.sender.clone(),
         // Admin defined, make sure that is a valid address
@@ -43,7 +43,7 @@ pub fn instantiate(
     Ok(Response::new()
         .add_attribute("method", "instantiate")
         .add_attribute("admin", admin)
-        .add_submessage(SubMsg::reply_always(
+        .add_submessage(SubMsg::reply_on_success(
             wasm_instantiate(msg.poap_code_id, &msg, info.funds, "poap-manager".into())?,
             INSTANTIATE_POAP_REPLY_ID,
         )))
@@ -68,18 +68,17 @@ fn save_config(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
-    if msg.id != INSTANTIATE_POAP_REPLY_ID {
-        return Err(ContractError::InvalidReplyID {});
+    match msg.id {
+        INSTANTIATE_POAP_REPLY_ID => resolve_instantiate_poap_reply(deps, msg),
+        _ => Err(ContractError::InvalidReplyID {}),
     }
-    let reply = parse_reply_instantiate_data(msg);
-    match reply {
-        Ok(res) => {
-            let address = deps.api.addr_validate(&res.contract_address)?;
-            POAP_ADDRESS.save(deps.storage, &address)?;
-            Ok(Response::new().add_attribute("action", "instantiate_poap_reply"))
-        }
-        Err(_) => Err(ContractError::InstantiatePOAPError {}),
-    }
+}
+
+fn resolve_instantiate_poap_reply(deps: DepsMut, msg: Reply) -> Result<Response, ContractError> {
+    let res = parse_reply_instantiate_data(msg)?;
+    let address = deps.api.addr_validate(&res.contract_address)?;
+    POAP_ADDRESS.save(deps.storage, &address)?;
+    Ok(Response::new().add_attribute("action", "instantiate_poap_reply"))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -101,34 +100,36 @@ pub fn execute(
 
 fn claim(deps: DepsMut, info: MessageInfo, post_id: u64) -> Result<Response, ContractError> {
     let poap_address = POAP_ADDRESS.load(deps.storage)?;
-    if !check_validity(deps,post_id)? {
-        return Err(ContractError::Unauthorized{});
+    if !check_eligibility(deps, post_id)? {
+        return Err(ContractError::NoEligibilityError {});
     }
-    Ok(Response::new().add_submessage(SubMsg::reply_on_error(
-        wasm_execute(
+    Ok(Response::new()
+        .add_attribute("action", "claim")
+        .add_attribute("sender", &info.sender)
+        .add_message(wasm_execute(
             poap_address,
-            &POAPExecuteMsg::MintTo { recipient: info.sender.into() },
+            &POAPExecuteMsg::MintTo {
+                recipient: info.sender.into(),
+            },
             info.funds,
-        )?,
-        MINT_TO_REPLY_ID,
-    )))
+        )?))
 }
 
-fn check_validity(_deps: DepsMut, _post_id: u64) -> Result<bool, ContractError> {
+fn check_eligibility(_deps: DepsMut, _post_id: u64) -> Result<bool, ContractError> {
     // TODO build checking process
     Ok(true)
 }
 
 fn mint_to(deps: DepsMut, info: MessageInfo, recipient: String) -> Result<Response, ContractError> {
     let poap_address = POAP_ADDRESS.load(deps.storage)?;
-    Ok(Response::new().add_submessage(SubMsg::reply_on_error(
-        wasm_execute(
+    Ok(Response::new()
+        .add_attribute("action", "mint_to")
+        .add_attribute("sender", &info.sender)
+        .add_message(wasm_execute(
             poap_address,
             &POAPExecuteMsg::MintTo { recipient },
             info.funds,
-        )?,
-        MINT_TO_REPLY_ID,
-    )))
+        )?))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]

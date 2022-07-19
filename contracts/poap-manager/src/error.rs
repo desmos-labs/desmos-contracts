@@ -1,6 +1,7 @@
 use cosmwasm_std::StdError;
 use thiserror::Error;
 use cw_controllers::AdminError;
+use cw_utils::ParseReplyError;
 
 #[derive(Error, Debug)]
 pub enum ContractError {
@@ -17,5 +18,11 @@ pub enum ContractError {
     InstantiatePOAPError {},
 
     #[error("{0}")]
-    Admin(#[from] AdminError),
+    AdminError(#[from] AdminError),
+
+    #[error("{0}")]
+    ParseReplyError(#[from] ParseReplyError),
+
+    #[error("No eligibility error")]
+    NoEligibilityError{}
 }
