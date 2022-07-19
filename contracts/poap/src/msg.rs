@@ -7,10 +7,10 @@ use serde::{Deserialize, Serialize};
 pub struct InstantiateMsg {
     /// Address of who will have the right to administer the contract.
     /// If `None` will be the address of who initialized the contract.
-    pub admin: Option<String>,
+    pub admin: String,
     /// Address of who can call the [`ExecuteMsg::MintTo`] other then the admin.
     /// if `None` will be the address of who initialized the contract.
-    pub minter: Option<String>,
+    pub minter: String,
     /// Id of the CW721 contract to initialize together with this contract.
     pub cw721_code_id: Uint64,
     /// Initialization message that will be sent to the CW721 contract.

@@ -34,20 +34,10 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     // Validate the admin address
-    let admin = match msg.admin {
-        // Fallback to sender if the admin is not defined
-        None => info.sender.clone(),
-        // Admin defined, make sure that is a valid address
-        Some(admin_address) => deps.api.addr_validate(&admin_address)?,
-    };
+    let admin = deps.api.addr_validate(&msg.admin)?;
 
     // Validate the minter address
-    let minter = match msg.minter {
-        // Fallback to sender if the minter is not defined
-        None => info.sender.clone(),
-        // Minter defined, make sure that is a valid address
-        Some(minter_address) => deps.api.addr_validate(&minter_address)?,
-    };
+    let minter = deps.api.addr_validate(&msg.minter)?;
 
     // Validate the creator address
     let creator = deps.api.addr_validate(&msg.event_info.creator)?;

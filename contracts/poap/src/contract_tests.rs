@@ -70,8 +70,8 @@ mod tests {
         let end_time = Timestamp::from_seconds(EVENT_END_SECONDS);
 
         InstantiateMsg {
-            admin: None,
-            minter: Some(MINTER.to_string()),
+            admin: ADMIN.to_string(),
+            minter: MINTER.to_string(),
             cw721_code_id: cw721_code_id.into(),
             cw721_initiate_msg: Cw721InstantiateMsg {
                 name: "test-poap".to_string(),
@@ -116,7 +116,7 @@ mod tests {
         let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
         let mut init_msg = get_valid_init_msg(cw721_code_id);
 
-        init_msg.admin = Some("a".to_string());
+        init_msg.admin = "a".to_string();
 
         let init_result = app.instantiate_contract(
             poap_code_id,
@@ -135,7 +135,7 @@ mod tests {
         let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
         let mut init_msg = get_valid_init_msg(cw721_code_id);
 
-        init_msg.minter = Some("a".to_string());
+        init_msg.minter = "a".to_string();
 
         let init_result = app.instantiate_contract(
             poap_code_id,
