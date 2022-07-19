@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::cw721_utils;
+    use crate::cw721_test_utils;
     use crate::helpers::CwTemplateContract;
     use crate::msg::{EventInfo, ExecuteMsg, InstantiateMsg};
     use cosmwasm_std::{coins, Addr, BlockInfo, Empty, Timestamp};
@@ -59,7 +59,7 @@ mod tests {
     /// Returns a pair of ids where the first refers to the cw721
     /// and the second to the poap.
     fn store_contracts(app: &mut App) -> (u64, u64) {
-        let cw721_code_id = app.store_code(cw721_utils::contract_cw721());
+        let cw721_code_id = app.store_code(cw721_test_utils::contract_cw721());
         let poap_code_id = app.store_code(contract_poap());
 
         (cw721_code_id, poap_code_id)
@@ -190,7 +190,7 @@ mod tests {
     fn instantiate_with_failing_cw721_contract() {
         let mut app = mock_app();
         let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
-        let failing_cw721_code_id = app.store_code(cw721_utils::failing_cw721());
+        let failing_cw721_code_id = app.store_code(cw721_test_utils::failing_cw721());
         let mut init_msg = get_valid_init_msg(cw721_code_id);
 
         init_msg.cw721_code_id = failing_cw721_code_id.into();
