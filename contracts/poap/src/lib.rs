@@ -1,6 +1,5 @@
 pub mod contract;
-#[cfg(test)]
-pub mod contract_tests;
+mod contract_tests;
 mod cw721_utils;
 mod error;
 pub mod helpers;
