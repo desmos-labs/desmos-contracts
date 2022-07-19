@@ -84,7 +84,7 @@ mod tests {
                 end_time,
                 per_address_limit: 10,
                 base_poap_uri: "ipfs://popap-uri".to_string(),
-                event_uri: "https://event-uri.com".to_string(),
+                event_uri: "ipfs://event-uri".to_string(),
                 cw721_code_id: 1,
             },
         }
@@ -277,6 +277,68 @@ mod tests {
             None,
         );
 
+        assert!(init_result.is_err());
+    }
+
+    #[test]
+    fn instantiate_with_invalid_poap_uri() {
+        let mut app = mock_app();
+        let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
+        let mut init_msg = get_valid_init_msg(cw721_code_id);
+
+        // Invalid uri
+        init_msg.event_info.base_poap_uri = "invalid_uri".to_string();
+        let init_result = app.instantiate_contract(
+            poap_code_id,
+            Addr::unchecked(ADMIN),
+            &init_msg,
+            &[],
+            "Poap contract",
+            None,
+        );
+        assert!(init_result.is_err());
+
+        // Non ipfs uri
+        init_msg.event_info.base_poap_uri = "https://random_domain.com".to_string();
+        let init_result = app.instantiate_contract(
+            poap_code_id,
+            Addr::unchecked(ADMIN),
+            &init_msg,
+            &[],
+            "Poap contract",
+            None,
+        );
+        assert!(init_result.is_err());
+    }
+
+    #[test]
+    fn instantiate_with_invalid_event_uri() {
+        let mut app = mock_app();
+        let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
+        let mut init_msg = get_valid_init_msg(cw721_code_id);
+
+        // Invalid uri
+        init_msg.event_info.event_uri = "invalid_uri".to_string();
+        let init_result = app.instantiate_contract(
+            poap_code_id,
+            Addr::unchecked(ADMIN),
+            &init_msg,
+            &[],
+            "Poap contract",
+            None,
+        );
+        assert!(init_result.is_err());
+
+        // Non ipfs uri
+        init_msg.event_info.event_uri = "https://random_domain.com".to_string();
+        let init_result = app.instantiate_contract(
+            poap_code_id,
+            Addr::unchecked(ADMIN),
+            &init_msg,
+            &[],
+            "Poap contract",
+            None,
+        );
         assert!(init_result.is_err());
     }
 
