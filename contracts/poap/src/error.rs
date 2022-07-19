@@ -56,11 +56,4 @@ pub enum ContractError {
         current_time: Timestamp,
         end_time: Timestamp,
     },
-
-    #[error("Event is in progress, current time: {current_time}, start time: {start_time} end time: {end_time}")]
-    EventInProgress {
-        current_time: Timestamp,
-        start_time: Timestamp,
-        end_time: Timestamp,
-    },
 }

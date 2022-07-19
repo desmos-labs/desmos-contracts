@@ -8,8 +8,8 @@ use crate::state::{
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, ReplyOn,
-    Response, StdResult, SubMsg, Timestamp, WasmMsg,
+    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, ReplyOn, Response,
+    StdResult, SubMsg, Timestamp, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw721_base::{
@@ -34,20 +34,10 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     // Validate the admin address
-    let admin = match msg.admin {
-        // Fallback to sender if the admin is not defined
-        None => info.sender.clone(),
-        // Admin defined, make sure that is a valid address
-        Some(admin_address) => deps.api.addr_validate(&admin_address)?,
-    };
+    let admin = deps.api.addr_validate(&msg.admin)?;
 
     // Validate the minter address
-    let minter = match msg.minter {
-        // Fallback to sender if the minter is not defined
-        None => info.sender.clone(),
-        // Minter defined, make sure that is a valid address
-        Some(minter_address) => deps.api.addr_validate(&minter_address)?,
-    };
+    let minter = deps.api.addr_validate(&msg.minter)?;
 
     // Validate the creator address
     let creator = deps.api.addr_validate(&msg.event_info.creator)?;
@@ -68,15 +58,19 @@ pub fn instantiate(
         });
     }
 
-    // Check that the poap uri is valid IPFS url
-    let ipfs_url = Url::parse(&msg.event_info.base_poap_uri)
+    // Check that the poap uri is a valid IPFS url
+    let poap_uri = Url::parse(&msg.event_info.base_poap_uri)
         .map_err(|_err| ContractError::InvalidPoapUri {})?;
-    if ipfs_url.scheme() != "ipfs" {
+    if poap_uri.scheme() != "ipfs" {
         return Err(ContractError::InvalidPoapUri {});
     }
 
-    // Check event uri
-    Url::parse(&msg.event_info.event_uri).map_err(|_err| ContractError::InvalidEventUri {})?;
+    // Check that the event uri is a valid IPFS url
+    let event_uri =
+        Url::parse(&msg.event_info.event_uri).map_err(|_err| ContractError::InvalidEventUri {})?;
+    if event_uri.scheme() != "ipfs" {
+        return Err(ContractError::InvalidEventUri {});
+    }
 
     // Check pre address limit
     if msg.event_info.per_address_limit == 0 {
@@ -87,7 +81,7 @@ pub fn instantiate(
         admin: admin.clone(),
         minter: minter.clone(),
         per_address_limit: msg.event_info.per_address_limit,
-        cw721_code_id: msg.cw721_code_id.u64(),
+        cw721_code_id: msg.cw721_code_id,
         mint_enabled: false,
     };
     // Save the received event info.
@@ -107,7 +101,7 @@ pub fn instantiate(
     let sub_msgs: Vec<SubMsg> = vec![SubMsg {
         msg: WasmMsg::Instantiate {
             admin: Some(admin.to_string()),
-            code_id: msg.cw721_code_id.u64(),
+            code_id: msg.cw721_code_id,
             msg: to_binary(&Cw721InstantiateMsg {
                 name: msg.cw721_initiate_msg.name,
                 symbol: msg.cw721_initiate_msg.symbol,
@@ -232,12 +226,12 @@ fn execute_mint(
     }
 
     // Check per address limit
-    let mint_count = (MINTER_ADDRESS
-        .key(info.sender.clone())
+    let recipient_mint_count = (MINTER_ADDRESS
+        .key(recipient_addr.clone())
         .may_load(deps.storage)?)
     .unwrap_or(0);
 
-    if mint_count >= config.per_address_limit {
+    if recipient_mint_count >= config.per_address_limit {
         return Err(ContractError::MaxPerAddressLimitExceeded {});
     }
 
@@ -245,11 +239,11 @@ fn execute_mint(
     let poap_id = NEXT_POAP_ID.may_load(deps.storage)?.unwrap_or(1);
 
     // Create the cw721 message to send to mint the poap
-    let mint_msg = Cw721ExecuteMsg::Mint(MintMsg::<Empty> {
+    let mint_msg = Cw721ExecuteMsg::Mint(MintMsg::<String> {
         token_id: poap_id.to_string(),
         owner: recipient_addr.to_string(),
         token_uri: Some(format!("{}/{}", event_info.base_poap_uri, poap_id)),
-        extension: Empty {},
+        extension: event_info.event_uri,
     });
 
     let cw721_address = CW721_ADDRESS.load(deps.storage)?;
@@ -263,8 +257,12 @@ fn execute_mint(
     let new_poap_id = poap_id + 1;
     NEXT_POAP_ID.save(deps.storage, &new_poap_id)?;
     // Save the new mint count for the sender's address
-    let new_mint_count = mint_count + 1;
-    MINTER_ADDRESS.save(deps.storage, info.sender.clone(), &new_mint_count)?;
+    let new_recipient_mint_count = recipient_mint_count + 1;
+    MINTER_ADDRESS.save(
+        deps.storage,
+        recipient_addr.clone(),
+        &new_recipient_mint_count,
+    )?;
 
     Ok(Response::new()
         .add_attribute("action", action)
@@ -288,12 +286,19 @@ fn execute_update_event_info(
         return Err(ContractError::Unauthorized {});
     }
 
-    // Check that the event is not in progress
-    if event_info.in_progress(&env.block.time) {
-        return Err(ContractError::EventInProgress {
+    // Check that the event is not ended
+    if event_info.is_ended(&env.block.time) {
+        return Err(ContractError::EventTerminated {
+            current_time: env.block.time,
+            end_time: event_info.end_time,
+        });
+    }
+
+    // Check that the event is not started
+    if event_info.is_started(&env.block.time) {
+        return Err(ContractError::EventStarted {
             current_time: env.block.time,
             start_time: event_info.start_time,
-            end_time: event_info.end_time,
         });
     }
 
@@ -382,12 +387,12 @@ fn query_config(deps: Deps) -> StdResult<QueryConfigResponse> {
     let cw721_address = CW721_ADDRESS.load(deps.storage)?;
 
     Ok(QueryConfigResponse {
-        admin: config.admin.to_string(),
-        minter: config.minter.to_string(),
+        admin: config.admin,
+        minter: config.minter,
         mint_enabled: config.mint_enabled,
         per_address_limit: config.per_address_limit,
-        cw721_contract_code: config.cw721_code_id.into(),
-        cw721_contract: cw721_address.to_string(),
+        cw721_contract_code: config.cw721_code_id,
+        cw721_contract: cw721_address,
     })
 }
 
@@ -395,7 +400,7 @@ fn query_event_info(deps: Deps) -> StdResult<QueryEventInfoResponse> {
     let event_info = EVENT_INFO.load(deps.storage)?;
 
     Ok(QueryEventInfoResponse {
-        creator: event_info.creator.to_string(),
+        creator: event_info.creator,
         start_time: event_info.start_time,
         end_time: event_info.end_time,
         event_uri: event_info.event_uri,
