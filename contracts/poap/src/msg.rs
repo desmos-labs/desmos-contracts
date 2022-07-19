@@ -6,10 +6,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     /// Address of who will have the right to administer the contract.
-    /// If `None` will be the address of who initialized the contract.
     pub admin: String,
     /// Address of who can call the [`ExecuteMsg::MintTo`] other then the admin.
-    /// if `None` will be the address of who initialized the contract.
     pub minter: String,
     /// Id of the CW721 contract to initialize together with this contract.
     pub cw721_code_id: u64,
@@ -21,11 +19,17 @@ pub struct InstantiateMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct EventInfo {
+    /// User that created the event.
     pub creator: String,
+    /// Time at which the event begins.
     pub start_time: Timestamp,
+    /// Time at which the event ends.
     pub end_time: Timestamp,
+    /// Max amount of poap that a single user can mint.
     pub per_address_limit: u32,
+    /// Identifies a valid IPFS URI corresponding to where the assets and metadata of the POAPs are stored.
     pub base_poap_uri: String,
+    /// Uri
     pub event_uri: String,
     pub cw721_code_id: u64,
 }
