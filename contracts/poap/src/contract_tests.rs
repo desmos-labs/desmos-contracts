@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use crate::cw721_test_utils;
-    use crate::helpers::CwTemplateContract;
     use crate::msg::{EventInfo, ExecuteMsg, InstantiateMsg};
     use cosmwasm_std::{coins, Addr, BlockInfo, Empty, Timestamp};
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
@@ -90,12 +89,12 @@ mod tests {
         }
     }
 
-    fn proper_instantiate() -> (App, CwTemplateContract) {
+    fn proper_instantiate() -> (App, Addr) {
         let mut app = mock_app();
         let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
         let msg = get_valid_init_msg(cw721_code_id);
 
-        let cw_template_contract_addr = app
+        let poap_contract_addr = app
             .instantiate_contract(
                 poap_code_id,
                 Addr::unchecked(ADMIN),
@@ -106,8 +105,7 @@ mod tests {
             )
             .unwrap();
 
-        let cw_template_contract = CwTemplateContract(cw_template_contract_addr);
-        (app, cw_template_contract)
+        (app, poap_contract_addr)
     }
 
     #[test]
@@ -344,49 +342,51 @@ mod tests {
 
     #[test]
     fn enable_mint() {
-        let (mut app, cw_template_contract) = proper_instantiate();
+        let (mut app, poap_contract_addr) = proper_instantiate();
 
         let msg = ExecuteMsg::EnableMint {};
-        let cosmos_msg = cw_template_contract.call(msg).unwrap();
-        app.execute(Addr::unchecked(ADMIN), cosmos_msg).unwrap();
+        app.execute_contract(Addr::unchecked(ADMIN), poap_contract_addr, &msg, &vec![])
+            .unwrap();
     }
 
     #[test]
     fn normal_user_can_t_enable_mint() {
-        let (mut app, cw_template_contract) = proper_instantiate();
+        let (mut app, poap_contract_addr) = proper_instantiate();
 
         let msg = ExecuteMsg::EnableMint {};
-        let cosmos_msg = cw_template_contract.call(msg).unwrap();
-        let mint_result = app.execute(Addr::unchecked(USER), cosmos_msg);
-        assert!(mint_result.is_err());
+        let result = app.execute_contract(Addr::unchecked(USER), poap_contract_addr, &msg, &vec![]);
+        assert!(result.is_err());
     }
 
     #[test]
     fn disable_mint() {
-        let (mut app, cw_template_contract) = proper_instantiate();
+        let (mut app, poap_contract_addr) = proper_instantiate();
 
         let msg = ExecuteMsg::DisableMint {};
-        let cosmos_msg = cw_template_contract.call(msg).unwrap();
-        app.execute(Addr::unchecked(ADMIN), cosmos_msg).unwrap();
+        app.execute_contract(Addr::unchecked(ADMIN), poap_contract_addr, &msg, &vec![])
+            .unwrap();
     }
 
     #[test]
     fn normal_user_can_t_disable_mint() {
-        let (mut app, cw_template_contract) = proper_instantiate();
+        let (mut app, poap_contract_addr) = proper_instantiate();
 
         let msg = ExecuteMsg::DisableMint {};
-        let cosmos_msg = cw_template_contract.call(msg).unwrap();
-        let mint_result = app.execute(Addr::unchecked(USER), cosmos_msg);
-        assert!(mint_result.is_err());
+        let result = app.execute_contract(Addr::unchecked(USER), poap_contract_addr, &msg, &vec![]);
+        assert!(result.is_err());
     }
 
     #[test]
     fn mint() {
-        let (mut app, cw_template_contract) = proper_instantiate();
+        let (mut app, poap_contract_addr) = proper_instantiate();
 
         let msg = ExecuteMsg::Mint {};
-        let cosmos_msg = cw_template_contract.call(msg).unwrap();
-        let mint_result = app.execute(Addr::unchecked(USER), cosmos_msg);
+        let mint_result = app.execute_contract(
+            Addr::unchecked(USER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         // Event is not started
         assert!(mint_result.is_err());
 
@@ -397,32 +397,50 @@ mod tests {
 
         // Mint should fail since mint is disabled by default
         let msg = ExecuteMsg::Mint {};
-        let cosmos_msg = cw_template_contract.call(msg).unwrap();
-        let mint_result = app.execute(Addr::unchecked(USER), cosmos_msg);
+        let mint_result = app.execute_contract(
+            Addr::unchecked(USER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         assert!(mint_result.is_err());
 
         // Enable mint
         let msg = ExecuteMsg::EnableMint {};
-        let cosmos_msg = cw_template_contract.call(msg).unwrap();
-        app.execute(Addr::unchecked(ADMIN), cosmos_msg).unwrap();
+        app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
 
         // Now mint should work
         let msg = ExecuteMsg::Mint {};
-        let cosmos_msg = cw_template_contract.call(msg).unwrap();
-        app.execute(Addr::unchecked(USER), cosmos_msg).unwrap();
+        app.execute_contract(
+            Addr::unchecked(USER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
 
         // Mint should not work when the event is terminated
         app.update_block(|block_info| block_info.time = Timestamp::from_seconds(EVENT_END_SECONDS));
 
         let msg = ExecuteMsg::Mint {};
-        let cosmos_msg = cw_template_contract.call(msg).unwrap();
-        let mint_result = app.execute(Addr::unchecked(USER), cosmos_msg);
+        let mint_result = app.execute_contract(
+            Addr::unchecked(USER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         assert!(mint_result.is_err())
     }
 
     #[test]
     fn mint_to_only_for_minter_and_admin() {
-        let (mut app, cw_template_contract) = proper_instantiate();
+        let (mut app, poap_contract_addr) = proper_instantiate();
         // Change the chain time so that the event is started
         app.update_block(|block_info| {
             block_info.time = Timestamp::from_seconds(EVENT_START_SECONDS)
@@ -431,8 +449,12 @@ mod tests {
         let msg = ExecuteMsg::MintTo {
             recipient: USER.to_string(),
         };
-        let cosmos_msg = cw_template_contract.call(msg).unwrap();
-        let mint_result = app.execute(Addr::unchecked(USER), cosmos_msg);
+        let mint_result = app.execute_contract(
+            Addr::unchecked(USER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         // User should not be authorized to use the mint to action
         assert!(mint_result.is_err());
 
@@ -440,45 +462,67 @@ mod tests {
         let msg = ExecuteMsg::MintTo {
             recipient: USER.to_string(),
         };
-        let cosmos_msg = cw_template_contract.call(msg).unwrap();
-        app.execute(Addr::unchecked(MINTER), cosmos_msg).unwrap();
+        app.execute_contract(
+            Addr::unchecked(MINTER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
 
         // Test that minter can call mint to
         let msg = ExecuteMsg::MintTo {
             recipient: USER.to_string(),
         };
-        let cosmos_msg = cw_template_contract.call(msg).unwrap();
-        app.execute(Addr::unchecked(ADMIN), cosmos_msg).unwrap();
+        app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
     }
 
     #[test]
     fn only_creator_can_change_event_info() {
-        let (mut app, cw_template_contract) = proper_instantiate();
+        let (mut app, poap_contract_addr) = proper_instantiate();
 
         let msg = ExecuteMsg::UpdateEventInfo {
             start_time: Timestamp::from_seconds(app.block_info().time.seconds() + 100),
             end_time: Timestamp::from_seconds(app.block_info().time.seconds() + 400),
         };
 
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
-        let result = app.execute(Addr::unchecked(USER), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(USER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         // User should not be authorized to update the event info
         assert!(result.is_err());
 
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
-        let result = app.execute(Addr::unchecked(ADMIN), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         // Admin should not be authorized to update the event info
         assert!(result.is_err());
 
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
-        let result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         // Admin should not be authorized to update the event info
         assert!(result.is_ok());
     }
 
     #[test]
     fn event_info_update_only_if_event_not_started_or_ended() {
-        let (mut app, cw_template_contract) = proper_instantiate();
+        let (mut app, poap_contract_addr) = proper_instantiate();
 
         let msg = ExecuteMsg::UpdateEventInfo {
             start_time: Timestamp::from_seconds(EVENT_START_SECONDS),
@@ -491,8 +535,12 @@ mod tests {
             block_info.time = Timestamp::from_seconds(EVENT_START_SECONDS + 100)
         });
 
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
-        let result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         assert!(result.is_err());
 
         // Edge case current time is event start
@@ -500,8 +548,12 @@ mod tests {
             block_info.time = Timestamp::from_seconds(EVENT_START_SECONDS)
         });
 
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
-        let result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         assert!(result.is_err());
 
         // Fake current time to event ended
@@ -509,15 +561,23 @@ mod tests {
             block_info.time = Timestamp::from_seconds(EVENT_END_SECONDS + 100)
         });
 
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
-        let result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         assert!(result.is_err());
 
         // Edge case current time is event end
         app.update_block(|block_info| block_info.time = Timestamp::from_seconds(EVENT_END_SECONDS));
 
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
-        let result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         assert!(result.is_err());
 
         // Current time is before event started
@@ -525,22 +585,30 @@ mod tests {
             block_info.time = Timestamp::from_seconds(EVENT_START_SECONDS - 100);
         });
 
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
-        let mint_result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
+        let mint_result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         assert!(mint_result.is_ok());
     }
 
     #[test]
     fn invalid_event_info() {
-        let (mut app, cw_template_contract) = proper_instantiate();
+        let (mut app, poap_contract_addr) = proper_instantiate();
 
         // Start time eq end time
         let msg = ExecuteMsg::UpdateEventInfo {
             start_time: Timestamp::from_seconds(EVENT_START_SECONDS),
             end_time: Timestamp::from_seconds(EVENT_START_SECONDS),
         };
-        let cosmos_msg = cw_template_contract.call(msg).unwrap();
-        let result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         assert!(result.is_err());
 
         // Start time is after end time
@@ -548,60 +616,92 @@ mod tests {
             start_time: Timestamp::from_seconds(EVENT_START_SECONDS + 100),
             end_time: Timestamp::from_seconds(EVENT_START_SECONDS),
         };
-        let cosmos_msg = cw_template_contract.call(msg).unwrap();
-        let result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         assert!(result.is_err());
     }
 
     #[test]
     fn update_admin_only_from_admin() {
-        let (mut app, cw_template_contract) = proper_instantiate();
+        let (mut app, poap_contract_addr) = proper_instantiate();
 
         let msg = ExecuteMsg::UpdateAdmin {
             new_admin: "admin2".to_string(),
         };
 
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
-        let result = app.execute(Addr::unchecked(USER), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(USER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         // User can't update admin
         assert!(result.is_err());
 
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
-        let result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         // Creator can't update admin
         assert!(result.is_err());
 
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
-        let result = app.execute(Addr::unchecked(ADMIN), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         // Admin can update admin
         assert!(result.is_ok());
 
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
-        let result = app.execute(Addr::unchecked(ADMIN), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         // Admin now can't update the admin anymore since is changed
         assert!(result.is_err());
     }
 
     #[test]
     fn update_minter_only_from_admin() {
-        let (mut app, cw_template_contract) = proper_instantiate();
+        let (mut app, poap_contract_addr) = proper_instantiate();
 
         let msg = ExecuteMsg::UpdateMinter {
             new_minter: "minter2".to_string(),
         };
 
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
-        let result = app.execute(Addr::unchecked(USER), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(USER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         // User can't update minter
         assert!(result.is_err());
 
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
-        let result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         // Creator can't update minter
         assert!(result.is_err());
 
-        let cosmos_msg = cw_template_contract.call(msg).unwrap();
-        let result = app.execute(Addr::unchecked(ADMIN), cosmos_msg);
+        let result = app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
         // Admin can update minter
         assert!(result.is_ok());
     }
