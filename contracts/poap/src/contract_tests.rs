@@ -477,7 +477,7 @@ mod tests {
             start_time: Timestamp::from_seconds(EVENT_START_SECONDS),
             end_time: Timestamp::from_seconds(EVENT_START_SECONDS),
         };
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
+        let cosmos_msg = cw_template_contract.call(msg).unwrap();
         let result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
         assert!(result.is_err());
 
@@ -486,8 +486,61 @@ mod tests {
             start_time: Timestamp::from_seconds(EVENT_START_SECONDS + 100),
             end_time: Timestamp::from_seconds(EVENT_START_SECONDS),
         };
-        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
+        let cosmos_msg = cw_template_contract.call(msg).unwrap();
         let result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn update_admin_only_from_admin() {
+        let (mut app, cw_template_contract) = proper_instantiate();
+
+        let msg = ExecuteMsg::UpdateAdmin {
+            new_admin: "admin2".to_string(),
+        };
+
+        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
+        let result = app.execute(Addr::unchecked(USER), cosmos_msg);
+        // User can't update admin
+        assert!(result.is_err());
+
+        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
+        let result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
+        // Creator can't update admin
+        assert!(result.is_err());
+
+        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
+        let result = app.execute(Addr::unchecked(ADMIN), cosmos_msg);
+        // Admin can update admin
+        assert!(result.is_ok());
+
+        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
+        let result = app.execute(Addr::unchecked(ADMIN), cosmos_msg);
+        // Admin now can't update the admin anymore since is changed
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn update_minter_only_from_admin() {
+        let (mut app, cw_template_contract) = proper_instantiate();
+
+        let msg = ExecuteMsg::UpdateMinter {
+            new_minter: "minter2".to_string(),
+        };
+
+        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
+        let result = app.execute(Addr::unchecked(USER), cosmos_msg);
+        // User can't update minter
+        assert!(result.is_err());
+
+        let cosmos_msg = cw_template_contract.call(msg.clone()).unwrap();
+        let result = app.execute(Addr::unchecked(CREATOR), cosmos_msg);
+        // Creator can't update minter
+        assert!(result.is_err());
+
+        let cosmos_msg = cw_template_contract.call(msg).unwrap();
+        let result = app.execute(Addr::unchecked(ADMIN), cosmos_msg);
+        // Admin can update minter
+        assert!(result.is_ok());
     }
 }
