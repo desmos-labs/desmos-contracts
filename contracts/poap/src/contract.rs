@@ -66,7 +66,11 @@ pub fn instantiate(
     }
 
     // Check event uri
-    Url::parse(&msg.event_info.event_uri).map_err(|_err| ContractError::InvalidEventUri {})?;
+    let event_uri =
+        Url::parse(&msg.event_info.event_uri).map_err(|_err| ContractError::InvalidEventUri {})?;
+    if event_uri.scheme() != "ipfs" {
+        return Err(ContractError::InvalidEventUri {});
+    }
 
     // Check pre address limit
     if msg.event_info.per_address_limit == 0 {
