@@ -242,7 +242,7 @@ fn execute_mint(
     let mint_msg = Cw721ExecuteMsg::Mint(MintMsg::<String> {
         token_id: poap_id.to_string(),
         owner: recipient_addr.to_string(),
-        token_uri: Some(format!("{}/{}", event_info.base_poap_uri, poap_id)),
+        token_uri: Some(event_info.base_poap_uri),
         extension: event_info.event_uri,
     });
 
