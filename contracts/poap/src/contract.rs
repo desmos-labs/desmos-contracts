@@ -50,6 +50,14 @@ pub fn instantiate(
         });
     }
 
+    // Check that the start time is in the future
+    if !msg.event_info.start_time.gt(&env.block.time) {
+        return Err(ContractError::StartTimeBeforeCurrentTime {
+            current_time: env.block.time,
+            start_time: msg.event_info.start_time,
+        });
+    }
+
     // Check that the end time is in the future
     if !msg.event_info.end_time.gt(&env.block.time) {
         return Err(ContractError::EndTimeBeforeCurrentTime {

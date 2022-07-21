@@ -205,6 +205,54 @@ mod tests {
     }
 
     #[test]
+    fn instantiate_with_event_start_before_current_time() {
+        let mut app = mock_app();
+        let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
+        let mut init_msg = get_valid_init_msg(cw721_code_id);
+
+        let current_block = app.block_info();
+        // Create a start time 200 seconds before the current block time
+        let start = current_block.time.seconds() - 200;
+        init_msg.event_info.start_time = Timestamp::from_seconds(start);
+        init_msg.event_info.end_time = Timestamp::from_seconds(start + 600);
+
+        let init_result = app.instantiate_contract(
+            poap_code_id,
+            Addr::unchecked(ADMIN),
+            &init_msg,
+            &[],
+            "Poap contract",
+            None,
+        );
+
+        assert!(init_result.is_err());
+    }
+
+    #[test]
+    fn instantiate_with_event_start_equal_current_time() {
+        let mut app = mock_app();
+        let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
+        let mut init_msg = get_valid_init_msg(cw721_code_id);
+
+        let current_block = app.block_info();
+        // Create a start time 200 seconds before the current block time
+        let start = current_block.time.seconds();
+        init_msg.event_info.start_time = Timestamp::from_seconds(start);
+        init_msg.event_info.end_time = Timestamp::from_seconds(start + 600);
+
+        let init_result = app.instantiate_contract(
+            poap_code_id,
+            Addr::unchecked(ADMIN),
+            &init_msg,
+            &[],
+            "Poap contract",
+            None,
+        );
+
+        assert!(init_result.is_err());
+    }
+
+    #[test]
     fn instantiate_with_event_end_before_current_time() {
         let mut app = mock_app();
         let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
@@ -216,6 +264,29 @@ mod tests {
         init_msg.event_info.start_time = Timestamp::from_seconds(start);
         // Start time 100 seconds before the current block time
         init_msg.event_info.end_time = Timestamp::from_seconds(start + 100);
+
+        let init_result = app.instantiate_contract(
+            poap_code_id,
+            Addr::unchecked(ADMIN),
+            &init_msg,
+            &[],
+            "Poap contract",
+            None,
+        );
+
+        assert!(init_result.is_err());
+    }
+
+    #[test]
+    fn instantiate_with_event_end_equal_current_time() {
+        let mut app = mock_app();
+        let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
+        let mut init_msg = get_valid_init_msg(cw721_code_id);
+
+        let current_block = app.block_info();
+        init_msg.event_info.start_time =
+            Timestamp::from_seconds(current_block.time.seconds() + 500);
+        init_msg.event_info.end_time = Timestamp::from_seconds(current_block.time.seconds());
 
         let init_result = app.instantiate_contract(
             poap_code_id,
