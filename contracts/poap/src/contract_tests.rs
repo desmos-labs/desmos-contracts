@@ -943,6 +943,15 @@ mod tests {
         assert!(result.is_err());
 
         let result = app.execute_contract(
+            Addr::unchecked(MINTER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+        // Minter can't update minter
+        assert!(result.is_err());
+
+        let result = app.execute_contract(
             Addr::unchecked(ADMIN),
             poap_contract_addr.clone(),
             &msg,
