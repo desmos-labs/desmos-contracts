@@ -660,7 +660,7 @@ mod tests {
         )
         .unwrap();
 
-        // Test that minter can call mint to
+        // Test that admin can call mint to
         let msg = ExecuteMsg::MintTo {
             recipient: USER.to_string(),
         };
