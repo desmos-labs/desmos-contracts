@@ -7,12 +7,15 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 use cw_utils::parse_reply_instantiate_data;
 
+use desmos_bindings::posts::querier::PostsQuerier;
 use poap::msg::ExecuteMsg as POAPExecuteMsg;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg};
 use crate::reply::*;
 use crate::state::{Config, ADMIN, CONFIG, POAP_ADDRESS};
+
+use std::ops::Deref;
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:poap-manager";
@@ -100,7 +103,8 @@ pub fn execute(
 
 fn claim(deps: DepsMut, info: MessageInfo, post_id: u64) -> Result<Response, ContractError> {
     let poap_address = POAP_ADDRESS.load(deps.storage)?;
-    if !check_eligibility(deps, post_id)? {
+    let config = CONFIG.load(deps.storage)?;
+    if !check_eligibility(deps, info.sender.clone(), config, post_id)? {
         return Err(ContractError::NoEligibilityError {});
     }
     Ok(Response::new()
@@ -115,9 +119,16 @@ fn claim(deps: DepsMut, info: MessageInfo, post_id: u64) -> Result<Response, Con
         )?))
 }
 
-fn check_eligibility(_deps: DepsMut, _post_id: u64) -> Result<bool, ContractError> {
-    // TODO build checking process
-    Ok(true)
+fn check_eligibility(deps: DepsMut, user: Addr, config: Config, post_id: u64) -> Result<bool, ContractError> {
+    let post_res = PostsQuerier::new(deps.querier.deref()).query_post(config.subspace_id, post_id)?;
+    let post = post_res.post;
+    if post.author != user {
+        return Ok(false)
+    }
+    match post.conversation_id {
+        Some(id) => return Ok(id.u64() == config.event_post_id),
+        None => return Ok(false)
+    }
 }
 
 fn mint_to(deps: DepsMut, info: MessageInfo, recipient: String) -> Result<Response, ContractError> {
