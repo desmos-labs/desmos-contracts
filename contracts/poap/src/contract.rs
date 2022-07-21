@@ -203,7 +203,7 @@ fn execute_mint(
     if !event_info.is_started(&env.block.time) {
         return Err(ContractError::EventNotStarted {
             current_time: env.block.time,
-            start_time: event_info.end_time,
+            start_time: event_info.start_time,
         });
     }
 
