@@ -29,7 +29,7 @@ pub struct EventInfo {
     pub per_address_limit: u32,
     /// Identifies a valid IPFS URI corresponding to where the assets and metadata of the POAPs are stored.
     pub base_poap_uri: String,
-    /// Uri
+    /// Uri of the poap event
     pub event_uri: String,
     pub cw721_code_id: u64,
 }
