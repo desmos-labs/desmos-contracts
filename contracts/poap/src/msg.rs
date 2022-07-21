@@ -94,7 +94,7 @@ pub struct QueryEventInfoResponse {
     pub creator: Addr,
     /// Time at which the event starts.
     pub start_time: Timestamp,
-    /// Time at witch the event ends.
+    /// Time at which the event ends.
     pub end_time: Timestamp,
     /// IPFS uri where the event's metadata are stored
     pub event_uri: String,
