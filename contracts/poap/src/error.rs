@@ -42,8 +42,8 @@ pub enum ContractError {
     #[error("Mint operation is disabled")]
     MintDisabled {},
 
-    #[error("Max minting limit per address exceeded")]
-    MaxPerAddressLimitExceeded {},
+    #[error("Minting limit reached for {recipient_addr}")]
+    MaxPerAddressLimitExceeded { recipient_addr: String },
 
     #[error("Event started, current time: {current_time}, start: {start_time}")]
     EventStarted {

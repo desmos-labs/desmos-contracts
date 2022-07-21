@@ -248,7 +248,9 @@ fn execute_mint(
     .unwrap_or(0);
 
     if recipient_mint_count >= config.per_address_limit {
-        return Err(ContractError::MaxPerAddressLimitExceeded {});
+        return Err(ContractError::MaxPerAddressLimitExceeded {
+            recipient_addr: recipient_addr.to_string(),
+        });
     }
 
     // Get the nex poap id
