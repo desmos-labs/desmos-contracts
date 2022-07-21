@@ -813,6 +813,62 @@ mod tests {
             &vec![],
         );
         assert!(result.is_err());
+
+        // Start time before current time
+        let current_block = app.block_info();
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(current_block.time.seconds() - 100),
+            end_time: Timestamp::from_seconds(EVENT_END_SECONDS),
+        };
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+        assert!(result.is_err());
+
+        // Edge case start time eq current time
+        let current_block = app.block_info();
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(current_block.time.seconds()),
+            end_time: Timestamp::from_seconds(EVENT_END_SECONDS),
+        };
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+        assert!(result.is_err());
+
+        // End time before current time
+        let current_block = app.block_info();
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(current_block.time.seconds() + 100),
+            end_time: Timestamp::from_seconds(current_block.time.seconds() - 100),
+        };
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+        assert!(result.is_err());
+
+        // Edge case end time eq current time
+        let current_block = app.block_info();
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(current_block.time.seconds() + 100),
+            end_time: Timestamp::from_seconds(current_block.time.seconds()),
+        };
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+        assert!(result.is_err());
     }
 
     #[test]

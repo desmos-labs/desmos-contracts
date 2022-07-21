@@ -318,6 +318,14 @@ fn execute_update_event_info(
         });
     }
 
+    // Check that the start time is not already passed
+    if env.block.time.ge(&start_time) {
+        return Err(ContractError::StartTimeBeforeCurrentTime {
+            current_time: env.block.time,
+            start_time,
+        });
+    }
+
     // Check that the end time is not already passed
     if env.block.time.ge(&end_time) {
         return Err(ContractError::EndTimeBeforeCurrentTime {
