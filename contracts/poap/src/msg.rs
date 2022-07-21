@@ -31,6 +31,7 @@ pub struct EventInfo {
     pub base_poap_uri: String,
     /// Uri of the poap event
     pub event_uri: String,
+    /// Id of the cw721 contract that the POAP contract initialise.
     pub cw721_code_id: u64,
 }
 
