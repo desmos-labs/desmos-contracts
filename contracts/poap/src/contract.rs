@@ -72,7 +72,7 @@ pub fn instantiate(
         return Err(ContractError::InvalidEventUri {});
     }
 
-    // Check pre address limit
+    // Check per address limit
     if msg.event_info.per_address_limit == 0 {
         return Err(ContractError::InvalidPerAddressLimit {});
     }
