@@ -21,6 +21,14 @@ use url::Url;
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:poap";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+// actions consts
+const ACTION_ENABLE_MINT: &str = "enable mint";
+const ACTION_DISABLE_MINT: &str = "disable mint";
+const ACTION_MINT: &str = "mint";
+const ACTION_MINT_TO: &str = "mint to";
+const ACTION_UPDATE_EVENT_INFO: &str = "update event info";
+const ACTION_UPDATE_ADMIN: &str = "update admin";
+const ACTION_UPDATE_MINTER: &str = "update minter";
 
 const INSTANTIATE_CW721_REPLY_ID: u64 = 1;
 
@@ -153,11 +161,11 @@ pub fn execute(
         ExecuteMsg::DisableMint {} => execute_set_mint_enabled(deps, info, false),
         ExecuteMsg::Mint {} => {
             let recipient_addr = info.sender.clone();
-            execute_mint(deps, env, info, "mint", recipient_addr, false, false)
+            execute_mint(deps, env, info, ACTION_MINT, recipient_addr, false, false)
         }
         ExecuteMsg::MintTo { recipient } => {
             let recipient_addr = deps.api.addr_validate(&recipient)?;
-            execute_mint(deps, env, info, "mint to", recipient_addr, true, true)
+            execute_mint(deps, env, info, ACTION_MINT_TO, recipient_addr, true, true)
         }
         ExecuteMsg::UpdateEventInfo {
             start_time,
@@ -185,9 +193,9 @@ fn execute_set_mint_enabled(
     CONFIG.save(deps.storage, &config)?;
 
     let action = if mint_enabled {
-        "enable mint"
+        ACTION_ENABLE_MINT
     } else {
-        "disable mint"
+        ACTION_DISABLE_MINT
     };
 
     Ok(Response::new()
@@ -340,7 +348,7 @@ fn execute_update_event_info(
     EVENT_INFO.save(deps.storage, &event_info)?;
 
     Ok(Response::new()
-        .add_attribute("action", "update event info")
+        .add_attribute("action", ACTION_UPDATE_EVENT_INFO)
         .add_attribute("sender", &info.sender)
         .add_attribute("new start time", event_info.start_time.to_string())
         .add_attribute("new end time", event_info.end_time.to_string()))
@@ -364,7 +372,7 @@ fn execute_update_admin(
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new()
-        .add_attribute("action", "update admin")
+        .add_attribute("action", ACTION_UPDATE_ADMIN)
         .add_attribute("new admin", &admin_address))
 }
 
@@ -386,7 +394,7 @@ fn execute_update_minter(
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new()
-        .add_attribute("action", "update minter")
+        .add_attribute("action", ACTION_UPDATE_MINTER)
         .add_attribute("new minter", &minter_address))
 }
 
