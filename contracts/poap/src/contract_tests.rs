@@ -706,7 +706,7 @@ mod tests {
             &msg,
             &vec![],
         );
-        // Admin should not be authorized to update the event info
+        // Creator is authorised to update the event info
         assert!(result.is_ok());
     }
 
