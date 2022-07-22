@@ -8,8 +8,8 @@ use crate::state::{
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, ReplyOn, Response,
-    StdResult, SubMsg, Timestamp, WasmMsg,
+    to_binary, wasm_execute, wasm_instantiate, Addr, Binary, Deps, DepsMut, Env, MessageInfo,
+    Reply, Response, StdResult, SubMsg, Timestamp,
 };
 use cw2::set_contract_version;
 use cw721_base::{
@@ -114,23 +114,19 @@ pub fn instantiate(
     EVENT_INFO.save(deps.storage, &event_info)?;
 
     // Submessage to instantiate cw721 contract
-    let sub_msgs: Vec<SubMsg> = vec![SubMsg {
-        msg: WasmMsg::Instantiate {
-            admin: Some(admin.to_string()),
-            code_id: msg.cw721_code_id.u64(),
-            msg: to_binary(&Cw721InstantiateMsg {
+    let cw721_submessage = SubMsg::reply_on_success(
+        wasm_instantiate(
+            msg.cw721_code_id.into(),
+            &Cw721InstantiateMsg {
                 name: msg.cw721_initiate_msg.name,
                 symbol: msg.cw721_initiate_msg.symbol,
                 minter: env.contract.address.to_string(),
-            })?,
-            funds: info.funds,
-            label: "poap cw721".to_string(),
-        }
-        .into(),
-        id: INSTANTIATE_CW721_REPLY_ID,
-        gas_limit: None,
-        reply_on: ReplyOn::Success,
-    }];
+            },
+            info.funds,
+            "poap cw721".to_string(),
+        )?,
+        INSTANTIATE_CW721_REPLY_ID,
+    );
 
     Ok(Response::new()
         .add_attribute("method", "instantiate")
@@ -146,7 +142,7 @@ pub fn instantiate(
         .add_attribute("base_poap_uri", &msg.event_info.base_poap_uri)
         .add_attribute("event_uri", &msg.event_info.event_uri)
         .add_attribute("cw721_code_id", &msg.cw721_code_id.to_string())
-        .add_submessages(sub_msgs))
+        .add_submessage(cw721_submessage))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -265,11 +261,7 @@ fn execute_mint(
     });
 
     let cw721_address = CW721_ADDRESS.load(deps.storage)?;
-    let response_msg = CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: cw721_address.to_string(),
-        msg: to_binary(&mint_msg)?,
-        funds: vec![],
-    });
+    let wasm_execute_mint_msg = wasm_execute(cw721_address, &mint_msg, vec![])?;
 
     // Update the next poap id state
     let new_poap_id = poap_id + 1;
@@ -287,7 +279,7 @@ fn execute_mint(
         .add_attribute("sender", info.sender)
         .add_attribute("recipient", recipient_addr.to_string())
         .add_attribute("poap_id", poap_id.to_string())
-        .add_message(response_msg))
+        .add_message(wasm_execute_mint_msg))
 }
 
 fn execute_update_event_info(
