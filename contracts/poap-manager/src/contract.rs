@@ -7,13 +7,13 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 use cw_utils::parse_reply_instantiate_data;
 
-use desmos_bindings::posts::querier::PostsQuerier;
+use desmos_bindings::profiles::querier::ProfilesQuerier;
 use poap::msg::ExecuteMsg as POAPExecuteMsg;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg};
 use crate::reply::*;
-use crate::state::{Config, ADMIN, CONFIG, POAP_ADDRESS};
+use crate::state::{Config, CONFIG};
 
 use std::ops::Deref;
 
@@ -28,31 +28,33 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
+    msg.validate()?;
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    // Validate the admin address
-    let admin = match &msg.admin {
-        // Fallback to sender if the admin is not defined
-        None => info.sender.clone(),
-        // Admin defined, make sure that is a valid address
-        Some(admin_address) => deps.api.addr_validate(&admin_address)?,
-    };
-    save_config(
+
+    let admin = deps.api.addr_validate(&msg.admin)?;
+    instantiate_config(
         deps,
         admin.clone(),
         msg.poap_code_id,
         msg.subspace_id,
         msg.event_post_id,
     )?;
+
     Ok(Response::new()
         .add_attribute("method", "instantiate")
         .add_attribute("admin", admin)
         .add_submessage(SubMsg::reply_on_success(
-            wasm_instantiate(msg.poap_code_id, &msg, info.funds, "poap-manager".into())?,
+            wasm_instantiate(
+                msg.poap_code_id,
+                &msg.poap_instantiate_msg,
+                info.funds,
+                "poap-manager".into(),
+            )?,
             INSTANTIATE_POAP_REPLY_ID,
         )))
 }
 
-fn save_config(
+fn instantiate_config(
     deps: DepsMut,
     admin: Addr,
     poap_code_id: u64,
@@ -60,19 +62,20 @@ fn save_config(
     event_post_id: u64,
 ) -> Result<(), ContractError> {
     let config = Config {
+        admin,
         poap_code_id: poap_code_id,
+        poap_address: Addr::unchecked(""),
         subspace_id: subspace_id,
         event_post_id: event_post_id,
     };
     CONFIG.save(deps.storage, &config)?;
-    ADMIN.set(deps, Some(admin))?;
     Ok(())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
-    match msg.id {
-        INSTANTIATE_POAP_REPLY_ID => resolve_instantiate_poap_reply(deps, msg),
+pub fn reply(deps: DepsMut, _env: Env, reply_msg: Reply) -> Result<Response, ContractError> {
+    match reply_msg.id {
+        INSTANTIATE_POAP_REPLY_ID => resolve_instantiate_poap_reply(deps, reply_msg),
         _ => Err(ContractError::InvalidReplyID {}),
     }
 }
@@ -80,7 +83,10 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 fn resolve_instantiate_poap_reply(deps: DepsMut, msg: Reply) -> Result<Response, ContractError> {
     let res = parse_reply_instantiate_data(msg)?;
     let address = deps.api.addr_validate(&res.contract_address)?;
-    POAP_ADDRESS.save(deps.storage, &address)?;
+    CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
+        config.poap_address = address;
+        Ok(config)
+    })?;
     Ok(Response::new().add_attribute("action", "instantiate_poap_reply"))
 }
 
@@ -91,20 +97,17 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    let api = deps.api;
+    msg.validate()?;
     match msg {
         ExecuteMsg::Claim { post_id } => claim(deps, info, post_id),
         ExecuteMsg::MintTo { recipient } => mint_to(deps, info, recipient),
-        ExecuteMsg::UpdateAdmin { new_admin } => {
-            Ok(ADMIN.execute_update_admin(deps, info, Some(api.addr_validate(&new_admin)?))?)
-        }
+        ExecuteMsg::UpdateAdmin { new_admin } => update_admin(deps, info, new_admin),
     }
 }
 
 fn claim(deps: DepsMut, info: MessageInfo, post_id: u64) -> Result<Response, ContractError> {
-    let poap_address = POAP_ADDRESS.load(deps.storage)?;
-    let config = CONFIG.load(deps.storage)?;
-    if !check_eligibility(deps, info.sender.clone(), config, post_id)? {
+    let poap_address = CONFIG.load(deps.storage)?.poap_address;
+    if !check_eligibility(deps, info.sender.clone(), post_id)? {
         return Err(ContractError::NoEligibilityError {});
     }
     Ok(Response::new()
@@ -119,20 +122,13 @@ fn claim(deps: DepsMut, info: MessageInfo, post_id: u64) -> Result<Response, Con
         )?))
 }
 
-fn check_eligibility(deps: DepsMut, user: Addr, config: Config, post_id: u64) -> Result<bool, ContractError> {
-    let post_res = PostsQuerier::new(deps.querier.deref()).query_post(config.subspace_id, post_id)?;
-    let post = post_res.post;
-    if post.author != user {
-        return Ok(false)
-    }
-    match post.conversation_id {
-        Some(id) => return Ok(id.u64() == config.event_post_id),
-        None => return Ok(false)
-    }
+fn check_eligibility(deps: DepsMut, user: Addr, _post_id: u64) -> Result<bool, ContractError> {
+    ProfilesQuerier::new(deps.querier.deref()).query_profile(user)?;
+    Ok(true)
 }
 
 fn mint_to(deps: DepsMut, info: MessageInfo, recipient: String) -> Result<Response, ContractError> {
-    let poap_address = POAP_ADDRESS.load(deps.storage)?;
+    let poap_address = CONFIG.load(deps.storage)?.poap_address;
     Ok(Response::new()
         .add_attribute("action", "mint_to")
         .add_attribute("sender", &info.sender)
@@ -143,6 +139,21 @@ fn mint_to(deps: DepsMut, info: MessageInfo, recipient: String) -> Result<Respon
         )?))
 }
 
+fn update_admin(deps: DepsMut, info: MessageInfo, user: String) -> Result<Response, ContractError> {
+    let new_admin = deps.api.addr_validate(&user)?;
+    CONFIG.update(deps.storage, |mut config| -> Result<_, ContractError> {
+        if config.admin != info.sender {
+            return Err(ContractError::NotAdmin {});
+        }
+        config.admin = new_admin.clone();
+        Ok(config)
+    })?;
+    Ok(Response::new()
+        .add_attribute("action", "update_admin")
+        .add_attribute("new_admin", new_admin)
+        .add_attribute("sender", info.sender))
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     match msg {
@@ -150,6 +161,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     }
 }
 
-fn query_config(_deps: Deps) -> StdResult<QueryConfigResponse> {
-    Ok(QueryConfigResponse {})
+fn query_config(deps: Deps) -> StdResult<QueryConfigResponse> {
+    let config = CONFIG.load(deps.storage)?;
+    Ok(QueryConfigResponse { config })
 }
