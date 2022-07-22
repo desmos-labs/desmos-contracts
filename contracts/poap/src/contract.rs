@@ -22,13 +22,13 @@ use url::Url;
 const CONTRACT_NAME: &str = "crates.io:poap";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 // actions consts
-const ACTION_ENABLE_MINT: &str = "enable mint";
-const ACTION_DISABLE_MINT: &str = "disable mint";
+const ACTION_ENABLE_MINT: &str = "enable_mint";
+const ACTION_DISABLE_MINT: &str = "disable_mint";
 const ACTION_MINT: &str = "mint";
-const ACTION_MINT_TO: &str = "mint to";
-const ACTION_UPDATE_EVENT_INFO: &str = "update event info";
-const ACTION_UPDATE_ADMIN: &str = "update admin";
-const ACTION_UPDATE_MINTER: &str = "update minter";
+const ACTION_MINT_TO: &str = "mint_to";
+const ACTION_UPDATE_EVENT_INFO: &str = "update_event_info";
+const ACTION_UPDATE_ADMIN: &str = "update_admin";
+const ACTION_UPDATE_MINTER: &str = "update_minter";
 
 const INSTANTIATE_CW721_REPLY_ID: u64 = 1;
 
@@ -97,7 +97,7 @@ pub fn instantiate(
         admin: admin.clone(),
         minter: minter.clone(),
         per_address_limit: msg.event_info.per_address_limit,
-        cw721_code_id: msg.cw721_code_id,
+        cw721_code_id: msg.cw721_code_id.u64(),
         mint_enabled: false,
     };
     // Save the received event info.
@@ -117,7 +117,7 @@ pub fn instantiate(
     let sub_msgs: Vec<SubMsg> = vec![SubMsg {
         msg: WasmMsg::Instantiate {
             admin: Some(admin.to_string()),
-            code_id: msg.cw721_code_id,
+            code_id: msg.cw721_code_id.u64(),
             msg: to_binary(&Cw721InstantiateMsg {
                 name: msg.cw721_initiate_msg.name,
                 symbol: msg.cw721_initiate_msg.symbol,
@@ -417,7 +417,7 @@ fn query_config(deps: Deps) -> StdResult<QueryConfigResponse> {
         minter: config.minter,
         mint_enabled: config.mint_enabled,
         per_address_limit: config.per_address_limit,
-        cw721_contract_code: config.cw721_code_id,
+        cw721_contract_code: config.cw721_code_id.into(),
         cw721_contract: cw721_address,
     })
 }

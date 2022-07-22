@@ -19,7 +19,7 @@
       ]
     },
     "end_time": {
-      "description": "Time at witch the event ends.",
+      "description": "Time at which the event ends.",
       "allOf": [
         {
           "$ref": "#/definitions/Timestamp"
@@ -27,7 +27,7 @@
       ]
     },
     "event_uri": {
-      "description": "IPFS uri where is stored the event's metadata.",
+      "description": "IPFS uri where the event's metadata are stored",
       "type": "string"
     },
     "start_time": {

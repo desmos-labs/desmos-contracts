@@ -71,7 +71,7 @@ mod tests {
         InstantiateMsg {
             admin: ADMIN.to_string(),
             minter: MINTER.to_string(),
-            cw721_code_id,
+            cw721_code_id: cw721_code_id.into(),
             cw721_initiate_msg: Cw721InstantiateMsg {
                 name: "test-poap".to_string(),
                 symbol: "poap".to_string(),
@@ -84,7 +84,6 @@ mod tests {
                 per_address_limit: 2,
                 base_poap_uri: "ipfs://popap-uri".to_string(),
                 event_uri: "ipfs://event-uri".to_string(),
-                cw721_code_id: 1,
             },
         }
     }

@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Timestamp};
+use cosmwasm_std::{Addr, Timestamp, Uint64};
 use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,7 @@ pub struct InstantiateMsg {
     /// Address of who can call the [`ExecuteMsg::MintTo`] other then the admin.
     pub minter: String,
     /// Id of the CW721 contract to initialize together with this contract.
-    pub cw721_code_id: u64,
+    pub cw721_code_id: Uint64,
     /// Initialization message that will be sent to the CW721 contract.
     pub cw721_initiate_msg: Cw721InstantiateMsg,
     /// Information about the event.
@@ -31,8 +31,6 @@ pub struct EventInfo {
     pub base_poap_uri: String,
     /// Uri of the poap event
     pub event_uri: String,
-    /// Id of the cw721 contract that the POAP contract initialise.
-    pub cw721_code_id: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -81,7 +79,7 @@ pub struct QueryConfigResponse {
     /// The maximus number of poap that an user can request.
     pub per_address_limit: u32,
     /// Id of the cw721 contract that this contract has initialized.
-    pub cw721_contract_code: u64,
+    pub cw721_contract_code: Uint64,
     /// Address of the cw721 contract that this contract is using to
     /// mint the poaps.
     pub cw721_contract: Addr,
