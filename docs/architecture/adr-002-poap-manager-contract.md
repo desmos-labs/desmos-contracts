@@ -55,7 +55,7 @@ pub enum ExecuteMsg{
 ```
 
 ##### Claim
-With the `Claim{post_id}` message the user call the contract to try claiming the POAP. The claim will be successful only if the user has created a profile before.
+With the `Claim{}` message the user call the contract to try claiming the POAP. The claim will be successful only if the user has created a profile before.
 
 ##### MintTo
 With the `MintTo{user}` message the admin of the contract can bypass the claim procedure and mint the POAP to a user (that still need to have a profile).
