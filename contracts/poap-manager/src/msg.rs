@@ -1,5 +1,6 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use cosmwasm_std::Uint64;
 
 use poap::msg::InstantiateMsg as POAPInstantiateMsg;
 use crate::error::ContractError;
@@ -8,10 +9,8 @@ use crate::state::Config;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub admin: String,
-    pub poap_code_id: u64,
+    pub poap_code_id: Uint64,
     pub poap_instantiate_msg: POAPInstantiateMsg,
-    pub subspace_id: u64,
-    pub event_post_id: u64,
 }
 
 impl InstantiateMsg {
@@ -21,7 +20,7 @@ impl InstantiateMsg {
                 "admin can not be empty or blank",
             ));
         }
-        if self.poap_code_id == 0 {
+        if self.poap_code_id == Uint64::zero() {
             return Err(ContractError::invalid_message("code id can not be zero"));
         }
         Ok(())
@@ -31,7 +30,7 @@ impl InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    Claim { post_id: u64 },
+    Claim {},
     MintTo { recipient: String },
     UpdateAdmin { new_admin: String },
 }
@@ -39,7 +38,7 @@ pub enum ExecuteMsg {
 impl ExecuteMsg {
     pub fn validate(&self) -> Result<(), ContractError> {
         match self {
-            ExecuteMsg::Claim { .. } => Ok(()),
+            ExecuteMsg::Claim {} => Ok(()),
             ExecuteMsg::MintTo { recipient } => {
                 if recipient.trim().is_empty() {
                     return Err(ContractError::invalid_message(

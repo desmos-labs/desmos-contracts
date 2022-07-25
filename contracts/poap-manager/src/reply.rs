@@ -1,1 +1,0 @@
-pub const INSTANTIATE_POAP_REPLY_ID: u64 = 1;
