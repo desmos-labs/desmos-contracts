@@ -1,6 +1,7 @@
 use crate::error::ContractError;
 use crate::msg::{
-    ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryEventInfoResponse, QueryMsg,
+    ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryEventInfoResponse,
+    QueryMintedAmountResponse, QueryMsg,
 };
 use crate::state::{
     Config, EventInfo, CONFIG, CW721_ADDRESS, EVENT_INFO, MINTER_ADDRESS, NEXT_POAP_ID,
@@ -16,8 +17,6 @@ use cw721_base::{
     msg::ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg, MintMsg,
 };
 use cw_utils::parse_reply_instantiate_data;
-use url::Url;
-
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:poap";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -370,6 +369,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::EventInfo {} => to_binary(&query_event_info(deps)?),
+        QueryMsg::MintedAmount { user } => to_binary(&query_minted_amount(deps, user)?),
     }
 }
 
@@ -395,6 +395,19 @@ fn query_event_info(deps: Deps) -> StdResult<QueryEventInfoResponse> {
         start_time: event_info.start_time,
         end_time: event_info.end_time,
         event_uri: event_info.event_uri,
+    })
+}
+
+fn query_minted_amount(deps: Deps, user: String) -> StdResult<QueryMintedAmountResponse> {
+    let user_addr = deps.api.addr_validate(&user)?;
+
+    let minted_amount = MINTER_ADDRESS
+        .may_load(deps.storage, user_addr.clone())?
+        .unwrap_or(0);
+
+    Ok(QueryMintedAmountResponse {
+        user: user_addr,
+        amount: minted_amount,
     })
 }
 

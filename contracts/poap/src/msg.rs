@@ -67,6 +67,8 @@ pub enum QueryMsg {
     Config {},
     /// Returns the event info as a [`QueryEventInfoResponse`].
     EventInfo {},
+    /// Returns the amount of poaps minted from `user` as [`QueryMintedAmountResponse`].
+    MintedAmount { user: String },
 }
 
 /// Response to [`QueryMsg::Config`].
@@ -98,6 +100,15 @@ pub struct QueryEventInfoResponse {
     pub end_time: Timestamp,
     /// IPFS uri where the event's metadata are stored
     pub event_uri: String,
+}
+
+/// Response to [`QueryMsg::MintedAmount`].
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct QueryMintedAmountResponse {
+    /// Address for which the request was made.
+    pub user: Addr,
+    /// Amount of poaps minted from the user.
+    pub amount: u32,
 }
 
 impl InstantiateMsg {
