@@ -249,7 +249,7 @@ fn execute_mint(
         });
     }
 
-    // Get the nex poap id
+    // Get the next poap id
     let poap_id = NEXT_POAP_ID.may_load(deps.storage)?.unwrap_or(1);
 
     // Create the cw721 message to send to mint the poap
