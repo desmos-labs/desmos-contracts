@@ -29,6 +29,10 @@ const ACTION_MINT_TO: &str = "mint_to";
 const ACTION_UPDATE_EVENT_INFO: &str = "update_event_info";
 const ACTION_UPDATE_ADMIN: &str = "update_admin";
 const ACTION_UPDATE_MINTER: &str = "update_minter";
+// response attributes
+const ATTRIBUTE_ACTION: &str = "action";
+const ATTRIBUTE_SENDER: &str = "sender";
+const ATTRIBUTE_CREATOR: &str = "creator";
 
 const INSTANTIATE_CW721_REPLY_ID: u64 = 1;
 
@@ -104,8 +108,8 @@ pub fn instantiate(
     );
 
     Ok(Response::new()
-        .add_attribute("method", "instantiate")
-        .add_attribute("creator", creator)
+        .add_attribute(ATTRIBUTE_ACTION, "instantiate")
+        .add_attribute(ATTRIBUTE_CREATOR, creator)
         .add_attribute("admin", admin)
         .add_attribute("minter", minter)
         .add_attribute("start_time", msg.event_info.start_time.to_string())
@@ -172,8 +176,8 @@ fn execute_set_mint_enabled(
     };
 
     Ok(Response::new()
-        .add_attribute("action", action)
-        .add_attribute("sender", info.sender))
+        .add_attribute(ATTRIBUTE_ACTION, action)
+        .add_attribute(ATTRIBUTE_SENDER, info.sender))
 }
 
 fn execute_mint(
@@ -252,8 +256,8 @@ fn execute_mint(
     )?;
 
     Ok(Response::new()
-        .add_attribute("action", action)
-        .add_attribute("sender", info.sender)
+        .add_attribute(ATTRIBUTE_ACTION, action)
+        .add_attribute(ATTRIBUTE_SENDER, info.sender)
         .add_attribute("recipient", recipient_addr.to_string())
         .add_attribute("poap_id", poap_id.to_string())
         .add_message(wasm_execute_mint_msg))
@@ -311,10 +315,10 @@ fn execute_update_event_info(
     EVENT_INFO.save(deps.storage, &event_info)?;
 
     Ok(Response::new()
-        .add_attribute("action", ACTION_UPDATE_EVENT_INFO)
-        .add_attribute("sender", &info.sender)
-        .add_attribute("new start time", start_time.to_string())
-        .add_attribute("new end time", end_time.to_string()))
+        .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_EVENT_INFO)
+        .add_attribute(ATTRIBUTE_SENDER, &info.sender)
+        .add_attribute("new_start_time", start_time.to_string())
+        .add_attribute("new_end_time", end_time.to_string()))
 }
 
 fn execute_update_admin(
@@ -335,8 +339,8 @@ fn execute_update_admin(
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new()
-        .add_attribute("action", ACTION_UPDATE_ADMIN)
-        .add_attribute("new admin", &admin_address))
+        .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_ADMIN)
+        .add_attribute("new_admin", &admin_address))
 }
 
 fn execute_update_minter(
@@ -357,8 +361,8 @@ fn execute_update_minter(
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new()
-        .add_attribute("action", ACTION_UPDATE_MINTER)
-        .add_attribute("new minter", &minter_address))
+        .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_MINTER)
+        .add_attribute("new_minter", &minter_address))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -405,7 +409,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
     match reply {
         Ok(res) => {
             CW721_ADDRESS.save(deps.storage, &Addr::unchecked(res.contract_address))?;
-            Ok(Response::default().add_attribute("action", "instantiate_cw721_reply"))
+            Ok(Response::default().add_attribute(ATTRIBUTE_ACTION, "instantiate_cw721_reply"))
         }
         Err(_) => Err(ContractError::InstantiateCw721Error {}),
     }
