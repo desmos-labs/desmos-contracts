@@ -18,6 +18,12 @@ pub enum ContractError {
     #[error("The start time ({start}) is after the end time ({end})")]
     StartTimeAfterEndTime { start: Timestamp, end: Timestamp },
 
+    #[error("Event start time is before current time: {current_time} start: {start_time}")]
+    StartTimeBeforeCurrentTime {
+        current_time: Timestamp,
+        start_time: Timestamp,
+    },
+
     #[error("Event end time is before current time: {current_time} end: {end_time}")]
     EndTimeBeforeCurrentTime {
         current_time: Timestamp,
@@ -36,8 +42,8 @@ pub enum ContractError {
     #[error("Mint operation is disabled")]
     MintDisabled {},
 
-    #[error("Max minting limit per address exceeded")]
-    MaxPerAddressLimitExceeded {},
+    #[error("Minting limit reached for {recipient_addr}")]
+    MaxPerAddressLimitExceeded { recipient_addr: String },
 
     #[error("Event started, current time: {current_time}, start: {start_time}")]
     EventStarted {

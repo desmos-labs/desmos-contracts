@@ -8,8 +8,8 @@ use crate::state::{
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, ReplyOn, Response,
-    StdResult, SubMsg, Timestamp, WasmMsg,
+    to_binary, wasm_execute, wasm_instantiate, Addr, Binary, Deps, DepsMut, Env, MessageInfo,
+    Reply, Response, StdResult, SubMsg, Timestamp,
 };
 use cw2::set_contract_version;
 use cw721_base::{
@@ -21,6 +21,14 @@ use url::Url;
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:poap";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+// actions consts
+const ACTION_ENABLE_MINT: &str = "enable_mint";
+const ACTION_DISABLE_MINT: &str = "disable_mint";
+const ACTION_MINT: &str = "mint";
+const ACTION_MINT_TO: &str = "mint_to";
+const ACTION_UPDATE_EVENT_INFO: &str = "update_event_info";
+const ACTION_UPDATE_ADMIN: &str = "update_admin";
+const ACTION_UPDATE_MINTER: &str = "update_minter";
 
 const INSTANTIATE_CW721_REPLY_ID: u64 = 1;
 
@@ -50,6 +58,14 @@ pub fn instantiate(
         });
     }
 
+    // Check that the start time is in the future
+    if !msg.event_info.start_time.gt(&env.block.time) {
+        return Err(ContractError::StartTimeBeforeCurrentTime {
+            current_time: env.block.time,
+            start_time: msg.event_info.start_time,
+        });
+    }
+
     // Check that the end time is in the future
     if !msg.event_info.end_time.gt(&env.block.time) {
         return Err(ContractError::EndTimeBeforeCurrentTime {
@@ -72,7 +88,7 @@ pub fn instantiate(
         return Err(ContractError::InvalidEventUri {});
     }
 
-    // Check pre address limit
+    // Check per address limit
     if msg.event_info.per_address_limit == 0 {
         return Err(ContractError::InvalidPerAddressLimit {});
     }
@@ -81,7 +97,7 @@ pub fn instantiate(
         admin: admin.clone(),
         minter: minter.clone(),
         per_address_limit: msg.event_info.per_address_limit,
-        cw721_code_id: msg.cw721_code_id,
+        cw721_code_id: msg.cw721_code_id.u64(),
         mint_enabled: false,
     };
     // Save the received event info.
@@ -98,23 +114,19 @@ pub fn instantiate(
     EVENT_INFO.save(deps.storage, &event_info)?;
 
     // Submessage to instantiate cw721 contract
-    let sub_msgs: Vec<SubMsg> = vec![SubMsg {
-        msg: WasmMsg::Instantiate {
-            admin: Some(admin.to_string()),
-            code_id: msg.cw721_code_id,
-            msg: to_binary(&Cw721InstantiateMsg {
+    let cw721_submessage = SubMsg::reply_on_success(
+        wasm_instantiate(
+            msg.cw721_code_id.into(),
+            &Cw721InstantiateMsg {
                 name: msg.cw721_initiate_msg.name,
                 symbol: msg.cw721_initiate_msg.symbol,
                 minter: env.contract.address.to_string(),
-            })?,
-            funds: info.funds,
-            label: "poap cw721".to_string(),
-        }
-        .into(),
-        id: INSTANTIATE_CW721_REPLY_ID,
-        gas_limit: None,
-        reply_on: ReplyOn::Success,
-    }];
+            },
+            info.funds,
+            "poap cw721".to_string(),
+        )?,
+        INSTANTIATE_CW721_REPLY_ID,
+    );
 
     Ok(Response::new()
         .add_attribute("method", "instantiate")
@@ -130,7 +142,7 @@ pub fn instantiate(
         .add_attribute("base_poap_uri", &msg.event_info.base_poap_uri)
         .add_attribute("event_uri", &msg.event_info.event_uri)
         .add_attribute("cw721_code_id", &msg.cw721_code_id.to_string())
-        .add_submessages(sub_msgs))
+        .add_submessage(cw721_submessage))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -145,11 +157,11 @@ pub fn execute(
         ExecuteMsg::DisableMint {} => execute_set_mint_enabled(deps, info, false),
         ExecuteMsg::Mint {} => {
             let recipient_addr = info.sender.clone();
-            execute_mint(deps, env, info, "mint", recipient_addr, false, false)
+            execute_mint(deps, env, info, ACTION_MINT, recipient_addr, false, false)
         }
         ExecuteMsg::MintTo { recipient } => {
             let recipient_addr = deps.api.addr_validate(&recipient)?;
-            execute_mint(deps, env, info, "mint to", recipient_addr, true, true)
+            execute_mint(deps, env, info, ACTION_MINT_TO, recipient_addr, true, true)
         }
         ExecuteMsg::UpdateEventInfo {
             start_time,
@@ -177,9 +189,9 @@ fn execute_set_mint_enabled(
     CONFIG.save(deps.storage, &config)?;
 
     let action = if mint_enabled {
-        "enable mint"
+        ACTION_ENABLE_MINT
     } else {
-        "disable mint"
+        ACTION_DISABLE_MINT
     };
 
     Ok(Response::new()
@@ -194,7 +206,7 @@ fn execute_mint(
     action: &str,
     recipient_addr: Addr,
     bypass_mint_enable: bool,
-    check_is_minter_or_admin: bool,
+    check_authorized_to_mint: bool,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     let event_info = EVENT_INFO.load(deps.storage)?;
@@ -203,7 +215,7 @@ fn execute_mint(
     if !event_info.is_started(&env.block.time) {
         return Err(ContractError::EventNotStarted {
             current_time: env.block.time,
-            start_time: event_info.end_time,
+            start_time: event_info.start_time,
         });
     }
 
@@ -221,7 +233,7 @@ fn execute_mint(
     }
 
     // Check if who is performing the action is the minter
-    if check_is_minter_or_admin && info.sender != config.minter && info.sender != config.admin {
+    if check_authorized_to_mint && info.sender != config.minter && info.sender != config.admin {
         return Err(ContractError::Unauthorized {});
     }
 
@@ -232,7 +244,9 @@ fn execute_mint(
     .unwrap_or(0);
 
     if recipient_mint_count >= config.per_address_limit {
-        return Err(ContractError::MaxPerAddressLimitExceeded {});
+        return Err(ContractError::MaxPerAddressLimitExceeded {
+            recipient_addr: recipient_addr.to_string(),
+        });
     }
 
     // Get the nex poap id
@@ -242,16 +256,12 @@ fn execute_mint(
     let mint_msg = Cw721ExecuteMsg::Mint(MintMsg::<String> {
         token_id: poap_id.to_string(),
         owner: recipient_addr.to_string(),
-        token_uri: Some(format!("{}/{}", event_info.base_poap_uri, poap_id)),
+        token_uri: Some(event_info.base_poap_uri),
         extension: event_info.event_uri,
     });
 
     let cw721_address = CW721_ADDRESS.load(deps.storage)?;
-    let response_msg = CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: cw721_address.to_string(),
-        msg: to_binary(&mint_msg)?,
-        funds: vec![],
-    });
+    let wasm_execute_mint_msg = wasm_execute(cw721_address, &mint_msg, vec![])?;
 
     // Update the next poap id state
     let new_poap_id = poap_id + 1;
@@ -269,7 +279,7 @@ fn execute_mint(
         .add_attribute("sender", info.sender)
         .add_attribute("recipient", recipient_addr.to_string())
         .add_attribute("poap_id", poap_id.to_string())
-        .add_message(response_msg))
+        .add_message(wasm_execute_mint_msg))
 }
 
 fn execute_update_event_info(
@@ -310,6 +320,14 @@ fn execute_update_event_info(
         });
     }
 
+    // Check that the start time is not already passed
+    if env.block.time.ge(&start_time) {
+        return Err(ContractError::StartTimeBeforeCurrentTime {
+            current_time: env.block.time,
+            start_time,
+        });
+    }
+
     // Check that the end time is not already passed
     if env.block.time.ge(&end_time) {
         return Err(ContractError::EndTimeBeforeCurrentTime {
@@ -324,7 +342,7 @@ fn execute_update_event_info(
     EVENT_INFO.save(deps.storage, &event_info)?;
 
     Ok(Response::new()
-        .add_attribute("action", "update event info")
+        .add_attribute("action", ACTION_UPDATE_EVENT_INFO)
         .add_attribute("sender", &info.sender)
         .add_attribute("new start time", event_info.start_time.to_string())
         .add_attribute("new end time", event_info.end_time.to_string()))
@@ -348,7 +366,7 @@ fn execute_update_admin(
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new()
-        .add_attribute("action", "update admin")
+        .add_attribute("action", ACTION_UPDATE_ADMIN)
         .add_attribute("new admin", &admin_address))
 }
 
@@ -370,7 +388,7 @@ fn execute_update_minter(
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new()
-        .add_attribute("action", "update minter")
+        .add_attribute("action", ACTION_UPDATE_MINTER)
         .add_attribute("new minter", &minter_address))
 }
 
@@ -391,7 +409,7 @@ fn query_config(deps: Deps) -> StdResult<QueryConfigResponse> {
         minter: config.minter,
         mint_enabled: config.mint_enabled,
         per_address_limit: config.per_address_limit,
-        cw721_contract_code: config.cw721_code_id,
+        cw721_contract_code: config.cw721_code_id.into(),
         cw721_contract: cw721_address,
     })
 }

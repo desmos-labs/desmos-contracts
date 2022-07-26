@@ -71,7 +71,7 @@ mod tests {
         InstantiateMsg {
             admin: ADMIN.to_string(),
             minter: MINTER.to_string(),
-            cw721_code_id,
+            cw721_code_id: cw721_code_id.into(),
             cw721_initiate_msg: Cw721InstantiateMsg {
                 name: "test-poap".to_string(),
                 symbol: "poap".to_string(),
@@ -84,7 +84,6 @@ mod tests {
                 per_address_limit: 2,
                 base_poap_uri: "ipfs://popap-uri".to_string(),
                 event_uri: "ipfs://event-uri".to_string(),
-                cw721_code_id: 1,
             },
         }
     }
@@ -205,6 +204,54 @@ mod tests {
     }
 
     #[test]
+    fn instantiate_with_event_start_before_current_time() {
+        let mut app = mock_app();
+        let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
+        let mut init_msg = get_valid_init_msg(cw721_code_id);
+
+        let current_block = app.block_info();
+        // Create a start time 200 seconds before the current block time
+        let start = current_block.time.seconds() - 200;
+        init_msg.event_info.start_time = Timestamp::from_seconds(start);
+        init_msg.event_info.end_time = Timestamp::from_seconds(start + 600);
+
+        let init_result = app.instantiate_contract(
+            poap_code_id,
+            Addr::unchecked(ADMIN),
+            &init_msg,
+            &[],
+            "Poap contract",
+            None,
+        );
+
+        assert!(init_result.is_err());
+    }
+
+    #[test]
+    fn instantiate_with_event_start_equal_current_time() {
+        let mut app = mock_app();
+        let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
+        let mut init_msg = get_valid_init_msg(cw721_code_id);
+
+        let current_block = app.block_info();
+        // Create a start time 200 seconds before the current block time
+        let start = current_block.time.seconds();
+        init_msg.event_info.start_time = Timestamp::from_seconds(start);
+        init_msg.event_info.end_time = Timestamp::from_seconds(start + 600);
+
+        let init_result = app.instantiate_contract(
+            poap_code_id,
+            Addr::unchecked(ADMIN),
+            &init_msg,
+            &[],
+            "Poap contract",
+            None,
+        );
+
+        assert!(init_result.is_err());
+    }
+
+    #[test]
     fn instantiate_with_event_end_before_current_time() {
         let mut app = mock_app();
         let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
@@ -216,6 +263,29 @@ mod tests {
         init_msg.event_info.start_time = Timestamp::from_seconds(start);
         // Start time 100 seconds before the current block time
         init_msg.event_info.end_time = Timestamp::from_seconds(start + 100);
+
+        let init_result = app.instantiate_contract(
+            poap_code_id,
+            Addr::unchecked(ADMIN),
+            &init_msg,
+            &[],
+            "Poap contract",
+            None,
+        );
+
+        assert!(init_result.is_err());
+    }
+
+    #[test]
+    fn instantiate_with_event_end_equal_current_time() {
+        let mut app = mock_app();
+        let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
+        let mut init_msg = get_valid_init_msg(cw721_code_id);
+
+        let current_block = app.block_info();
+        init_msg.event_info.start_time =
+            Timestamp::from_seconds(current_block.time.seconds() + 500);
+        init_msg.event_info.end_time = Timestamp::from_seconds(current_block.time.seconds());
 
         let init_result = app.instantiate_contract(
             poap_code_id,
@@ -589,7 +659,7 @@ mod tests {
         )
         .unwrap();
 
-        // Test that minter can call mint to
+        // Test that admin can call mint to
         let msg = ExecuteMsg::MintTo {
             recipient: USER.to_string(),
         };
@@ -635,7 +705,7 @@ mod tests {
             &msg,
             &vec![],
         );
-        // Admin should not be authorized to update the event info
+        // Creator is authorised to update the event info
         assert!(result.is_ok());
     }
 
@@ -742,6 +812,62 @@ mod tests {
             &vec![],
         );
         assert!(result.is_err());
+
+        // Start time before current time
+        let current_block = app.block_info();
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(current_block.time.seconds() - 100),
+            end_time: Timestamp::from_seconds(EVENT_END_SECONDS),
+        };
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+        assert!(result.is_err());
+
+        // Edge case start time eq current time
+        let current_block = app.block_info();
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(current_block.time.seconds()),
+            end_time: Timestamp::from_seconds(EVENT_END_SECONDS),
+        };
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+        assert!(result.is_err());
+
+        // End time before current time
+        let current_block = app.block_info();
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(current_block.time.seconds() + 100),
+            end_time: Timestamp::from_seconds(current_block.time.seconds() - 100),
+        };
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+        assert!(result.is_err());
+
+        // Edge case end time eq current time
+        let current_block = app.block_info();
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(current_block.time.seconds() + 100),
+            end_time: Timestamp::from_seconds(current_block.time.seconds()),
+        };
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+        assert!(result.is_err());
     }
 
     #[test]
@@ -813,6 +939,15 @@ mod tests {
             &vec![],
         );
         // Creator can't update minter
+        assert!(result.is_err());
+
+        let result = app.execute_contract(
+            Addr::unchecked(MINTER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+        // Minter can't update minter
         assert!(result.is_err());
 
         let result = app.execute_contract(

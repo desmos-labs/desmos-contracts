@@ -63,6 +63,7 @@
           "type": "string"
         },
         "cw721_code_id": {
+          "description": "Id of the cw721 contract that the POAP contract initialise.",
           "type": "integer",
           "format": "uint64",
           "minimum": 0.0
@@ -76,7 +77,7 @@
           ]
         },
         "event_uri": {
-          "description": "Uri",
+          "description": "Uri of the poap event",
           "type": "string"
         },
         "per_address_limit": {
