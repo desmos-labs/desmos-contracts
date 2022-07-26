@@ -175,7 +175,108 @@ fn query_config(deps: Deps) -> StdResult<QueryConfigResponse> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::testing::{
-        mock_dependencies, mock_env, mock_info, MockQuerier, MOCK_CONTRACT_ADDR,
-    };
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::Timestamp;
+    use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
+    use poap::msg::{EventInfo, InstantiateMsg as POAPInstantiateMsg};
+
+    const CREATOR: &str = "cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0";
+
+    #[test]
+    fn instatiate_with_invalid_msg_error() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+        let invalid_msg = InstantiateMsg {
+            admin: "".into(),
+            poap_code_id: 1u64.into(),
+            poap_instantiate_msg: POAPInstantiateMsg {
+                admin: "test".into(),
+                minter: "test".into(),
+                cw721_code_id: 2u64.into(),
+                cw721_initiate_msg: Cw721InstantiateMsg {
+                    minter: "".into(),
+                    name: "test".into(),
+                    symbol: "test".into(),
+                },
+                event_info: EventInfo {
+                    creator: "creator".to_string(),
+                    start_time: Timestamp::from_seconds(10),
+                    end_time: Timestamp::from_seconds(20),
+                    per_address_limit: 2,
+                    base_poap_uri: "ipfs://popap-uri".to_string(),
+                    event_uri: "ipfs://event-uri".to_string(),
+                },
+            },
+        };
+        assert!(instantiate(deps.as_mut(), env, info, invalid_msg).is_err())
+    }
+
+    #[test]
+    fn instatiate_with_invalid_admin_address_error() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+        let invalid_msg = InstantiateMsg {
+            admin: "a".into(),
+            poap_code_id: 1u64.into(),
+            poap_instantiate_msg: POAPInstantiateMsg {
+                admin: "test".into(),
+                minter: "test".into(),
+                cw721_code_id: 2u64.into(),
+                cw721_initiate_msg: Cw721InstantiateMsg {
+                    minter: "".into(),
+                    name: "test".into(),
+                    symbol: "test".into(),
+                },
+                event_info: EventInfo {
+                    creator: "creator".to_string(),
+                    start_time: Timestamp::from_seconds(10),
+                    end_time: Timestamp::from_seconds(20),
+                    per_address_limit: 2,
+                    base_poap_uri: "ipfs://popap-uri".to_string(),
+                    event_uri: "ipfs://event-uri".to_string(),
+                },
+            },
+        };
+        assert!(instantiate(deps.as_mut(), env, info, invalid_msg).is_err())
+    }
+
+    #[test]
+    fn instatiate_properly() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+        let invalid_msg = InstantiateMsg {
+            admin: "cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0".into(),
+            poap_code_id: 1u64.into(),
+            poap_instantiate_msg: POAPInstantiateMsg {
+                admin: "test".into(),
+                minter: "test".into(),
+                cw721_code_id: 2u64.into(),
+                cw721_initiate_msg: Cw721InstantiateMsg {
+                    minter: "".into(),
+                    name: "test".into(),
+                    symbol: "test".into(),
+                },
+                event_info: EventInfo {
+                    creator: "creator".to_string(),
+                    start_time: Timestamp::from_seconds(10),
+                    end_time: Timestamp::from_seconds(20),
+                    per_address_limit: 2,
+                    base_poap_uri: "ipfs://popap-uri".to_string(),
+                    event_uri: "ipfs://event-uri".to_string(),
+                },
+            },
+        };
+        assert!(instantiate(deps.as_mut(), env, info, invalid_msg).is_ok());
+
+        let config = CONFIG.load(&deps.storage).unwrap();
+        let expected = Config{
+            admin:  Addr::unchecked("cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0"),
+            poap_code_id: 1u64,
+            poap_address: Addr::unchecked(""),
+        };
+        assert_eq!(config, expected)
+    }
 }
