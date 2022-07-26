@@ -553,6 +553,7 @@ dependencies = [
  "cw-storage-plus",
  "cw-utils",
  "cw2",
+ "cw721-base",
  "desmos-bindings",
  "poap",
  "schemars",
