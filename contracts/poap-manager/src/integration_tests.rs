@@ -175,7 +175,7 @@ mod tests {
                 .unwrap()
                 .into(),
         );
-        assert_eq!(result.is_ok(), true);
+        assert!(result.is_ok());
          // TODO check the poap minted amount for the user
     }
 }

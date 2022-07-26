@@ -171,3 +171,11 @@ fn query_config(deps: Deps) -> StdResult<QueryConfigResponse> {
     let config = CONFIG.load(deps.storage)?;
     Ok(QueryConfigResponse { config })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::testing::{
+        mock_dependencies, mock_env, mock_info, MockQuerier, MOCK_CONTRACT_ADDR,
+    };
+}

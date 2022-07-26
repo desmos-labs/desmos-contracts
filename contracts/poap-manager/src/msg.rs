@@ -1,10 +1,10 @@
+use cosmwasm_std::Uint64;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::Uint64;
 
-use poap::msg::InstantiateMsg as POAPInstantiateMsg;
 use crate::error::ContractError;
 use crate::state::Config;
+use poap::msg::InstantiateMsg as POAPInstantiateMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -67,5 +67,176 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct QueryConfigResponse {
-   pub config: Config,
+    pub config: Config,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::Timestamp;
+    use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
+    use poap::msg::EventInfo;
+    #[test]
+    fn instantiate_msg_with_empty_admin_error() {
+        let msg = InstantiateMsg {
+            admin: "".into(),
+            poap_code_id: 1u64.into(),
+            poap_instantiate_msg: POAPInstantiateMsg {
+                admin: "test".into(),
+                minter: "test".into(),
+                cw721_code_id: 2u64.into(),
+                cw721_initiate_msg: Cw721InstantiateMsg {
+                    minter: "".into(),
+                    name: "test".into(),
+                    symbol: "test".into(),
+                },
+                event_info: EventInfo {
+                    creator: "creator".to_string(),
+                    start_time: Timestamp::from_seconds(10),
+                    end_time: Timestamp::from_seconds(20),
+                    per_address_limit: 2,
+                    base_poap_uri: "ipfs://popap-uri".to_string(),
+                    event_uri: "ipfs://event-uri".to_string(),
+                },
+            },
+        };
+        let result = msg.validate();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn instantiate_msg_with_blank_admin_error() {
+        let msg = InstantiateMsg {
+            admin: "   ".into(),
+            poap_code_id: 1u64.into(),
+            poap_instantiate_msg: POAPInstantiateMsg {
+                admin: "test".into(),
+                minter: "test".into(),
+                cw721_code_id: 2u64.into(),
+                cw721_initiate_msg: Cw721InstantiateMsg {
+                    minter: "".into(),
+                    name: "test".into(),
+                    symbol: "test".into(),
+                },
+                event_info: EventInfo {
+                    creator: "creator".to_string(),
+                    start_time: Timestamp::from_seconds(10),
+                    end_time: Timestamp::from_seconds(20),
+                    per_address_limit: 2,
+                    base_poap_uri: "ipfs://popap-uri".to_string(),
+                    event_uri: "ipfs://event-uri".to_string(),
+                },
+            },
+        };
+        let result = msg.validate();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn instantiate_msg_with_invalid_poap_id_error() {
+        let msg = InstantiateMsg {
+            admin: "cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0".into(),
+            poap_code_id: 0u64.into(),
+            poap_instantiate_msg: POAPInstantiateMsg {
+                admin: "test".into(),
+                minter: "test".into(),
+                cw721_code_id: 2u64.into(),
+                cw721_initiate_msg: Cw721InstantiateMsg {
+                    minter: "".into(),
+                    name: "test".into(),
+                    symbol: "test".into(),
+                },
+                event_info: EventInfo {
+                    creator: "creator".to_string(),
+                    start_time: Timestamp::from_seconds(10),
+                    end_time: Timestamp::from_seconds(20),
+                    per_address_limit: 2,
+                    base_poap_uri: "ipfs://popap-uri".to_string(),
+                    event_uri: "ipfs://event-uri".to_string(),
+                },
+            },
+        };
+        let result = msg.validate();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn proper_instantiate_msg_no_error() {
+        let msg = InstantiateMsg {
+            admin: "cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0".into(),
+            poap_code_id: 1u64.into(),
+            poap_instantiate_msg: POAPInstantiateMsg {
+                admin: "test".into(),
+                minter: "test".into(),
+                cw721_code_id: 2u64.into(),
+                cw721_initiate_msg: Cw721InstantiateMsg {
+                    minter: "".into(),
+                    name: "test".into(),
+                    symbol: "test".into(),
+                },
+                event_info: EventInfo {
+                    creator: "creator".to_string(),
+                    start_time: Timestamp::from_seconds(10),
+                    end_time: Timestamp::from_seconds(20),
+                    per_address_limit: 2,
+                    base_poap_uri: "ipfs://popap-uri".to_string(),
+                    event_uri: "ipfs://event-uri".to_string(),
+                },
+            },
+        };
+        assert!(msg.validate().is_ok());
+    }
+
+    #[test]
+    fn proper_claim_msg_no_error() {
+        let msg = ExecuteMsg::Claim {};
+        assert!(msg.validate().is_ok());
+    }
+
+    #[test]
+    fn mint_into_msg_with_empty_recipient_error() {
+        let msg = ExecuteMsg::MintTo {
+            recipient: "".into(),
+        };
+        assert!(msg.validate().is_err());
+    }
+
+    #[test]
+    fn mint_into_msg_with_blank_recipient_error() {
+        let msg = ExecuteMsg::MintTo {
+            recipient: "  ".into(),
+        };
+        assert!(msg.validate().is_err());
+    }
+
+    #[test]
+    fn proper_mint_into_msg_no_error() {
+        let msg = ExecuteMsg::MintTo {
+            recipient: "cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0".into(),
+        };
+        assert!(msg.validate().is_ok());
+    }
+    #[test]
+    fn update_admin_msg_with_empty_new_admin_error() {
+        let msg = ExecuteMsg::UpdateAdmin {
+            new_admin: "".into(),
+        };
+        assert!(msg.validate().is_err());
+    }
+
+    #[test]
+    fn update_admin_msg_with_blank_new_admin_error() {
+        let msg = ExecuteMsg::UpdateAdmin {
+            new_admin: "  ".into(),
+        };
+        assert!(msg.validate().is_err());
+    }
+
+    #[test]
+    fn update_admin_msg_into_msg_no_error() {
+        let msg = ExecuteMsg::UpdateAdmin {
+            new_admin: "cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0".into(),
+        };
+        assert!(msg.validate().is_ok());
+    }
 }
