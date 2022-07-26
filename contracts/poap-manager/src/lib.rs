@@ -4,6 +4,6 @@ pub mod state;
 mod error;
 mod test_utils;
 
-mod contract_tests;
+mod integration_tests;
 
 pub use crate::error::ContractError;

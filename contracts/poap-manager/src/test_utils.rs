@@ -1,5 +1,5 @@
 #![cfg(test)]
-use cosmwasm_std::{Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdError, StdResult};
+use cosmwasm_std::{Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdError, StdResult, Reply};
 use cw721_base::{
     ContractError as Cw721ContractError, Cw721Contract, ExecuteMsg as Cw721ExecuteMsg,
     InstantiateMsg as Cw721InstantiateMsg, QueryMsg as Cw721QueryMsg,
@@ -10,6 +10,7 @@ use poap::{
         instantiate as poap_instantiate,
         execute as poap_execute,
         query as poap_query,
+        reply as poap_reply,
     },
     error::ContractError as POAPContractError,
     msg::{
@@ -51,10 +52,14 @@ impl POAPTestContract {
         poap_query(deps, env, msg)
     }
 
+    fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, POAPContractError> {
+        poap_reply(deps, env, msg)
+    }
+
     /// Provides an instance of a poap contract.
     /// This instance can be used only during the integration tests.
     pub fn success_contract() -> Box<dyn Contract<Empty>> {
-        let contract = ContractWrapper::new(Self::execute, Self::instantiate, Self::query);
+        let contract = ContractWrapper::new(Self::execute, Self::instantiate, Self::query).with_reply(Self::reply);
         Box::new(contract)
     }
 

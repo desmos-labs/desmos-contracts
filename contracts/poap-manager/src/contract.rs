@@ -62,7 +62,7 @@ pub fn instantiate(
                 msg.poap_code_id.u64(),
                 &poap_instantiate_msg,
                 info.funds,
-                "poap_manager".into(),
+                "poap".into(),
             )?,
             INSTANTIATE_POAP_REPLY_ID,
         )))
@@ -79,9 +79,9 @@ fn instantiate_config(deps: DepsMut, admin: Addr, poap_code_id: u64) -> Result<(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, _env: Env, reply_msg: Reply) -> Result<Response, ContractError> {
-    match reply_msg.id {
-        INSTANTIATE_POAP_REPLY_ID => resolve_instantiate_poap_reply(deps, reply_msg),
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+    match msg.id {
+        INSTANTIATE_POAP_REPLY_ID => resolve_instantiate_poap_reply(deps, msg),
         _ => Err(ContractError::InvalidReplyID {}),
     }
 }
