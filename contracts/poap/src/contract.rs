@@ -98,7 +98,7 @@ pub fn instantiate(
                 minter: env.contract.address.to_string(),
             },
             info.funds,
-            "poap cw721".to_string(),
+            "poap_cw721".to_string(),
         )?,
         INSTANTIATE_CW721_REPLY_ID,
     );
@@ -226,7 +226,7 @@ fn execute_mint(
         });
     }
 
-    // Get the nex poap id
+    // Get the next poap id
     let poap_id = NEXT_POAP_ID.may_load(deps.storage)?.unwrap_or(1);
 
     // Create the cw721 message to send to mint the poap
