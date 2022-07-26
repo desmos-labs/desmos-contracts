@@ -438,7 +438,7 @@ mod tests {
     }
 
     #[test]
-    fn normal_user_can_t_disable_mint() {
+    fn normal_user_can_not_disable_mint() {
         let (mut app, poap_contract_addr) = proper_instantiate();
 
         let msg = ExecuteMsg::DisableMint {};
