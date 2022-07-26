@@ -135,7 +135,7 @@ mod tests {
     #[test]
     fn instantiate_msg_with_invalid_poap_id_error() {
         let msg = InstantiateMsg {
-            admin: "cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0".into(),
+            admin: "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc".into(),
             poap_code_id: 0u64.into(),
             poap_instantiate_msg: POAPInstantiateMsg {
                 admin: "test".into(),
@@ -163,7 +163,7 @@ mod tests {
     #[test]
     fn proper_instantiate_msg_no_error() {
         let msg = InstantiateMsg {
-            admin: "cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0".into(),
+            admin: "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc".into(),
             poap_code_id: 1u64.into(),
             poap_instantiate_msg: POAPInstantiateMsg {
                 admin: "test".into(),
@@ -212,7 +212,7 @@ mod tests {
     #[test]
     fn proper_mint_into_msg_no_error() {
         let msg = ExecuteMsg::MintTo {
-            recipient: "cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0".into(),
+            recipient: "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc".into(),
         };
         assert!(msg.validate().is_ok());
     }
@@ -235,7 +235,7 @@ mod tests {
     #[test]
     fn update_admin_msg_into_msg_no_error() {
         let msg = ExecuteMsg::UpdateAdmin {
-            new_admin: "cosmos18atyyv6zycryhvnhpr2mjxgusdcah6kdpkffq0".into(),
+            new_admin: "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc".into(),
         };
         assert!(msg.validate().is_ok());
     }

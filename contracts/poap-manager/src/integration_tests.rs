@@ -11,7 +11,6 @@ mod tests {
     };
 
     const ADMIN: &str = "admin";
-    const CLAIMER: &str = "claimer";
     const RECIPIENT: &str = "recipient";
 
     fn mock_app() -> App {
@@ -21,7 +20,7 @@ mod tests {
                 time: Timestamp::from_seconds(0),
                 chain_id: "testchain".to_string(),
             })
-            .build(|router, _, _| {})
+            .build(|_, _, _| {})
     }
 
     fn contract_poap_manger() -> Box<dyn Contract<Empty>> {
