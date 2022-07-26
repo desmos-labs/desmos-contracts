@@ -41,6 +41,8 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
+    msg.validate()?;
+
     // Validate the admin address
     let admin = deps.api.addr_validate(&msg.admin)?;
 
@@ -49,14 +51,6 @@ pub fn instantiate(
 
     // Validate the creator address
     let creator = deps.api.addr_validate(&msg.event_info.creator)?;
-
-    // Check that start time is before the end time
-    if !msg.event_info.end_time.gt(&msg.event_info.start_time) {
-        return Err(ContractError::StartTimeAfterEndTime {
-            start: msg.event_info.start_time,
-            end: msg.event_info.end_time,
-        });
-    }
 
     // Check that the start time is in the future
     if !msg.event_info.start_time.gt(&env.block.time) {
@@ -72,25 +66,6 @@ pub fn instantiate(
             current_time: env.block.time,
             end_time: msg.event_info.end_time,
         });
-    }
-
-    // Check that the poap uri is a valid IPFS url
-    let poap_uri = Url::parse(&msg.event_info.base_poap_uri)
-        .map_err(|_err| ContractError::InvalidPoapUri {})?;
-    if poap_uri.scheme() != "ipfs" {
-        return Err(ContractError::InvalidPoapUri {});
-    }
-
-    // Check that the event uri is a valid IPFS url
-    let event_uri =
-        Url::parse(&msg.event_info.event_uri).map_err(|_err| ContractError::InvalidEventUri {})?;
-    if event_uri.scheme() != "ipfs" {
-        return Err(ContractError::InvalidEventUri {});
-    }
-
-    // Check per address limit
-    if msg.event_info.per_address_limit == 0 {
-        return Err(ContractError::InvalidPerAddressLimit {});
     }
 
     let config = Config {
@@ -152,6 +127,8 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
+    msg.validate()?;
+
     match msg {
         ExecuteMsg::EnableMint {} => execute_set_mint_enabled(deps, info, true),
         ExecuteMsg::DisableMint {} => execute_set_mint_enabled(deps, info, false),
@@ -312,14 +289,6 @@ fn execute_update_event_info(
         });
     }
 
-    // Check that the start time is before the end time
-    if start_time.ge(&end_time) {
-        return Err(ContractError::StartTimeAfterEndTime {
-            start: start_time,
-            end: end_time,
-        });
-    }
-
     // Check that the start time is not already passed
     if env.block.time.ge(&start_time) {
         return Err(ContractError::StartTimeBeforeCurrentTime {
@@ -344,8 +313,8 @@ fn execute_update_event_info(
     Ok(Response::new()
         .add_attribute("action", ACTION_UPDATE_EVENT_INFO)
         .add_attribute("sender", &info.sender)
-        .add_attribute("new start time", event_info.start_time.to_string())
-        .add_attribute("new end time", event_info.end_time.to_string()))
+        .add_attribute("new start time", start_time.to_string())
+        .add_attribute("new end time", end_time.to_string()))
 }
 
 fn execute_update_admin(
