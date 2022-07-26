@@ -123,7 +123,7 @@ pub fn instantiate(
                 minter: env.contract.address.to_string(),
             },
             info.funds,
-            "poap cw721".to_string(),
+            "poap_cw721".to_string(),
         )?,
         INSTANTIATE_CW721_REPLY_ID,
     );
