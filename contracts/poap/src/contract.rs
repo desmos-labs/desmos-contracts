@@ -55,19 +55,19 @@ pub fn instantiate(
     // Validate the creator address
     let creator = deps.api.addr_validate(&msg.event_info.creator)?;
 
-    // Check that the start time is in the future
-    if !msg.event_info.start_time.gt(&env.block.time) {
-        return Err(ContractError::StartTimeBeforeCurrentTime {
-            current_time: env.block.time,
-            start_time: msg.event_info.start_time,
-        });
-    }
-
     // Check that the end time is in the future
     if !msg.event_info.end_time.gt(&env.block.time) {
         return Err(ContractError::EndTimeBeforeCurrentTime {
             current_time: env.block.time,
             end_time: msg.event_info.end_time,
+        });
+    }
+
+    // Check that the start time is in the future
+    if !msg.event_info.start_time.gt(&env.block.time) {
+        return Err(ContractError::StartTimeBeforeCurrentTime {
+            current_time: env.block.time,
+            start_time: msg.event_info.start_time,
         });
     }
 
@@ -417,5 +417,670 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
             Ok(Response::default().add_attribute(ATTRIBUTE_ACTION, "instantiate_cw721_reply"))
         }
         Err(_) => Err(ContractError::InstantiateCw721Error {}),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::contract::{execute, instantiate};
+    use crate::msg::ExecuteMsg;
+    use crate::state::{CONFIG, EVENT_INFO};
+    use crate::test_utils::{
+        get_valid_init_msg, EVENT_END_SECONDS, EVENT_START_SECONDS, INITIAL_BLOCK_TIME_SECONDS,
+    };
+    use crate::ContractError;
+    use crate::ContractError::Unauthorized;
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::{DepsMut, Timestamp};
+
+    const CREATOR: &str = "creator";
+    const ADMIN: &str = "admin";
+    const MINTER: &str = "minter";
+    const USER: &str = "user";
+
+    fn do_instantiate(deps: DepsMut) {
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        // Change block time to event start.
+        env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+
+        let msg = get_valid_init_msg(1);
+        assert!(instantiate(deps, env, info, msg).is_ok());
+    }
+
+    #[test]
+    fn instantiate_with_invalid_admin_addr() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+
+        let mut init_msg = get_valid_init_msg(1);
+        init_msg.admin = "a".to_string();
+
+        let result = instantiate(deps.as_mut(), env, info, init_msg);
+        assert!(result.is_err())
+    }
+
+    #[test]
+    fn instantiate_with_invalid_minter_addr() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+
+        let mut init_msg = get_valid_init_msg(1);
+        init_msg.minter = "a".to_string();
+
+        let result = instantiate(deps.as_mut(), env, info, init_msg);
+        assert!(result.is_err())
+    }
+
+    #[test]
+    fn instantiate_with_invalid_creator_addr() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+
+        let mut init_msg = get_valid_init_msg(1);
+        init_msg.event_info.creator = "a".to_string();
+
+        let result = instantiate(deps.as_mut(), env, info, init_msg);
+        assert!(result.is_err())
+    }
+
+    #[test]
+    fn instantiate_with_event_start_before_current_time() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+
+        let mut init_msg = get_valid_init_msg(1);
+        // Create a start time 200 seconds before the current block time
+        let start = &env.block.time.seconds() - 200;
+        init_msg.event_info.start_time = Timestamp::from_seconds(start);
+        init_msg.event_info.end_time = Timestamp::from_seconds(start + 600);
+
+        let init_result = instantiate(deps.as_mut(), env.clone(), info, init_msg);
+        assert_eq!(
+            ContractError::StartTimeBeforeCurrentTime {
+                current_time: env.block.time,
+                start_time: Timestamp::from_seconds(start)
+            },
+            init_result.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn instantiate_with_event_start_equal_current_time() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+        let mut init_msg = get_valid_init_msg(1);
+
+        let start = env.block.time.nanos();
+        init_msg.event_info.start_time = Timestamp::from_nanos(start);
+        init_msg.event_info.end_time = Timestamp::from_nanos(start + 600);
+
+        let init_result = instantiate(deps.as_mut(), env, info, init_msg);
+        assert_eq!(
+            ContractError::StartTimeBeforeCurrentTime {
+                current_time: Timestamp::from_nanos(start),
+                start_time: Timestamp::from_nanos(start)
+            },
+            init_result.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn instantiate_with_event_end_before_current_time() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+        let mut init_msg = get_valid_init_msg(1);
+
+        // Create a start time 200 seconds before the current block time
+        let start = env.block.time.seconds() - 200;
+        let end = env.block.time.seconds() - 100;
+        init_msg.event_info.start_time = Timestamp::from_seconds(start);
+        // Start time 100 seconds before the current block time
+        init_msg.event_info.end_time = Timestamp::from_seconds(end);
+
+        let init_result = instantiate(deps.as_mut(), env.clone(), info, init_msg);
+        assert_eq!(
+            ContractError::EndTimeBeforeCurrentTime {
+                current_time: env.block.time,
+                end_time: Timestamp::from_seconds(end)
+            },
+            init_result.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn instantiate_with_event_end_equal_current_time() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+        let mut init_msg = get_valid_init_msg(1);
+
+        let start = env.block.time.seconds() - 200;
+        let end = env.block.time.nanos();
+        init_msg.event_info.start_time = Timestamp::from_seconds(start);
+        init_msg.event_info.end_time = Timestamp::from_nanos(end);
+
+        let init_result = instantiate(deps.as_mut(), env, info, init_msg);
+        assert_eq!(
+            ContractError::EndTimeBeforeCurrentTime {
+                current_time: Timestamp::from_nanos(end),
+                end_time: Timestamp::from_nanos(end),
+            },
+            init_result.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn instantiate_with_event_start_after_end() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+        let mut init_msg = get_valid_init_msg(1);
+
+        // Create a start time 200 seconds after the current block time
+        let start = env.block.time.seconds() + 200;
+        let end = env.block.time.seconds() + 100;
+        init_msg.event_info.start_time = Timestamp::from_seconds(start);
+        // Start time 100 seconds before the event start time
+        init_msg.event_info.end_time = Timestamp::from_seconds(end);
+
+        let init_result = instantiate(deps.as_mut(), env, info, init_msg);
+        assert_eq!(
+            ContractError::StartTimeAfterEndTime {
+                start: Timestamp::from_seconds(start),
+                end: Timestamp::from_seconds(end),
+            },
+            init_result.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn instantiate_with_event_start_eq_end() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+        let mut init_msg = get_valid_init_msg(1);
+
+        // Create a start time 200 seconds after the current block time
+        let start = env.block.time.seconds() + 200;
+        init_msg.event_info.start_time = Timestamp::from_seconds(start);
+        init_msg.event_info.end_time = Timestamp::from_seconds(start);
+
+        let init_result = instantiate(deps.as_mut(), env, info, init_msg);
+        assert_eq!(
+            ContractError::StartTimeAfterEndTime {
+                start: Timestamp::from_seconds(start),
+                end: Timestamp::from_seconds(start),
+            },
+            init_result.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn instantiate_with_invalid_poap_uri() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+        let mut init_msg = get_valid_init_msg(1);
+
+        // Invalid uri
+        init_msg.event_info.base_poap_uri = "invalid_uri".to_string();
+
+        let init_result = instantiate(deps.as_mut(), env, info, init_msg);
+        assert!(init_result.is_err());
+
+        // Non ipfs uri
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+        let mut init_msg = get_valid_init_msg(1);
+
+        init_msg.event_info.base_poap_uri = "https://random_domain.com".to_string();
+
+        let init_result = instantiate(deps.as_mut(), env, info, init_msg);
+        assert_eq!(ContractError::InvalidPoapUri {}, init_result.unwrap_err());
+    }
+
+    #[test]
+    fn instantiate_with_invalid_event_uri() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+        let mut init_msg = get_valid_init_msg(1);
+
+        // Invalid uri
+        init_msg.event_info.event_uri = "invalid_uri".to_string();
+
+        let init_result = instantiate(deps.as_mut(), env, info, init_msg);
+        assert!(init_result.is_err());
+
+        // Non ipfs uri
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+        let mut init_msg = get_valid_init_msg(1);
+
+        init_msg.event_info.event_uri = "https://random_domain.com".to_string();
+
+        let init_result = instantiate(deps.as_mut(), env, info, init_msg);
+        assert_eq!(ContractError::InvalidEventUri {}, init_result.unwrap_err());
+    }
+
+    #[test]
+    fn enable_mint() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        let msg = ExecuteMsg::EnableMint {};
+        execute(deps.as_mut(), env, info, msg).unwrap();
+
+        let config = CONFIG.load(&deps.storage).unwrap();
+        assert_eq!(true, config.mint_enabled);
+    }
+
+    #[test]
+    fn normal_user_can_not_enable_mint() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(USER, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        let msg = ExecuteMsg::EnableMint {};
+        let execute_result = execute(deps.as_mut(), env, info, msg);
+        assert_eq!(Unauthorized {}, execute_result.unwrap_err());
+    }
+
+    #[test]
+    fn disable_mint() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        let msg = ExecuteMsg::DisableMint {};
+        execute(deps.as_mut(), env, info, msg).unwrap();
+
+        let config = CONFIG.load(&deps.storage).unwrap();
+        assert_eq!(false, config.mint_enabled);
+    }
+
+    #[test]
+    fn normal_user_can_not_disable_mint() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(USER, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        let msg = ExecuteMsg::DisableMint {};
+        let execute_result = execute(deps.as_mut(), env, info, msg);
+        assert_eq!(Unauthorized {}, execute_result.unwrap_err());
+    }
+
+    #[test]
+    fn creator_change_event_info_properly() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+        let new_start_time = Timestamp::from_seconds(env.block.time.seconds() + 100);
+        let new_end_time = Timestamp::from_seconds(env.block.time.seconds() + 400);
+
+        do_instantiate(deps.as_mut());
+
+        env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: new_start_time.clone(),
+            end_time: new_end_time.clone(),
+        };
+
+        execute(deps.as_mut(), env, info, msg).unwrap();
+
+        let event_info = EVENT_INFO.load(&deps.storage).unwrap();
+        assert_eq!(new_start_time, event_info.start_time);
+        assert_eq!(new_end_time, event_info.end_time)
+    }
+
+    #[test]
+    fn non_creator_change_event_info() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info(USER, &vec![]);
+        let new_start_time = Timestamp::from_seconds(env.block.time.seconds() + 100);
+        let new_end_time = Timestamp::from_seconds(env.block.time.seconds() + 400);
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: new_start_time.clone(),
+            end_time: new_end_time.clone(),
+        };
+
+        do_instantiate(deps.as_mut());
+
+        let result = execute(deps.as_mut(), env, info, msg.clone());
+        // User should not be authorized to update the event info
+        assert_eq!(Unauthorized {}, result.unwrap_err());
+
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+
+        let result = execute(deps.as_mut(), env, info, msg);
+        // Admin should not be authorized to update the event info
+        assert_eq!(Unauthorized {}, result.unwrap_err());
+    }
+
+    #[test]
+    fn event_info_update_only_if_event_not_started_or_ended() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(EVENT_START_SECONDS),
+            // Add 300 seconds to prevent end time to be already passed
+            end_time: Timestamp::from_seconds(EVENT_END_SECONDS + 300),
+        };
+
+        // Fake current time to event in progress
+        env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS + 100);
+
+        let result = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+        assert_eq!(
+            ContractError::EventStarted {
+                start_time: Timestamp::from_seconds(EVENT_START_SECONDS),
+                current_time: env.block.time.clone(),
+            },
+            result.unwrap_err()
+        );
+
+        // Edge case current time is event start
+        env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS);
+
+        let result = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+        assert_eq!(
+            ContractError::EventStarted {
+                start_time: Timestamp::from_seconds(EVENT_START_SECONDS),
+                current_time: env.block.time.clone(),
+            },
+            result.unwrap_err()
+        );
+
+        // Fake current time to event ended
+        env.block.time = Timestamp::from_seconds(EVENT_END_SECONDS + 100);
+
+        let result = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+        assert_eq!(
+            ContractError::EventTerminated {
+                end_time: Timestamp::from_seconds(EVENT_END_SECONDS),
+                current_time: env.block.time.clone(),
+            },
+            result.unwrap_err()
+        );
+
+        // Edge case current time is event end
+        env.block.time = Timestamp::from_seconds(EVENT_END_SECONDS);
+
+        let result = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
+        assert_eq!(
+            ContractError::EventTerminated {
+                end_time: Timestamp::from_seconds(EVENT_END_SECONDS),
+                current_time: env.block.time.clone(),
+            },
+            result.unwrap_err()
+        );
+
+        // Current time is before event started
+        env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS - 100);
+
+        execute(deps.as_mut(), env, info, msg).unwrap();
+    }
+
+    #[test]
+    fn invalid_event_info() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+        let current_time_nanos = env.block.time.nanos();
+
+        // Start time eq end time
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(EVENT_START_SECONDS),
+            end_time: Timestamp::from_seconds(EVENT_START_SECONDS),
+        };
+
+        let result = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+        assert_eq!(
+            ContractError::StartTimeAfterEndTime {
+                start: Timestamp::from_seconds(EVENT_START_SECONDS),
+                end: Timestamp::from_seconds(EVENT_START_SECONDS)
+            },
+            result.unwrap_err()
+        );
+
+        // Start time is after end time
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(EVENT_START_SECONDS + 100),
+            end_time: Timestamp::from_seconds(EVENT_START_SECONDS),
+        };
+
+        let result = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+        assert_eq!(
+            ContractError::StartTimeAfterEndTime {
+                start: Timestamp::from_seconds(EVENT_START_SECONDS + 100),
+                end: Timestamp::from_seconds(EVENT_START_SECONDS)
+            },
+            result.unwrap_err()
+        );
+
+        // Start time before current time
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_nanos(current_time_nanos - 100),
+            end_time: Timestamp::from_seconds(EVENT_END_SECONDS),
+        };
+
+        let result = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+        assert_eq!(
+            ContractError::StartTimeBeforeCurrentTime {
+                start_time: Timestamp::from_nanos(current_time_nanos - 100),
+                current_time: Timestamp::from_nanos(current_time_nanos),
+            },
+            result.unwrap_err()
+        );
+
+        // Edge case start time eq current time
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_nanos(current_time_nanos),
+            end_time: Timestamp::from_seconds(EVENT_END_SECONDS),
+        };
+
+        let result = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+        assert_eq!(
+            ContractError::StartTimeBeforeCurrentTime {
+                start_time: Timestamp::from_nanos(current_time_nanos),
+                current_time: Timestamp::from_nanos(current_time_nanos),
+            },
+            result.unwrap_err()
+        );
+
+        // End time before current time
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_nanos(current_time_nanos),
+            end_time: Timestamp::from_nanos(current_time_nanos - 100),
+        };
+
+        let result = execute(deps.as_mut(), env.clone(), info.clone(), msg);
+        assert_eq!(
+            ContractError::StartTimeAfterEndTime {
+                start: Timestamp::from_nanos(current_time_nanos),
+                end: Timestamp::from_nanos(current_time_nanos - 100),
+            },
+            result.unwrap_err()
+        );
+
+        // Edge case end time eq current time
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_nanos(current_time_nanos + 100),
+            end_time: Timestamp::from_nanos(current_time_nanos),
+        };
+
+        let result = execute(deps.as_mut(), env, info, msg);
+        assert_eq!(
+            ContractError::StartTimeAfterEndTime {
+                start: Timestamp::from_nanos(current_time_nanos + 100),
+                end: Timestamp::from_nanos(current_time_nanos),
+            },
+            result.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn update_admin_only_from_admin() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        const NEW_ADMIN: &str = "admin2";
+
+        do_instantiate(deps.as_mut());
+
+        let info = mock_info(USER, &vec![]);
+        let msg = ExecuteMsg::UpdateAdmin {
+            new_admin: NEW_ADMIN.to_string(),
+        };
+
+        let result = execute(deps.as_mut(), env.clone(), info, msg.clone());
+        assert_eq!(ContractError::Unauthorized {}, result.unwrap_err());
+
+        let info = mock_info(CREATOR, &vec![]);
+
+        let result = execute(deps.as_mut(), env.clone(), info, msg.clone());
+        assert_eq!(ContractError::Unauthorized {}, result.unwrap_err());
+
+        let info = mock_info(ADMIN, &vec![]);
+
+        execute(deps.as_mut(), env.clone(), info, msg.clone()).unwrap();
+
+        let config = CONFIG.load(&deps.storage).unwrap();
+        assert_eq!(NEW_ADMIN, config.admin.as_str());
+    }
+
+    #[test]
+    fn update_minter_only_from_admin() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        const NEW_MINTER: &str = "minter2";
+
+        do_instantiate(deps.as_mut());
+
+        let msg = ExecuteMsg::UpdateMinter {
+            new_minter: NEW_MINTER.to_string(),
+        };
+
+        let info = mock_info(USER, &vec![]);
+        let result = execute(deps.as_mut(), env.clone(), info, msg.clone());
+        // User can't update minter
+        assert_eq!(ContractError::Unauthorized {}, result.unwrap_err());
+
+        let info = mock_info(CREATOR, &vec![]);
+        let result = execute(deps.as_mut(), env.clone(), info, msg.clone());
+        // Creator can't update minter
+        assert_eq!(ContractError::Unauthorized {}, result.unwrap_err());
+
+        let info = mock_info(MINTER, &vec![]);
+        let result = execute(deps.as_mut(), env.clone(), info, msg.clone());
+        // Minter can't update minter
+        assert_eq!(ContractError::Unauthorized {}, result.unwrap_err());
+
+        let info = mock_info(ADMIN, &vec![]);
+        execute(deps.as_mut(), env.clone(), info, msg.clone()).unwrap();
+
+        let config = CONFIG.load(&deps.storage).unwrap();
+        assert_eq!(NEW_MINTER, config.minter.as_str());
+    }
+
+    #[test]
+    fn mint_event_not_started() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+
+        // Enable mint since is disable by default.
+        let msg = ExecuteMsg::EnableMint {};
+        execute(deps.as_mut(), env.clone(), info, msg).unwrap();
+
+        let msg = ExecuteMsg::Mint {};
+        let info = mock_info(USER, &vec![]);
+        let result = execute(deps.as_mut(), env.clone(), info, msg);
+
+        // Event is not started
+        assert_eq!(
+            ContractError::EventNotStarted {
+                current_time: env.block.time,
+                start_time: Timestamp::from_seconds(EVENT_START_SECONDS),
+            },
+            result.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn mint_event_terminated() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        // Enable mint since is disable by default.
+        let msg = ExecuteMsg::EnableMint {};
+        execute(deps.as_mut(), env.clone(), info, msg).unwrap();
+
+        env.block.time = Timestamp::from_seconds(EVENT_END_SECONDS);
+
+        let msg = ExecuteMsg::Mint {};
+        let info = mock_info(USER, &vec![]);
+        let result = execute(deps.as_mut(), env.clone(), info, msg);
+
+        // Event is not started
+        assert_eq!(
+            ContractError::EventTerminated {
+                current_time: env.block.time,
+                end_time: Timestamp::from_seconds(EVENT_END_SECONDS),
+            },
+            result.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn mint_without_permissions() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info(USER, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        // Change current time to event start
+        env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS);
+
+        let msg = ExecuteMsg::Mint {};
+        let result = execute(deps.as_mut(), env.clone(), info, msg);
+
+        // Event is not started
+        assert_eq!(ContractError::MintDisabled {}, result.unwrap_err());
     }
 }

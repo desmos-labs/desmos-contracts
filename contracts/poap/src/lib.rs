@@ -1,9 +1,11 @@
 pub mod contract;
-mod contract_tests;
 #[cfg(test)]
 mod cw721_test_utils;
 mod error;
+mod integration_tests;
 pub mod msg;
 pub mod state;
+#[cfg(test)]
+mod test_utils;
 
 pub use crate::error::ContractError;
