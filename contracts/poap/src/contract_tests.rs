@@ -799,7 +799,36 @@ mod tests {
     }
 
     #[test]
-    fn only_creator_can_change_event_info() {
+    fn creator_change_event_info_properly() {
+        let (mut app, poap_contract_addr) = proper_instantiate();
+        let new_start_time = Timestamp::from_seconds(app.block_info().time.seconds() + 100);
+        let new_end_time = Timestamp::from_seconds(app.block_info().time.seconds() + 400);
+
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: new_start_time.clone(),
+            end_time: new_end_time.clone(),
+        };
+
+        let result = app.execute_contract(
+            Addr::unchecked(CREATOR),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+        // Creator is authorised to update the event info
+        assert!(result.is_ok());
+
+        let querier = app.wrap();
+        let event_info: QueryEventInfoResponse = querier
+            .query_wasm_smart(&poap_contract_addr, &QueryMsg::EventInfo {})
+            .unwrap();
+
+        assert_eq!(new_start_time, event_info.start_time);
+        assert_eq!(new_end_time, event_info.end_time)
+    }
+
+    #[test]
+    fn non_creator_change_event_info() {
         let (mut app, poap_contract_addr) = proper_instantiate();
 
         let msg = ExecuteMsg::UpdateEventInfo {
@@ -813,6 +842,7 @@ mod tests {
             &msg,
             &vec![],
         );
+
         // User should not be authorized to update the event info
         assert!(result.is_err());
 
@@ -824,15 +854,6 @@ mod tests {
         );
         // Admin should not be authorized to update the event info
         assert!(result.is_err());
-
-        let result = app.execute_contract(
-            Addr::unchecked(CREATOR),
-            poap_contract_addr.clone(),
-            &msg,
-            &vec![],
-        );
-        // Creator is authorised to update the event info
-        assert!(result.is_ok());
     }
 
     #[test]
