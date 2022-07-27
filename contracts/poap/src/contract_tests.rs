@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::cw721_test_utils;
-    use crate::msg::{EventInfo, ExecuteMsg, InstantiateMsg};
+    use crate::msg::{EventInfo, ExecuteMsg, InstantiateMsg, QueryMintedAmountResponse, QueryMsg};
     use cosmwasm_std::{coins, Addr, BlockInfo, Empty, Timestamp};
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
     use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
@@ -447,8 +447,18 @@ mod tests {
     }
 
     #[test]
-    fn mint() {
+    fn mint_event_not_started() {
         let (mut app, poap_contract_addr) = proper_instantiate();
+
+        // Enable mint since is disable by default.
+        let msg = ExecuteMsg::EnableMint {};
+        app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
 
         let msg = ExecuteMsg::Mint {};
         let mint_result = app.execute_contract(
@@ -457,23 +467,69 @@ mod tests {
             &msg,
             &vec![],
         );
+
         // Event is not started
         assert!(mint_result.is_err());
+    }
+
+    #[test]
+    fn mint_event_terminated() {
+        let (mut app, poap_contract_addr) = proper_instantiate();
+
+        // Enable mint since is disable by default.
+        let msg = ExecuteMsg::EnableMint {};
+        app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
+
+        // Update chain time to event end
+        app.update_block(|block_info| block_info.time = Timestamp::from_seconds(EVENT_END_SECONDS));
+
+        let msg = ExecuteMsg::Mint {};
+        let mint_result = app.execute_contract(
+            Addr::unchecked(USER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+
+        // Mint should fail if the event is terminated
+        assert!(mint_result.is_err())
+    }
+
+    #[test]
+    fn mint_without_permissions() {
+        let (mut app, poap_contract_addr) = proper_instantiate();
+
+        // Update chain time to event end
+        app.update_block(|block_info| {
+            block_info.time = Timestamp::from_seconds(EVENT_START_SECONDS)
+        });
+
+        let msg = ExecuteMsg::Mint {};
+        let mint_result = app.execute_contract(
+            Addr::unchecked(USER),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        );
+
+        // Mint should fail since mint from user should be enabled.
+        assert!(mint_result.is_err())
+    }
+
+    #[test]
+    fn mint_with_permission_properly() {
+        let (mut app, poap_contract_addr) = proper_instantiate();
 
         // Change the chain time so that the event is started
         app.update_block(|block_info| {
             block_info.time = Timestamp::from_seconds(EVENT_START_SECONDS)
         });
-
-        // Mint should fail since mint is disabled by default
-        let msg = ExecuteMsg::Mint {};
-        let mint_result = app.execute_contract(
-            Addr::unchecked(USER),
-            poap_contract_addr.clone(),
-            &msg,
-            &vec![],
-        );
-        assert!(mint_result.is_err());
 
         // Enable mint
         let msg = ExecuteMsg::EnableMint {};
@@ -485,7 +541,7 @@ mod tests {
         )
         .unwrap();
 
-        // Now mint should work
+        // Mint should work since the event is started and the user is allowed to mint
         let msg = ExecuteMsg::Mint {};
         app.execute_contract(
             Addr::unchecked(USER),
@@ -495,17 +551,18 @@ mod tests {
         )
         .unwrap();
 
-        // Mint should not work when the event is terminated
-        app.update_block(|block_info| block_info.time = Timestamp::from_seconds(EVENT_END_SECONDS));
+        let querier = app.wrap();
+        let response: QueryMintedAmountResponse = querier
+            .query_wasm_smart(
+                &poap_contract_addr,
+                &QueryMsg::MintedAmount {
+                    user: USER.to_string(),
+                },
+            )
+            .unwrap();
 
-        let msg = ExecuteMsg::Mint {};
-        let mint_result = app.execute_contract(
-            Addr::unchecked(USER),
-            poap_contract_addr.clone(),
-            &msg,
-            &vec![],
-        );
-        assert!(mint_result.is_err())
+        assert_eq!(Addr::unchecked(USER), response.user);
+        assert_eq!(1, response.amount);
     }
 
     #[test]
