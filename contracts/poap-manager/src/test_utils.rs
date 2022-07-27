@@ -1,5 +1,7 @@
 #![cfg(test)]
-use cosmwasm_std::{Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdError, StdResult, Reply};
+use cosmwasm_std::{
+    Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response, StdError, StdResult,
+};
 use cw721_base::{
     ContractError as Cw721ContractError, Cw721Contract, ExecuteMsg as Cw721ExecuteMsg,
     InstantiateMsg as Cw721InstantiateMsg, QueryMsg as Cw721QueryMsg,
@@ -7,17 +9,15 @@ use cw721_base::{
 use cw_multi_test::{Contract, ContractWrapper};
 use poap::{
     contract::{
-        instantiate as poap_instantiate,
-        execute as poap_execute,
-        query as poap_query,
+        execute as poap_execute, instantiate as poap_instantiate, query as poap_query,
         reply as poap_reply,
     },
     error::ContractError as POAPContractError,
     msg::{
-    InstantiateMsg as POAPInstantiateMsg,
-    ExecuteMsg as POAPExecuteMsg,
-    QueryMsg as POAPQueryMsg,
-}};
+        ExecuteMsg as POAPExecuteMsg, InstantiateMsg as POAPInstantiateMsg,
+        QueryMsg as POAPQueryMsg,
+    },
+};
 
 pub struct POAPTestContract;
 impl POAPTestContract {
@@ -36,7 +36,9 @@ impl POAPTestContract {
         _info: MessageInfo,
         _msg: Cw721InstantiateMsg,
     ) -> Result<Response, POAPContractError> {
-        Err(POAPContractError::Std(StdError::generic_err("cw721 initialization failed")))
+        Err(POAPContractError::Std(StdError::generic_err(
+            "cw721 initialization failed",
+        )))
     }
 
     fn execute(
@@ -59,7 +61,8 @@ impl POAPTestContract {
     /// Provides an instance of a poap contract.
     /// This instance can be used only during the integration tests.
     pub fn success_contract() -> Box<dyn Contract<Empty>> {
-        let contract = ContractWrapper::new(Self::execute, Self::instantiate, Self::query).with_reply(Self::reply);
+        let contract = ContractWrapper::new(Self::execute, Self::instantiate, Self::query)
+            .with_reply(Self::reply);
         Box::new(contract)
     }
 

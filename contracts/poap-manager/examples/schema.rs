@@ -3,7 +3,7 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
-use poap_manager::msg::{QueryConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use poap_manager::msg::{ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();

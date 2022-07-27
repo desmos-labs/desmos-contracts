@@ -7,9 +7,8 @@ mod tests {
     use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
     use poap::msg::{
         EventInfo, InstantiateMsg as POAPInstantiateMsg,
-        QueryMsg as POAPQueryMsg,
         QueryConfigResponse as POAPQueryConfigResponse,
-        QueryMintedAmountResponse as POAPQueryMintedAmountResponse,
+        QueryMintedAmountResponse as POAPQueryMintedAmountResponse, QueryMsg as POAPQueryMsg,
     };
 
     const ADMIN: &str = "admin";
@@ -190,7 +189,7 @@ mod tests {
             .query_wasm_smart(&manager_addr, &QueryMsg::Config {})
             .unwrap();
         let manger_config = manager_config_response.config;
-        let minted_amount_response : POAPQueryMintedAmountResponse = querier
+        let minted_amount_response: POAPQueryMintedAmountResponse = querier
             .query_wasm_smart(
                 manger_config.poap_address,
                 &POAPQueryMsg::MintedAmount {
