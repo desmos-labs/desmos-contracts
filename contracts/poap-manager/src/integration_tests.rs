@@ -7,7 +7,9 @@ mod tests {
     use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
     use poap::msg::{
         EventInfo, InstantiateMsg as POAPInstantiateMsg,
-        QueryConfigResponse as POAPQueryConfigResponse, QueryMsg as POAPQueryMsg,
+        QueryMsg as POAPQueryMsg,
+        QueryConfigResponse as POAPQueryConfigResponse,
+        QueryMintedAmountResponse as POAPQueryMintedAmountResponse,
     };
 
     const ADMIN: &str = "admin";
@@ -170,11 +172,33 @@ mod tests {
         let (mut app, manager_addr) = proper_instantiate();
         let result = app.execute(
             Addr::unchecked(ADMIN),
-            wasm_execute(&manager_addr, &ExecuteMsg::MintTo { recipient: RECIPIENT.into() }, vec![])
-                .unwrap()
-                .into(),
+            wasm_execute(
+                &manager_addr,
+                &ExecuteMsg::MintTo {
+                    recipient: RECIPIENT.into(),
+                },
+                vec![],
+            )
+            .unwrap()
+            .into(),
         );
         assert!(result.is_ok());
-         // TODO check the poap minted amount for the user
+
+        // check the state of poap contract
+        let querier = app.wrap();
+        let manager_config_response: QueryConfigResponse = querier
+            .query_wasm_smart(&manager_addr, &QueryMsg::Config {})
+            .unwrap();
+        let manger_config = manager_config_response.config;
+        let minted_amount_response : POAPQueryMintedAmountResponse = querier
+            .query_wasm_smart(
+                manger_config.poap_address,
+                &POAPQueryMsg::MintedAmount {
+                    user: RECIPIENT.into(),
+                },
+            )
+            .unwrap();
+        assert_eq!(minted_amount_response.user, RECIPIENT);
+        assert_eq!(minted_amount_response.amount, 1)
     }
 }
