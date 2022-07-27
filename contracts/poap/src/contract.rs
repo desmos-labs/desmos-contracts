@@ -300,14 +300,6 @@ fn execute_update_event_info(
         });
     }
 
-    // Check that the end time is not already passed
-    if env.block.time.ge(&end_time) {
-        return Err(ContractError::EndTimeBeforeCurrentTime {
-            current_time: env.block.time,
-            end_time,
-        });
-    }
-
     // Update the event info
     event_info.start_time = start_time;
     event_info.end_time = end_time;
