@@ -1,13 +1,13 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, wasm_execute, wasm_instantiate, Addr, Deps, DepsMut, Env, MessageInfo,
-    QueryResponse, Reply, Response, StdResult, SubMsg, CustomQuery,
+    to_binary, wasm_execute, wasm_instantiate, Addr, CustomQuery, Deps, DepsMut, Env, MessageInfo,
+    QueryResponse, Reply, Response, StdResult, SubMsg,
 };
 use cw2::set_contract_version;
 use cw_utils::parse_reply_instantiate_data;
 
-use desmos_bindings::{profiles::querier::ProfilesQuerier};
+use desmos_bindings::profiles::querier::ProfilesQuerier;
 use poap::msg::ExecuteMsg as POAPExecuteMsg;
 
 use crate::error::ContractError;
@@ -34,7 +34,10 @@ const ATTRIBUTE_POAP_CODE_ID: &str = "poap_code_id";
 const ATTRIBUTE_SENDER: &str = "sender";
 const ATTRIBUTE_NEW_ADMIN: &str = "new_admin";
 
+// reply ids for handling reply tasks
 const INSTANTIATE_POAP_REPLY_ID: u64 = 1;
+
+const EMPTY_POAP_ADDRESS: &str = "";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -68,25 +71,36 @@ pub fn instantiate(
         )))
 }
 
-fn instantiate_config(deps: DepsMut<impl CustomQuery>, admin: Addr, poap_code_id: u64) -> Result<(), ContractError> {
+fn instantiate_config(
+    deps: DepsMut<impl CustomQuery>,
+    admin: Addr,
+    poap_code_id: u64,
+) -> Result<(), ContractError> {
     let config = Config {
         admin,
         poap_code_id: poap_code_id,
-        poap_address: Addr::unchecked(""),
+        poap_address: Addr::unchecked(EMPTY_POAP_ADDRESS),
     };
     CONFIG.save(deps.storage, &config)?;
     Ok(())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut<impl CustomQuery>, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+pub fn reply(
+    deps: DepsMut<impl CustomQuery>,
+    _env: Env,
+    msg: Reply,
+) -> Result<Response, ContractError> {
     match msg.id {
         INSTANTIATE_POAP_REPLY_ID => resolve_instantiate_poap_reply(deps, msg),
         _ => Err(ContractError::InvalidReplyID {}),
     }
 }
 
-fn resolve_instantiate_poap_reply(deps: DepsMut<impl CustomQuery>, msg: Reply) -> Result<Response, ContractError> {
+fn resolve_instantiate_poap_reply(
+    deps: DepsMut<impl CustomQuery>,
+    msg: Reply,
+) -> Result<Response, ContractError> {
     let res = parse_reply_instantiate_data(msg)?;
     let address = deps.api.addr_validate(&res.contract_address)?;
     CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
@@ -133,7 +147,11 @@ fn check_eligibility(deps: DepsMut<impl CustomQuery>, user: Addr) -> Result<bool
     Ok(true)
 }
 
-fn mint_to(deps: DepsMut<impl CustomQuery>, info: MessageInfo, recipient: String) -> Result<Response, ContractError> {
+fn mint_to(
+    deps: DepsMut<impl CustomQuery>,
+    info: MessageInfo,
+    recipient: String,
+) -> Result<Response, ContractError> {
     let poap_address = CONFIG.load(deps.storage)?.poap_address;
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_MINT_TO)
@@ -145,7 +163,11 @@ fn mint_to(deps: DepsMut<impl CustomQuery>, info: MessageInfo, recipient: String
         )?))
 }
 
-fn update_admin(deps: DepsMut<impl CustomQuery>, info: MessageInfo, user: String) -> Result<Response, ContractError> {
+fn update_admin(
+    deps: DepsMut<impl CustomQuery>,
+    info: MessageInfo,
+    user: String,
+) -> Result<Response, ContractError> {
     let new_admin = deps.api.addr_validate(&user)?;
     CONFIG.update(deps.storage, |mut config| -> Result<_, ContractError> {
         if config.admin != info.sender {
@@ -175,11 +197,12 @@ fn query_config(deps: Deps<impl CustomQuery>) -> StdResult<QueryConfigResponse> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use desmos_bindings::mocks::mock_dependencies_with_custom_querier;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::Timestamp;
+    use cosmwasm_std::{SubMsgResponse, SubMsgResult, Timestamp};
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
+    use desmos_bindings::mocks::mock_dependencies_with_custom_querier;
     use poap::msg::{EventInfo, InstantiateMsg as POAPInstantiateMsg};
+    use prost::Message;
 
     const CREATOR: &str = "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc";
     const NEW_ADMIN: &str = "desmos1fcrca0eyvj32yeqwyqgs245gjmq4ee9vjjdlnz";
@@ -209,7 +232,7 @@ mod tests {
                 },
             },
         };
-        assert!(instantiate(deps, env, info, invalid_msg).is_ok()); 
+        assert!(instantiate(deps, env, info, invalid_msg).is_ok());
     }
 
     #[test]
@@ -278,27 +301,26 @@ mod tests {
         do_instantiate(deps.as_mut());
 
         let config = CONFIG.load(&deps.storage).unwrap();
-        let expected = Config{
-            admin:  Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
+        let expected = Config {
+            admin: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
             poap_code_id: 1u64,
-            poap_address: Addr::unchecked(""),
+            poap_address: Addr::unchecked(EMPTY_POAP_ADDRESS),
         };
         assert_eq!(config, expected)
     }
 
     #[test]
-    fn claim_with_unsupported_desmos_deps_error(){
+    fn claim_with_unsupported_desmos_deps_error() {
         let mut deps = mock_dependencies();
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let msg = ExecuteMsg::Claim {};
         assert!(execute(deps.as_mut(), env, info, msg).is_err())
-
     }
 
     #[test]
-    fn claim_without_profile_error(){
+    fn claim_without_profile_error() {
         // TODO: build the test for it after improving desmos-binding
     }
 
@@ -318,7 +340,9 @@ mod tests {
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
-        let msg = ExecuteMsg::MintTo { recipient: "".into()};
+        let msg = ExecuteMsg::MintTo {
+            recipient: "".into(),
+        };
         assert!(execute(deps.as_mut(), env, info, msg).is_err())
     }
 
@@ -328,7 +352,9 @@ mod tests {
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
-        let msg = ExecuteMsg::MintTo { recipient: CREATOR.into()};
+        let msg = ExecuteMsg::MintTo {
+            recipient: CREATOR.into(),
+        };
         assert!(execute(deps.as_mut(), env, info, msg).is_ok())
     }
 
@@ -338,7 +364,9 @@ mod tests {
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
-        let msg = ExecuteMsg::UpdateAdmin { new_admin: "".into()};
+        let msg = ExecuteMsg::UpdateAdmin {
+            new_admin: "".into(),
+        };
         assert!(execute(deps.as_mut(), env, info, msg).is_err())
     }
 
@@ -348,7 +376,9 @@ mod tests {
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
-        let msg = ExecuteMsg::UpdateAdmin { new_admin: "a".into()};
+        let msg = ExecuteMsg::UpdateAdmin {
+            new_admin: "a".into(),
+        };
         assert!(execute(deps.as_mut(), env, info, msg).is_err())
     }
 
@@ -358,15 +388,92 @@ mod tests {
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
-        let msg = ExecuteMsg::UpdateAdmin { new_admin: NEW_ADMIN.into()};
+        let msg = ExecuteMsg::UpdateAdmin {
+            new_admin: NEW_ADMIN.into(),
+        };
         assert!(execute(deps.as_mut(), env, info, msg).is_ok());
 
         let config = CONFIG.load(&deps.storage).unwrap();
-        let expected = Config{
-            admin:  Addr::unchecked(NEW_ADMIN),
+        let expected = Config {
+            admin: Addr::unchecked(NEW_ADMIN),
             poap_code_id: 1u64,
             poap_address: Addr::unchecked(""),
         };
         assert_eq!(config, expected)
+    }
+
+    #[derive(Clone, PartialEq, Message)]
+    struct MsgInstantiateContractResponse {
+        #[prost(string, tag = "1")]
+        pub contract_address: ::prost::alloc::string::String,
+        #[prost(bytes, tag = "2")]
+        pub data: ::prost::alloc::vec::Vec<u8>,
+    }
+
+    fn get_valid_instantiate_reply() -> Reply {
+        let instantiate_reply = MsgInstantiateContractResponse {
+            contract_address: "poap_contract_address".into(),
+            data: vec![],
+        };
+        let mut encoded_instantiate_reply =
+            Vec::<u8>::with_capacity(instantiate_reply.encoded_len());
+
+        instantiate_reply
+            .encode(&mut encoded_instantiate_reply)
+            .unwrap();
+        Reply {
+            id: 1,
+            result: SubMsgResult::Ok(SubMsgResponse {
+                events: vec![],
+                data: Some(encoded_instantiate_reply.into()),
+            }),
+        }
+    }
+
+    #[test]
+    fn poap_instantiate_with_invalid_reply_id_error() {
+        let mut deps = mock_dependencies();
+        do_instantiate(deps.as_mut());
+        let env = mock_env();
+        let result = reply(
+            deps.as_mut(),
+            env,
+            Reply {
+                id: 2,
+                result: SubMsgResult::Ok(SubMsgResponse {
+                    events: vec![],
+                    data: None,
+                }),
+            },
+        );
+        assert!(result.is_err())
+    }
+
+    #[test]
+    fn poap_instantiate_with_invalid_instantiate_msg_error() {
+        let mut deps = mock_dependencies();
+        do_instantiate(deps.as_mut());
+        let env = mock_env();
+        let result = reply(
+            deps.as_mut(),
+            env,
+            Reply {
+                id: 1,
+                result: SubMsgResult::Ok(SubMsgResponse {
+                    events: vec![],
+                    data: None,
+                }),
+            },
+        );
+        assert!(result.is_err())
+    }
+
+    #[test]
+    fn poap_instantiate_reply_properly() {
+        let mut deps = mock_dependencies();
+        do_instantiate(deps.as_mut());
+        let env = mock_env();
+        let result = reply(deps.as_mut(), env, get_valid_instantiate_reply());
+        assert!(result.is_ok())
     }
 }
