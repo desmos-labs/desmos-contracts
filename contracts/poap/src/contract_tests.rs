@@ -1,9 +1,14 @@
 #[cfg(test)]
 mod tests {
     use crate::cw721_test_utils;
-    use crate::msg::{EventInfo, ExecuteMsg, InstantiateMsg, QueryMintedAmountResponse, QueryMsg};
-    use cosmwasm_std::{coins, Addr, BlockInfo, Empty, Timestamp};
-    use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
+    use crate::msg::{
+        EventInfo, ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryEventInfoResponse,
+        QueryMintedAmountResponse, QueryMsg,
+    };
+    use cosmwasm_std::{coins, Addr, BlockInfo, Empty, Timestamp, Uint64};
+    use cw721_base::{
+        InstantiateMsg as Cw721InstantiateMsg, MinterResponse, QueryMsg as Cw721QueryMsg,
+    };
     use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
 
     const CREATOR: &str = "creator";
@@ -16,6 +21,7 @@ mod tests {
     const EVENT_END_SECONDS: u64 = EVENT_START_SECONDS + 3600;
     const CREATION_FEE: u128 = 1_000_000_000;
     const INITIAL_BALANCE: u128 = 2_000_000_000;
+    const EVENT_URI: &str = "ipfs://event-uri";
 
     fn contract_poap() -> Box<dyn Contract<Empty>> {
         let contract = ContractWrapper::new(
@@ -83,7 +89,7 @@ mod tests {
                 end_time,
                 per_address_limit: 2,
                 base_poap_uri: "ipfs://popap-uri".to_string(),
-                event_uri: "ipfs://event-uri".to_string(),
+                event_uri: EVENT_URI.to_string(),
             },
         }
     }
@@ -411,12 +417,63 @@ mod tests {
     }
 
     #[test]
+    fn proper_contracts_instantiation() {
+        let (app, poap_contract_addr) = proper_instantiate();
+
+        let querier = app.wrap();
+
+        let poap_config: QueryConfigResponse = querier
+            .query_wasm_smart(&poap_contract_addr, &QueryMsg::Config {})
+            .unwrap();
+
+        assert_eq!(Addr::unchecked(ADMIN), poap_config.admin);
+        assert_eq!(Addr::unchecked(MINTER), poap_config.minter);
+        assert_eq!(false, poap_config.mint_enabled);
+        // 1 since is the first uploaded.
+        assert_eq!(Uint64::new(1), poap_config.cw721_contract_code);
+
+        let poap_event_info: QueryEventInfoResponse = querier
+            .query_wasm_smart(&poap_contract_addr, &QueryMsg::EventInfo {})
+            .unwrap();
+
+        assert_eq!(Addr::unchecked(CREATOR), poap_event_info.creator);
+        assert_eq!(
+            Timestamp::from_seconds(EVENT_START_SECONDS),
+            poap_event_info.start_time
+        );
+        assert_eq!(
+            Timestamp::from_seconds(EVENT_END_SECONDS),
+            poap_event_info.end_time
+        );
+        assert_eq!(EVENT_URI, poap_event_info.event_uri.as_str());
+
+        let cw721_minter_response: MinterResponse = querier
+            .query_wasm_smart(&poap_config.cw721_contract, &Cw721QueryMsg::Minter {})
+            .unwrap();
+
+        // The cw721 minter should be the poap contract address.
+        assert_eq!(poap_contract_addr.to_string(), cw721_minter_response.minter)
+    }
+
+    #[test]
     fn enable_mint() {
         let (mut app, poap_contract_addr) = proper_instantiate();
 
         let msg = ExecuteMsg::EnableMint {};
-        app.execute_contract(Addr::unchecked(ADMIN), poap_contract_addr, &msg, &vec![])
+        app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
+
+        let response: QueryConfigResponse = app
+            .wrap()
+            .query_wasm_smart(&poap_contract_addr, &QueryMsg::Config {})
             .unwrap();
+
+        assert_eq!(true, response.mint_enabled)
     }
 
     #[test]
@@ -433,8 +490,20 @@ mod tests {
         let (mut app, poap_contract_addr) = proper_instantiate();
 
         let msg = ExecuteMsg::DisableMint {};
-        app.execute_contract(Addr::unchecked(ADMIN), poap_contract_addr, &msg, &vec![])
+        app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
+
+        let response: QueryConfigResponse = app
+            .wrap()
+            .query_wasm_smart(&poap_contract_addr, &QueryMsg::Config {})
             .unwrap();
+
+        assert_eq!(false, response.mint_enabled)
     }
 
     #[test]
