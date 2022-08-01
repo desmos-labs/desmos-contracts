@@ -12,7 +12,7 @@ use poap::{
         execute as poap_execute, instantiate as poap_instantiate, query as poap_query,
         reply as poap_reply,
     },
-    error::ContractError as POAPContractError,
+    ContractError as POAPContractError,
     msg::{
         ExecuteMsg as POAPExecuteMsg, InstantiateMsg as POAPInstantiateMsg,
         QueryMsg as POAPQueryMsg,
