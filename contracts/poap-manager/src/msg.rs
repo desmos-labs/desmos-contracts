@@ -7,8 +7,11 @@ use poap::msg::InstantiateMsg as POAPInstantiateMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
+    /// Address of who will have the right to administer the contract.
     pub admin: String,
+     /// Id of the POAP contract to initialize together with this contract.
     pub poap_code_id: Uint64,
+    /// Initialization message that will be sent to the POAP contract.
     pub poap_instantiate_msg: POAPInstantiateMsg,
 }
 
@@ -24,8 +27,11 @@ impl InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    /// Allows users to claim a POAP token.
     Claim {},
+    /// Allows the contract's admin to mint a POAP for a specific recipient.
     MintTo { recipient: String },
+    /// Allows the contract's admin to transfer the admin rights to another user.
     UpdateAdmin { new_admin: String },
 }
 
@@ -43,8 +49,11 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct QueryConfigResponse {
+    /// Address of the contract administrator.
     pub admin: Addr,
+    /// Id of the POAP contract that this contract has initialized.
     pub poap_code_id: u64,
+    /// Address of the POAP contract that this contract
     pub poap_address: Addr,
 }
 

@@ -69,7 +69,6 @@ mod tests {
     fn proper_instantiate() -> (App, Addr) {
         let mut app = mock_app();
         let (cw721_code_id, poap_code_id, poap_manager_code_id) = store_contracts(&mut app);
-
         let poap_manager_contract_addr = app
             .instantiate_contract(
                 poap_manager_code_id,
@@ -92,8 +91,8 @@ mod tests {
         let mut app = mock_app();
         let (cw721_code_id, poap_code_id, poap_manager_code_id) = store_contracts(&mut app);
         let mut init_msg = get_valid_init_msg(cw721_code_id, poap_code_id);
+        // change code poap_code_id to the invalid one
         init_msg.poap_code_id = cw721_code_id.into();
-
         let init_result = app.instantiate_contract(
             poap_manager_code_id,
             Addr::unchecked(ADMIN),
@@ -110,8 +109,8 @@ mod tests {
         let mut app = mock_app();
         let (cw721_code_id, poap_code_id, poap_manager_code_id) = store_contracts(&mut app);
         let mut init_msg = get_valid_init_msg(cw721_code_id, poap_code_id);
+        // change cw721_code_id to the invalid one
         init_msg.poap_instantiate_msg.cw721_code_id = poap_code_id.into();
-
         let init_result = app.instantiate_contract(
             poap_manager_code_id,
             Addr::unchecked(ADMIN),
@@ -126,11 +125,11 @@ mod tests {
     #[test]
     fn instantiate_with_failing_poap_contract_error() {
         let mut app = mock_app();
-        let (cw721_code_id, poap_code_id, poap_manager_code_id) = store_contracts(&mut app);
-        let mut init_msg = get_valid_init_msg(cw721_code_id, poap_code_id);
+        let (cw721_code_id, _, poap_manager_code_id) = store_contracts(&mut app);
         let failing_poap_code_id = app.store_code(POAPTestContract::failing_contract());
+        let mut init_msg = get_valid_init_msg(cw721_code_id, failing_poap_code_id);
+        // change id to the failing one
         init_msg.poap_code_id = failing_poap_code_id.into();
-
         let init_result = app.instantiate_contract(
             poap_manager_code_id,
             Addr::unchecked(ADMIN),
@@ -147,13 +146,10 @@ mod tests {
         let (app, manager_addr) = proper_instantiate();
         let querier = app.wrap();
 
-        // check poap manger admin
+        // check if poap minter is manager contract
         let manager_config: QueryConfigResponse = querier
             .query_wasm_smart(&manager_addr, &QueryMsg::Config {})
             .unwrap();
-        assert_eq!(manager_config.admin, ADMIN);
-
-        // check poap minter
         let poap_config: POAPQueryConfigResponse = querier
             .query_wasm_smart(manager_config.poap_address, &POAPQueryMsg::Config {})
             .unwrap();
@@ -162,7 +158,7 @@ mod tests {
 
     #[test]
     fn user_claim_poap_properly() {
-        // TODO: build a test after cw_multi_test is available for desmos custom module
+        // TODO: build a test after desmos_bindings::mocks::mock_apps is released
     }
 
     #[test]
