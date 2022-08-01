@@ -37,7 +37,7 @@ impl POAPTestContract {
         _msg: Cw721InstantiateMsg,
     ) -> Result<Response, POAPContractError> {
         Err(POAPContractError::Std(StdError::generic_err(
-            "cw721 initialization failed",
+            "poap initialization failed",
         )))
     }
 
