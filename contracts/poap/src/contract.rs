@@ -693,7 +693,7 @@ mod tests {
     }
 
     #[test]
-    fn normal_user_can_not_enable_mint() {
+    fn enable_mint_without_permission_error() {
         let mut deps = mock_dependencies();
         let env = mock_env();
         let info = mock_info(USER, &vec![]);
