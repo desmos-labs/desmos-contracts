@@ -234,6 +234,14 @@ mod tests {
         }
     }
 
+    #[derive(Clone, PartialEq, Message)]
+    struct MsgInstantiateContractResponse {
+        #[prost(string, tag = "1")]
+        pub contract_address: ::prost::alloc::string::String,
+        #[prost(bytes, tag = "2")]
+        pub data: ::prost::alloc::vec::Vec<u8>,
+    }
+
     fn get_valid_instantiate_reply() -> Reply {
         let instantiate_reply = MsgInstantiateContractResponse {
             contract_address: "poap_contract_address".into(),
@@ -481,13 +489,5 @@ mod tests {
             poap_code_id: 1u64,
         };
         assert_eq!(config, expected)
-    }
-
-    #[derive(Clone, PartialEq, Message)]
-    struct MsgInstantiateContractResponse {
-        #[prost(string, tag = "1")]
-        pub contract_address: ::prost::alloc::string::String,
-        #[prost(bytes, tag = "2")]
-        pub data: ::prost::alloc::vec::Vec<u8>,
     }
 }
