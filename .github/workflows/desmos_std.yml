@@ -22,6 +22,24 @@ jobs:
         run: cargo test --package poap
         env:
           RUST_BACKTRACE: 1
+    
+  test-poap-manager-contract:
+    name: Test Poap Manger contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Unit tests
+        run: cargo test --package poap-manager
+        env:
+          RUST_BACKTRACE: 1
 
   coverage:
     if: ${{false}} # Disable this job
