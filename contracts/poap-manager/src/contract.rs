@@ -186,11 +186,11 @@ pub fn query(deps: Deps<impl CustomQuery>, _env: Env, msg: QueryMsg) -> StdResul
 
 fn query_config(deps: Deps<impl CustomQuery>) -> StdResult<QueryConfigResponse> {
     let config = CONFIG.load(deps.storage)?;
-    Ok(QueryConfigResponse { 
+    Ok(QueryConfigResponse {
         admin: config.admin,
         poap_code_id: config.poap_code_id,
-        poap_address: POAP_ADDRESS.load(deps.storage)?
-     })
+        poap_address: POAP_ADDRESS.load(deps.storage)?,
+    })
 }
 
 #[cfg(test)]
@@ -336,8 +336,6 @@ mod tests {
         };
         assert_eq!(config, expected)
     }
-
-    
 
     #[test]
     fn poap_instantiate_with_invalid_reply_id_error() {
