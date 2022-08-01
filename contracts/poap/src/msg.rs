@@ -168,3 +168,231 @@ impl ExecuteMsg {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::msg::{EventInfo, ExecuteMsg, InstantiateMsg};
+    use crate::ContractError;
+    use cosmwasm_std::Timestamp;
+    use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
+
+    #[test]
+    fn instantiate_with_invalid_time_error() {
+        // Test start time after end time
+        let start = Timestamp::from_seconds(2);
+        let end = Timestamp::from_seconds(1);
+        let msg = InstantiateMsg {
+            admin: "".to_string(),
+            minter: "".to_string(),
+            cw721_code_id: 0u64.into(),
+            cw721_initiate_msg: Cw721InstantiateMsg {
+                name: "".to_string(),
+                minter: "".to_string(),
+                symbol: "".to_string(),
+            },
+            event_info: EventInfo {
+                creator: "".to_string(),
+                start_time: start.clone(),
+                end_time: end.clone(),
+                per_address_limit: 1,
+                base_poap_uri: "ipfs://domain.com".to_string(),
+                event_uri: "ipfs://domain.com".to_string(),
+            },
+        };
+
+        assert_eq!(
+            ContractError::StartTimeAfterEndTime { start, end },
+            msg.validate().unwrap_err()
+        );
+
+        // Test start time eq end time
+        let start = Timestamp::from_seconds(1);
+        let end = Timestamp::from_seconds(1);
+        let msg = InstantiateMsg {
+            admin: "".to_string(),
+            minter: "".to_string(),
+            cw721_code_id: 0u64.into(),
+            cw721_initiate_msg: Cw721InstantiateMsg {
+                name: "".to_string(),
+                minter: "".to_string(),
+                symbol: "".to_string(),
+            },
+            event_info: EventInfo {
+                creator: "".to_string(),
+                start_time: start.clone(),
+                end_time: end.clone(),
+                per_address_limit: 1,
+                base_poap_uri: "ipfs://domain.com".to_string(),
+                event_uri: "ipfs://domain.com".to_string(),
+            },
+        };
+
+        assert_eq!(
+            ContractError::StartTimeAfterEndTime { start, end },
+            msg.validate().unwrap_err()
+        );
+    }
+
+    #[test]
+    fn instantiate_with_invalid_per_address_limit_error() {
+        // Test start time after end time
+        let msg = InstantiateMsg {
+            admin: "".to_string(),
+            minter: "".to_string(),
+            cw721_code_id: 0u64.into(),
+            cw721_initiate_msg: Cw721InstantiateMsg {
+                name: "".to_string(),
+                minter: "".to_string(),
+                symbol: "".to_string(),
+            },
+            event_info: EventInfo {
+                creator: "".to_string(),
+                start_time: Timestamp::from_seconds(1),
+                end_time: Timestamp::from_seconds(2),
+                per_address_limit: 0,
+                base_poap_uri: "ipfs://domain.com".to_string(),
+                event_uri: "ipfs://domain.com".to_string(),
+            },
+        };
+
+        assert_eq!(
+            ContractError::InvalidPerAddressLimit {},
+            msg.validate().unwrap_err()
+        );
+    }
+
+    #[test]
+    fn instantiate_with_invalid_event_uri_error() {
+        // Invalid uri
+        let msg = InstantiateMsg {
+            admin: "".to_string(),
+            minter: "".to_string(),
+            cw721_code_id: 0u64.into(),
+            cw721_initiate_msg: Cw721InstantiateMsg {
+                name: "".to_string(),
+                minter: "".to_string(),
+                symbol: "".to_string(),
+            },
+            event_info: EventInfo {
+                creator: "".to_string(),
+                start_time: Timestamp::from_seconds(1),
+                end_time: Timestamp::from_seconds(2),
+                per_address_limit: 1,
+                base_poap_uri: "ipfs://domain.com".to_string(),
+                event_uri: "invalid_event_uri".to_string(),
+            },
+        };
+
+        assert_eq!(
+            ContractError::InvalidEventUri {},
+            msg.validate().unwrap_err()
+        );
+
+        // Non ipfs uri
+        let msg = InstantiateMsg {
+            admin: "".to_string(),
+            minter: "".to_string(),
+            cw721_code_id: 0u64.into(),
+            cw721_initiate_msg: Cw721InstantiateMsg {
+                name: "".to_string(),
+                minter: "".to_string(),
+                symbol: "".to_string(),
+            },
+            event_info: EventInfo {
+                creator: "".to_string(),
+                start_time: Timestamp::from_seconds(1),
+                end_time: Timestamp::from_seconds(2),
+                per_address_limit: 1,
+                base_poap_uri: "ipfs://domain.com".to_string(),
+                event_uri: "https://domain.com".to_string(),
+            },
+        };
+
+        assert_eq!(
+            ContractError::InvalidEventUri {},
+            msg.validate().unwrap_err()
+        );
+    }
+
+    #[test]
+    fn instantiate_with_invalid_base_poap_uri_error() {
+        // Invalid uri
+        let msg = InstantiateMsg {
+            admin: "".to_string(),
+            minter: "".to_string(),
+            cw721_code_id: 0u64.into(),
+            cw721_initiate_msg: Cw721InstantiateMsg {
+                name: "".to_string(),
+                minter: "".to_string(),
+                symbol: "".to_string(),
+            },
+            event_info: EventInfo {
+                creator: "".to_string(),
+                start_time: Timestamp::from_seconds(1),
+                end_time: Timestamp::from_seconds(2),
+                per_address_limit: 1,
+                base_poap_uri: "https://domain.com".to_string(),
+                event_uri: "ipfs://domain.com".to_string(),
+            },
+        };
+
+        assert_eq!(
+            ContractError::InvalidPoapUri {},
+            msg.validate().unwrap_err()
+        );
+
+        // Non ipfs uri
+        let msg = InstantiateMsg {
+            admin: "".to_string(),
+            minter: "".to_string(),
+            cw721_code_id: 0u64.into(),
+            cw721_initiate_msg: Cw721InstantiateMsg {
+                name: "".to_string(),
+                minter: "".to_string(),
+                symbol: "".to_string(),
+            },
+            event_info: EventInfo {
+                creator: "".to_string(),
+                start_time: Timestamp::from_seconds(1),
+                end_time: Timestamp::from_seconds(2),
+                per_address_limit: 1,
+                base_poap_uri: "https://domain.com".to_string(),
+                event_uri: "ipfs://domain.com".to_string(),
+            },
+        };
+
+        assert_eq!(
+            ContractError::InvalidPoapUri {},
+            msg.validate().unwrap_err()
+        );
+    }
+
+    #[test]
+    fn update_event_info_start_time_after_end_time_error() {
+        // Start time after end time
+        let start = Timestamp::from_seconds(2);
+        let end = Timestamp::from_seconds(1);
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: start.clone(),
+            end_time: end.clone(),
+        };
+
+        assert_eq!(
+            ContractError::StartTimeAfterEndTime { start, end },
+            msg.validate().unwrap_err()
+        );
+
+        // Start time eq end time
+        let start = Timestamp::from_seconds(1);
+        let end = Timestamp::from_seconds(1);
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: start.clone(),
+            end_time: end.clone(),
+        };
+
+        assert_eq!(
+            ContractError::StartTimeAfterEndTime { start, end },
+            msg.validate().unwrap_err()
+        );
+    }
+}
