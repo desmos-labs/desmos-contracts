@@ -424,19 +424,20 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 mod tests {
     use crate::contract::{execute, instantiate};
     use crate::msg::ExecuteMsg;
-    use crate::state::{CONFIG, EVENT_INFO};
+    use crate::state::{CONFIG, CW721_ADDRESS, EVENT_INFO};
     use crate::test_utils::{
         get_valid_init_msg, EVENT_END_SECONDS, EVENT_START_SECONDS, INITIAL_BLOCK_TIME_SECONDS,
     };
     use crate::ContractError;
     use crate::ContractError::Unauthorized;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{DepsMut, Timestamp};
+    use cosmwasm_std::{Addr, DepsMut, Timestamp};
 
     const CREATOR: &str = "creator";
     const ADMIN: &str = "admin";
     const MINTER: &str = "minter";
     const USER: &str = "user";
+    const FAKE_CW721_ADDRESS: &str = "cw721-contract";
 
     fn do_instantiate(deps: DepsMut) {
         let mut env = mock_env();
@@ -444,6 +445,11 @@ mod tests {
 
         // Change block time to event start.
         env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+
+        // Since replay is not called, fake the stored cw721 contract address.
+        CW721_ADDRESS
+            .save(deps.storage, &Addr::unchecked(FAKE_CW721_ADDRESS))
+            .unwrap();
 
         let msg = get_valid_init_msg(1);
         assert!(instantiate(deps, env, info, msg).is_ok());
@@ -1082,5 +1088,179 @@ mod tests {
 
         // Event is not started
         assert_eq!(ContractError::MintDisabled {}, result.unwrap_err());
+    }
+
+    #[test]
+    fn mint_limit() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        // Change current time to event start
+        env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS);
+
+        execute(deps.as_mut(), env.clone(), info, ExecuteMsg::EnableMint {}).unwrap();
+
+        let info = mock_info(USER, &vec![]);
+        // Mint the first poap
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::Mint {},
+        )
+        .unwrap();
+        // Mint the second poap
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::Mint {},
+        )
+        .unwrap();
+
+        let response = execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::Mint {},
+        );
+        assert_eq!(
+            ContractError::MaxPerAddressLimitExceeded {
+                recipient_addr: USER.to_string()
+            },
+            response.unwrap_err()
+        );
+
+        // Ensure that mint to also fails when minting for the user
+        let info = mock_info(ADMIN, &vec![]);
+        let response = execute(
+            deps.as_mut(),
+            env.clone(),
+            info,
+            ExecuteMsg::MintTo {
+                recipient: USER.to_string(),
+            },
+        );
+
+        assert_eq!(
+            ContractError::MaxPerAddressLimitExceeded {
+                recipient_addr: USER.to_string()
+            },
+            response.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn mint_to_limit() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        // Change current time to event start
+        env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS);
+
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::EnableMint {},
+        )
+        .unwrap();
+
+        // Mint the first poap
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::MintTo {
+                recipient: USER.to_string(),
+            },
+        )
+        .unwrap();
+        // Mint the second and last allowed poap
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::MintTo {
+                recipient: USER.to_string(),
+            },
+        )
+        .unwrap();
+
+        let response = execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::MintTo {
+                recipient: USER.to_string(),
+            },
+        );
+        // Should fail since the user have already received the max allowed poaps.
+        assert_eq!(
+            ContractError::MaxPerAddressLimitExceeded {
+                recipient_addr: USER.to_string()
+            },
+            response.unwrap_err()
+        );
+
+        // Test also with Mint from use
+        let info = mock_info(USER, &vec![]);
+        let response = execute(deps.as_mut(), env.clone(), info, ExecuteMsg::Mint {});
+        assert_eq!(
+            ContractError::MaxPerAddressLimitExceeded {
+                recipient_addr: USER.to_string()
+            },
+            response.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn mint_to_only_for_minter_and_admin() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+
+        do_instantiate(deps.as_mut());
+
+        // Change current time to event start
+        env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS);
+
+        let response = execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info(USER, &vec![]),
+            ExecuteMsg::MintTo {
+                recipient: USER.to_string(),
+            },
+        );
+        // User should not be authorized to use the mint to action
+        assert_eq!(ContractError::Unauthorized {}, response.unwrap_err());
+
+        // Test that minter can call mint to
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info(MINTER, &vec![]),
+            ExecuteMsg::MintTo {
+                recipient: USER.to_string(),
+            },
+        )
+        .unwrap();
+
+        // Test that admin can call mint to
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info(ADMIN, &vec![]),
+            ExecuteMsg::MintTo {
+                recipient: USER.to_string(),
+            },
+        )
+        .unwrap();
     }
 }
