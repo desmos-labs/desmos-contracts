@@ -397,10 +397,6 @@ mod tests {
         assert!(execute(deps.as_mut(), env, info, msg).is_err())
     }
 
-    #[test]
-    fn claim_without_profile_error() {
-        // TODO: build the test for it after improving desmos-binding
-    }
 
     #[test]
     fn claim_properly() {

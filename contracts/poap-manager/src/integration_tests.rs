@@ -146,14 +146,22 @@ mod tests {
         let (app, manager_addr) = proper_instantiate();
         let querier = app.wrap();
 
-        // check if poap minter is manager contract
+        // check manager config set properly
         let manager_config: QueryConfigResponse = querier
             .query_wasm_smart(&manager_addr, &QueryMsg::Config {})
             .unwrap();
+        assert_eq!(manager_config.admin, ADMIN);
+
+        // check if poap minter is manager contract
         let poap_config: POAPQueryConfigResponse = querier
             .query_wasm_smart(manager_config.poap_address, &POAPQueryMsg::Config {})
             .unwrap();
         assert_eq!(manager_addr, poap_config.minter);
+    }
+
+    #[test]
+    fn user_claim_without_profile_error() {
+        // TODO: build a test after desmos_bindings::mocks::mock_apps is released
     }
 
     #[test]
