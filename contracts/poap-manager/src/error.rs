@@ -8,20 +8,20 @@ pub enum ContractError {
     Std(#[from] StdError),
 
     #[error("Invalid reply ID")]
-    InvalidReplyID,
+    InvalidReplyID {},
 
     #[error("Invalid POAP code ID")]
-    InvalidPOAPCodeID,
+    InvalidPOAPCodeID {},
 
     #[error("Instantiate POAP error")]
-    InstantiatePOAPError,
+    InstantiatePOAPError {},
 
     #[error("Caller is not admin")]
-    NotAdmin,
+    NotAdmin {},
 
     #[error("{0}")]
     ParseReplyError(#[from] ParseReplyError),
 
     #[error("No eligibility error")]
-    NoEligibilityError,
+    NoEligibilityError {},
 }
