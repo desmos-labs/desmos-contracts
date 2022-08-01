@@ -9,13 +9,9 @@ mod tests {
         get_valid_init_msg, ADMIN, CREATOR, EVENT_END_SECONDS, EVENT_START_SECONDS, EVENT_URI,
         INITIAL_BLOCK_TIME_SECONDS, MINTER, USER,
     };
-    use cosmwasm_std::{coins, Addr, BlockInfo, Empty, Timestamp, Uint64};
+    use cosmwasm_std::{Addr, BlockInfo, Empty, Timestamp, Uint64};
     use cw721_base::{MinterResponse, QueryMsg as Cw721QueryMsg};
     use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
-
-    const NATIVE_DENOM: &str = "udsm";
-    const CREATION_FEE: u128 = 1_000_000_000;
-    const INITIAL_BALANCE: u128 = 2_000_000_000;
 
     fn contract_poap() -> Box<dyn Contract<Empty>> {
         let contract = ContractWrapper::new(
@@ -34,24 +30,7 @@ mod tests {
                 time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS),
                 chain_id: "testchain".to_string(),
             })
-            .build(|router, _, storage| {
-                router
-                    .bank
-                    .init_balance(
-                        storage,
-                        &Addr::unchecked(USER),
-                        coins(INITIAL_BALANCE, NATIVE_DENOM),
-                    )
-                    .unwrap();
-                router
-                    .bank
-                    .init_balance(
-                        storage,
-                        &Addr::unchecked(ADMIN),
-                        coins(INITIAL_BALANCE + CREATION_FEE, NATIVE_DENOM),
-                    )
-                    .unwrap();
-            })
+            .build(|_, _, _| {})
     }
 
     /// Uploads the contracts to the app.
