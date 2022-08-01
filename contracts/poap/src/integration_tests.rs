@@ -75,7 +75,7 @@ mod tests {
                 Addr::unchecked(ADMIN),
                 &msg,
                 &[],
-                "Poap contract",
+                "poap",
                 None,
             )
             .unwrap();
@@ -96,7 +96,7 @@ mod tests {
             Addr::unchecked(ADMIN),
             &init_msg,
             &[],
-            "Poap contract",
+            "poap",
             None,
         );
         assert!(init_result.is_err());
@@ -116,7 +116,7 @@ mod tests {
             Addr::unchecked(ADMIN),
             &init_msg,
             &[],
-            "Poap contract",
+            "poap",
             None,
         );
         assert!(init_result.is_err());
