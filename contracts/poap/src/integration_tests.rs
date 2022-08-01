@@ -10,6 +10,7 @@ mod tests {
         INITIAL_BLOCK_TIME_SECONDS, MINTER, USER,
     };
     use cosmwasm_std::{Addr, BlockInfo, Empty, Timestamp, Uint64};
+    use cw721::TokensResponse;
     use cw721_base::{MinterResponse, QueryMsg as Cw721QueryMsg};
     use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
 
@@ -181,5 +182,23 @@ mod tests {
 
         assert_eq!(Addr::unchecked(USER), response.user);
         assert_eq!(1, response.amount);
+
+        let config: QueryConfigResponse = querier
+            .query_wasm_smart(&poap_contract_addr, &QueryMsg::Config {})
+            .unwrap();
+
+        let querier = app.wrap();
+        let response: TokensResponse = querier
+            .query_wasm_smart(
+                config.cw721_contract.as_str(),
+                &Cw721QueryMsg::Tokens {
+                    owner: USER.to_string(),
+                    start_after: None,
+                    limit: None,
+                },
+            )
+            .unwrap();
+
+        assert_eq!(1, response.tokens.len());
     }
 }
