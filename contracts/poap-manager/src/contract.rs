@@ -12,7 +12,7 @@ use poap::msg::ExecuteMsg as POAPExecuteMsg;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg};
-use crate::state::{Config, CONFIG};
+use crate::state::{Config, CONFIG, POAP_ADDRESS};
 
 use std::ops::Deref;
 
@@ -36,8 +36,6 @@ const ATTRIBUTE_NEW_ADMIN: &str = "new_admin";
 
 // reply ids for handling reply tasks
 const INSTANTIATE_POAP_REPLY_ID: u64 = 1;
-
-const EMPTY_POAP_ADDRESS: &str = "";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -79,7 +77,6 @@ fn instantiate_config(
     let config = Config {
         admin,
         poap_code_id: poap_code_id,
-        poap_address: Addr::unchecked(EMPTY_POAP_ADDRESS),
     };
     CONFIG.save(deps.storage, &config)?;
     Ok(())
@@ -103,10 +100,7 @@ fn resolve_instantiate_poap_reply(
 ) -> Result<Response, ContractError> {
     let res = parse_reply_instantiate_data(msg)?;
     let address = deps.api.addr_validate(&res.contract_address)?;
-    CONFIG.update(deps.storage, |mut config| -> StdResult<_> {
-        config.poap_address = address;
-        Ok(config)
-    })?;
+    POAP_ADDRESS.save(deps.storage, &address)?;
     Ok(Response::new().add_attribute(ATTRIBUTE_ACTION, ACTION_INSTANTIATE_POAP_REPLY))
 }
 
@@ -126,7 +120,7 @@ pub fn execute(
 }
 
 fn claim(deps: DepsMut<impl CustomQuery>, info: MessageInfo) -> Result<Response, ContractError> {
-    let poap_address = CONFIG.load(deps.storage)?.poap_address;
+    let poap_address = POAP_ADDRESS.load(deps.storage)?;
     if !check_eligibility(deps, info.sender.clone())? {
         return Err(ContractError::NoEligibilityError {});
     }
@@ -152,7 +146,8 @@ fn mint_to(
     info: MessageInfo,
     recipient: String,
 ) -> Result<Response, ContractError> {
-    let poap_address = CONFIG.load(deps.storage)?.poap_address;
+    let poap_address = POAP_ADDRESS.load(deps.storage)?;
+    deps.api.addr_validate(&recipient)?;
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_MINT_TO)
         .add_attribute(ATTRIBUTE_SENDER, &info.sender)
@@ -191,7 +186,11 @@ pub fn query(deps: Deps<impl CustomQuery>, _env: Env, msg: QueryMsg) -> StdResul
 
 fn query_config(deps: Deps<impl CustomQuery>) -> StdResult<QueryConfigResponse> {
     let config = CONFIG.load(deps.storage)?;
-    Ok(QueryConfigResponse { config })
+    Ok(QueryConfigResponse { 
+        admin: config.admin,
+        poap_code_id: config.poap_code_id,
+        poap_address: POAP_ADDRESS.load(deps.storage)?
+     })
 }
 
 #[cfg(test)]
@@ -207,10 +206,8 @@ mod tests {
     const CREATOR: &str = "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc";
     const NEW_ADMIN: &str = "desmos1fcrca0eyvj32yeqwyqgs245gjmq4ee9vjjdlnz";
 
-    fn do_instantiate(deps: DepsMut<impl CustomQuery>) {
-        let env = mock_env();
-        let info = mock_info(CREATOR, &vec![]);
-        let invalid_msg = InstantiateMsg {
+    fn get_valid_instantiate() -> InstantiateMsg {
+        InstantiateMsg {
             admin: "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc".into(),
             poap_code_id: 1u64.into(),
             poap_instantiate_msg: POAPInstantiateMsg {
@@ -231,8 +228,40 @@ mod tests {
                     event_uri: "ipfs://event-uri".to_string(),
                 },
             },
+        }
+    }
+
+    fn get_valid_instantiate_reply() -> Reply {
+        let instantiate_reply = MsgInstantiateContractResponse {
+            contract_address: "poap_contract_address".into(),
+            data: vec![],
         };
-        assert!(instantiate(deps, env, info, invalid_msg).is_ok());
+        let mut encoded_instantiate_reply =
+            Vec::<u8>::with_capacity(instantiate_reply.encoded_len());
+
+        instantiate_reply
+            .encode(&mut encoded_instantiate_reply)
+            .unwrap();
+        Reply {
+            id: 1,
+            result: SubMsgResult::Ok(SubMsgResponse {
+                events: vec![],
+                data: Some(encoded_instantiate_reply.into()),
+            }),
+        }
+    }
+
+    fn do_instantiate(deps: DepsMut<impl CustomQuery>) {
+        let env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+        let valid_msg = get_valid_instantiate();
+        assert!(instantiate(deps, env, info, valid_msg).is_ok());
+    }
+
+    fn do_reply(deps: DepsMut<impl CustomQuery>) {
+        let env = mock_env();
+        let valid_reply = get_valid_instantiate_reply();
+        assert!(reply(deps, env, valid_reply).is_ok())
     }
 
     #[test]
@@ -304,131 +333,11 @@ mod tests {
         let expected = Config {
             admin: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
             poap_code_id: 1u64,
-            poap_address: Addr::unchecked(EMPTY_POAP_ADDRESS),
         };
         assert_eq!(config, expected)
     }
 
-    #[test]
-    fn claim_with_unsupported_desmos_deps_error() {
-        let mut deps = mock_dependencies();
-        do_instantiate(deps.as_mut());
-        let env = mock_env();
-        let info = mock_info(CREATOR, &vec![]);
-        let msg = ExecuteMsg::Claim {};
-        assert!(execute(deps.as_mut(), env, info, msg).is_err())
-    }
-
-    #[test]
-    fn claim_without_profile_error() {
-        // TODO: build the test for it after improving desmos-binding
-    }
-
-    #[test]
-    fn claim_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&vec![]);
-        do_instantiate(deps.as_mut());
-        let env = mock_env();
-        let info = mock_info(CREATOR, &vec![]);
-        let msg = ExecuteMsg::Claim {};
-        assert!(execute(deps.as_mut(), env, info, msg).is_ok())
-    }
-
-    #[test]
-    fn mint_into_with_invalid_msg_error() {
-        let mut deps = mock_dependencies();
-        do_instantiate(deps.as_mut());
-        let env = mock_env();
-        let info = mock_info(CREATOR, &vec![]);
-        let msg = ExecuteMsg::MintTo {
-            recipient: "".into(),
-        };
-        assert!(execute(deps.as_mut(), env, info, msg).is_err())
-    }
-
-    #[test]
-    fn mint_into_properly() {
-        let mut deps = mock_dependencies();
-        do_instantiate(deps.as_mut());
-        let env = mock_env();
-        let info = mock_info(CREATOR, &vec![]);
-        let msg = ExecuteMsg::MintTo {
-            recipient: CREATOR.into(),
-        };
-        assert!(execute(deps.as_mut(), env, info, msg).is_ok())
-    }
-
-    #[test]
-    fn update_admin_with_invalid_msg_error() {
-        let mut deps = mock_dependencies();
-        do_instantiate(deps.as_mut());
-        let env = mock_env();
-        let info = mock_info(CREATOR, &vec![]);
-        let msg = ExecuteMsg::UpdateAdmin {
-            new_admin: "".into(),
-        };
-        assert!(execute(deps.as_mut(), env, info, msg).is_err())
-    }
-
-    #[test]
-    fn update_admin_with_invalid_address_error() {
-        let mut deps = mock_dependencies();
-        do_instantiate(deps.as_mut());
-        let env = mock_env();
-        let info = mock_info(CREATOR, &vec![]);
-        let msg = ExecuteMsg::UpdateAdmin {
-            new_admin: "a".into(),
-        };
-        assert!(execute(deps.as_mut(), env, info, msg).is_err())
-    }
-
-    #[test]
-    fn update_admin_properly() {
-        let mut deps = mock_dependencies();
-        do_instantiate(deps.as_mut());
-        let env = mock_env();
-        let info = mock_info(CREATOR, &vec![]);
-        let msg = ExecuteMsg::UpdateAdmin {
-            new_admin: NEW_ADMIN.into(),
-        };
-        assert!(execute(deps.as_mut(), env, info, msg).is_ok());
-
-        let config = CONFIG.load(&deps.storage).unwrap();
-        let expected = Config {
-            admin: Addr::unchecked(NEW_ADMIN),
-            poap_code_id: 1u64,
-            poap_address: Addr::unchecked(""),
-        };
-        assert_eq!(config, expected)
-    }
-
-    #[derive(Clone, PartialEq, Message)]
-    struct MsgInstantiateContractResponse {
-        #[prost(string, tag = "1")]
-        pub contract_address: ::prost::alloc::string::String,
-        #[prost(bytes, tag = "2")]
-        pub data: ::prost::alloc::vec::Vec<u8>,
-    }
-
-    fn get_valid_instantiate_reply() -> Reply {
-        let instantiate_reply = MsgInstantiateContractResponse {
-            contract_address: "poap_contract_address".into(),
-            data: vec![],
-        };
-        let mut encoded_instantiate_reply =
-            Vec::<u8>::with_capacity(instantiate_reply.encoded_len());
-
-        instantiate_reply
-            .encode(&mut encoded_instantiate_reply)
-            .unwrap();
-        Reply {
-            id: 1,
-            result: SubMsgResult::Ok(SubMsgResponse {
-                events: vec![],
-                data: Some(encoded_instantiate_reply.into()),
-            }),
-        }
-    }
+    
 
     #[test]
     fn poap_instantiate_with_invalid_reply_id_error() {
@@ -474,6 +383,115 @@ mod tests {
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let result = reply(deps.as_mut(), env, get_valid_instantiate_reply());
-        assert!(result.is_ok())
+        assert!(result.is_ok());
+        let address = POAP_ADDRESS.load(&deps.storage).unwrap();
+        let expected = Addr::unchecked("poap_contract_address");
+        assert_eq!(address, expected);
+    }
+
+    #[test]
+    fn claim_with_unsupported_desmos_deps_error() {
+        let mut deps = mock_dependencies();
+        do_instantiate(deps.as_mut());
+        let env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+        let msg = ExecuteMsg::Claim {};
+        assert!(execute(deps.as_mut(), env, info, msg).is_err())
+    }
+
+    #[test]
+    fn claim_without_profile_error() {
+        // TODO: build the test for it after improving desmos-binding
+    }
+
+    #[test]
+    fn claim_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&vec![]);
+        do_instantiate(deps.as_mut());
+        do_reply(deps.as_mut());
+        let env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+        let msg = ExecuteMsg::Claim {};
+        assert!(execute(deps.as_mut(), env, info, msg).is_ok())
+    }
+
+    #[test]
+    fn mint_into_with_invalid_msg_error() {
+        let mut deps = mock_dependencies();
+        do_instantiate(deps.as_mut());
+        do_reply(deps.as_mut());
+        let env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+        let msg = ExecuteMsg::MintTo {
+            recipient: "a".into(),
+        };
+        assert!(execute(deps.as_mut(), env, info, msg).is_err())
+    }
+
+    #[test]
+    fn mint_into_properly() {
+        let mut deps = mock_dependencies();
+        do_instantiate(deps.as_mut());
+        do_reply(deps.as_mut());
+        let env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+        let msg = ExecuteMsg::MintTo {
+            recipient: CREATOR.into(),
+        };
+        assert!(execute(deps.as_mut(), env, info, msg).is_ok())
+    }
+
+    #[test]
+    fn update_admin_with_invalid_msg_error() {
+        let mut deps = mock_dependencies();
+        do_instantiate(deps.as_mut());
+        do_reply(deps.as_mut());
+        let env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+        let msg = ExecuteMsg::UpdateAdmin {
+            new_admin: "".into(),
+        };
+        assert!(execute(deps.as_mut(), env, info, msg).is_err())
+    }
+
+    #[test]
+    fn update_admin_with_invalid_address_error() {
+        let mut deps = mock_dependencies();
+        do_instantiate(deps.as_mut());
+        do_reply(deps.as_mut());
+        let env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+        let msg = ExecuteMsg::UpdateAdmin {
+            new_admin: "a".into(),
+        };
+        assert!(execute(deps.as_mut(), env, info, msg).is_err())
+    }
+
+    #[test]
+    fn update_admin_properly() {
+        let mut deps = mock_dependencies();
+        do_instantiate(deps.as_mut());
+        do_reply(deps.as_mut());
+        let env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+        let msg = ExecuteMsg::UpdateAdmin {
+            new_admin: NEW_ADMIN.into(),
+        };
+        assert!(execute(deps.as_mut(), env, info, msg).is_ok());
+
+        let config = CONFIG.load(&deps.storage).unwrap();
+        let expected = Config {
+            admin: Addr::unchecked(NEW_ADMIN),
+            poap_code_id: 1u64,
+        };
+        assert_eq!(config, expected)
+    }
+
+    #[derive(Clone, PartialEq, Message)]
+    struct MsgInstantiateContractResponse {
+        #[prost(string, tag = "1")]
+        pub contract_address: ::prost::alloc::string::String,
+        #[prost(bytes, tag = "2")]
+        pub data: ::prost::alloc::vec::Vec<u8>,
     }
 }

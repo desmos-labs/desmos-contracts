@@ -148,15 +148,14 @@ mod tests {
         let querier = app.wrap();
 
         // check poap manger admin
-        let manager_config_response: QueryConfigResponse = querier
+        let manager_config: QueryConfigResponse = querier
             .query_wasm_smart(&manager_addr, &QueryMsg::Config {})
             .unwrap();
-        let manger_config = manager_config_response.config;
-        assert_eq!(manger_config.admin, ADMIN);
+        assert_eq!(manager_config.admin, ADMIN);
 
         // check poap minter
         let poap_config: POAPQueryConfigResponse = querier
-            .query_wasm_smart(manger_config.poap_address, &POAPQueryMsg::Config {})
+            .query_wasm_smart(manager_config.poap_address, &POAPQueryMsg::Config {})
             .unwrap();
         assert_eq!(manager_addr, poap_config.minter);
     }
@@ -185,13 +184,12 @@ mod tests {
 
         // check the state of poap contract
         let querier = app.wrap();
-        let manager_config_response: QueryConfigResponse = querier
+        let manager_config: QueryConfigResponse = querier
             .query_wasm_smart(&manager_addr, &QueryMsg::Config {})
             .unwrap();
-        let manger_config = manager_config_response.config;
         let minted_amount_response: POAPQueryMintedAmountResponse = querier
             .query_wasm_smart(
-                manger_config.poap_address,
+                manager_config.poap_address,
                 &POAPQueryMsg::MintedAmount {
                     user: RECIPIENT.into(),
                 },

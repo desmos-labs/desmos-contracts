@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub admin: Addr,
     pub poap_code_id: u64,
-    pub poap_address: Addr,
 }
+
+pub const POAP_ADDRESS : Item<Addr> = Item::new("poap_address");
 
 pub const CONFIG: Item<Config> = Item::new("config");
