@@ -119,7 +119,10 @@ pub fn execute(
     }
 }
 
-fn execute_claim(deps: DepsMut<impl CustomQuery>, info: MessageInfo) -> Result<Response, ContractError> {
+fn execute_claim(
+    deps: DepsMut<impl CustomQuery>,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
     let poap_address = POAP_ADDRESS.load(deps.storage)?;
     if !check_eligibility(deps, info.sender.clone())? {
         return Err(ContractError::NoEligibilityError {});
@@ -396,7 +399,6 @@ mod tests {
         let msg = ExecuteMsg::Claim {};
         assert!(execute(deps.as_mut(), env, info, msg).is_err())
     }
-
 
     #[test]
     fn claim_properly() {
