@@ -43,10 +43,10 @@ pub enum ExecuteMsg {
     /// Allows the contract's admin to disable the [`ExecuteMsg::Mint`].
     DisableMint {},
     /// If the mint is enabled, allow the user to mint the poap by themself.
-    /// It's disabled after the event's end.
+    /// It's disabled before the start of the event and after the event's end.
     Mint {},
     /// Allows the contract's admin or the minter to mint a POAP for a specific recipient.
-    /// It's disabled after the event's end.
+    /// It's disabled before the start of the event and after the event's end.
     MintTo { recipient: String },
     /// Message that allows the event's creator to change the time frame of the event
     /// if it's not started or finished.
