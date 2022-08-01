@@ -113,13 +113,13 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     msg.validate()?;
     match msg {
-        ExecuteMsg::Claim {} => claim(deps, info),
-        ExecuteMsg::MintTo { recipient } => mint_to(deps, info, recipient),
-        ExecuteMsg::UpdateAdmin { new_admin } => update_admin(deps, info, new_admin),
+        ExecuteMsg::Claim {} => execute_claim(deps, info),
+        ExecuteMsg::MintTo { recipient } => execute_mint_to(deps, info, recipient),
+        ExecuteMsg::UpdateAdmin { new_admin } => execute_update_admin(deps, info, new_admin),
     }
 }
 
-fn claim(deps: DepsMut<impl CustomQuery>, info: MessageInfo) -> Result<Response, ContractError> {
+fn execute_claim(deps: DepsMut<impl CustomQuery>, info: MessageInfo) -> Result<Response, ContractError> {
     let poap_address = POAP_ADDRESS.load(deps.storage)?;
     if !check_eligibility(deps, info.sender.clone())? {
         return Err(ContractError::NoEligibilityError {});
@@ -141,7 +141,7 @@ fn check_eligibility(deps: DepsMut<impl CustomQuery>, user: Addr) -> Result<bool
     Ok(true)
 }
 
-fn mint_to(
+fn execute_mint_to(
     deps: DepsMut<impl CustomQuery>,
     info: MessageInfo,
     recipient: String,
@@ -158,7 +158,7 @@ fn mint_to(
         )?))
 }
 
-fn update_admin(
+fn execute_update_admin(
     deps: DepsMut<impl CustomQuery>,
     info: MessageInfo,
     user: String,
