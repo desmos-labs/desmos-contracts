@@ -90,7 +90,7 @@ pub fn reply(
 ) -> Result<Response, ContractError> {
     match msg.id {
         INSTANTIATE_POAP_REPLY_ID => resolve_instantiate_poap_reply(deps, msg),
-        _ => Err(ContractError::InvalidReplyID {}),
+        _ => Err(ContractError::InvalidReplyID),
     }
 }
 
@@ -122,7 +122,7 @@ pub fn execute(
 fn claim(deps: DepsMut<impl CustomQuery>, info: MessageInfo) -> Result<Response, ContractError> {
     let poap_address = POAP_ADDRESS.load(deps.storage)?;
     if !check_eligibility(deps, info.sender.clone())? {
-        return Err(ContractError::NoEligibilityError {});
+        return Err(ContractError::NoEligibilityError);
     }
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_CLAIM)
@@ -166,7 +166,7 @@ fn update_admin(
     let new_admin = deps.api.addr_validate(&user)?;
     CONFIG.update(deps.storage, |mut config| -> Result<_, ContractError> {
         if config.admin != info.sender {
-            return Err(ContractError::NotAdmin {});
+            return Err(ContractError::NotAdmin);
         }
         config.admin = new_admin.clone();
         Ok(config)

@@ -18,7 +18,7 @@ pub struct InstantiateMsg {
 impl InstantiateMsg {
     pub fn validate(&self) -> Result<(), ContractError> {
         if self.poap_code_id == Uint64::zero() {
-            return Err(ContractError::invalid_message("code id can not be zero"));
+            return Err(ContractError::InstantiatePOAPError{});
         }
         Ok(())
     }
