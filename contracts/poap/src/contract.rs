@@ -784,7 +784,7 @@ mod tests {
     }
 
     #[test]
-    fn event_info_update_only_if_event_not_started_or_ended() {
+    fn event_info_update_after_event_started_error() {
         let mut deps = mock_dependencies();
         let mut env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
@@ -793,8 +793,7 @@ mod tests {
 
         let msg = ExecuteMsg::UpdateEventInfo {
             start_time: Timestamp::from_seconds(EVENT_START_SECONDS),
-            // Add 300 seconds to prevent end time to be already passed
-            end_time: Timestamp::from_seconds(EVENT_END_SECONDS + 300),
+            end_time: Timestamp::from_seconds(EVENT_END_SECONDS),
         };
 
         // Fake current time to event in progress
@@ -820,6 +819,21 @@ mod tests {
             },
             result.unwrap_err()
         );
+    }
+
+    #[test]
+    fn event_info_update_after_event_terminated_error() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(EVENT_START_SECONDS),
+            // Add 300 seconds to prevent end time to be already passed
+            end_time: Timestamp::from_seconds(EVENT_END_SECONDS + 300),
+        };
 
         // Fake current time to event ended
         env.block.time = Timestamp::from_seconds(EVENT_END_SECONDS + 100);
@@ -844,6 +858,20 @@ mod tests {
             },
             result.unwrap_err()
         );
+    }
+
+    #[test]
+    fn event_info_update_properly() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(EVENT_START_SECONDS),
+            end_time: Timestamp::from_seconds(EVENT_END_SECONDS + 300),
+        };
 
         // Current time is before event started
         env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS - 100);
