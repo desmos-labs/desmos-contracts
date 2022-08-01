@@ -75,7 +75,7 @@ mod tests {
                 Addr::unchecked(ADMIN),
                 &get_valid_init_msg(cw721_code_id, poap_code_id),
                 &[],
-                "Poap manager contract",
+                "poap_manager_contract",
                 None,
             )
             .unwrap();
@@ -98,7 +98,7 @@ mod tests {
             Addr::unchecked(ADMIN),
             &init_msg,
             &[],
-            "Poap manager contract",
+            "poap_manager_contract",
             None,
         );
         assert!(init_result.is_err());
@@ -116,7 +116,7 @@ mod tests {
             Addr::unchecked(ADMIN),
             &init_msg,
             &[],
-            "Poap manager contract",
+            "poap_manager_contract",
             None,
         );
         assert!(init_result.is_err());
@@ -135,7 +135,7 @@ mod tests {
             Addr::unchecked(ADMIN),
             &init_msg,
             &[],
-            "Poap manager contract",
+            "poap_manager_contract",
             None,
         );
         assert!(init_result.is_err());
