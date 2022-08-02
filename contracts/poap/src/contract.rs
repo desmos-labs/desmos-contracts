@@ -1308,7 +1308,7 @@ mod tests {
     }
 
     #[test]
-    fn mint_to_only_for_minter_and_admin() {
+    fn mint_to_from_user_error() {
         let mut deps = mock_dependencies();
         let mut env = mock_env();
 
@@ -1319,7 +1319,7 @@ mod tests {
 
         let response = execute(
             deps.as_mut(),
-            env.clone(),
+            env,
             mock_info(USER, &vec![]),
             ExecuteMsg::MintTo {
                 recipient: USER.to_string(),
@@ -1327,6 +1327,17 @@ mod tests {
         );
         // User should not be authorized to use the mint to action
         assert_eq!(ContractError::Unauthorized {}, response.unwrap_err());
+    }
+
+    #[test]
+    fn mint_to_from_minter_properly() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+
+        do_instantiate(deps.as_mut());
+
+        // Change current time to event start
+        env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS);
 
         // Test that minter can call mint to
         execute(
@@ -1338,8 +1349,19 @@ mod tests {
             },
         )
         .unwrap();
+    }
 
-        // Test that admin can call mint to
+    #[test]
+    fn mint_to_from_admin_properly() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+
+        do_instantiate(deps.as_mut());
+
+        // Change current time to event start
+        env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS);
+
+        // Test that minter can call mint to
         execute(
             deps.as_mut(),
             env.clone(),
