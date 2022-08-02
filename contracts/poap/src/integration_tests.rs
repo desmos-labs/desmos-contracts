@@ -64,7 +64,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate_with_invalid_cw721_code_id() {
+    fn instantiate_with_invalid_cw721_code_id_error() {
         let mut app = mock_app();
         let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
         let mut init_msg = get_valid_init_msg(cw721_code_id);
@@ -83,7 +83,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate_with_failing_cw721_contract() {
+    fn instantiate_with_failing_cw721_contract_error() {
         let mut app = mock_app();
         let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
         let failing_cw721_code_id = app.store_code(cw721_test_utils::failing_cw721());
