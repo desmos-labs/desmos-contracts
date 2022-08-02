@@ -235,7 +235,6 @@ mod tests {
 
     #[test]
     fn instantiate_with_invalid_per_address_limit_error() {
-        // Test start time after end time
         let msg = InstantiateMsg {
             admin: "".to_string(),
             minter: "".to_string(),
