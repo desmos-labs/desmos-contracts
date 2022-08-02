@@ -177,8 +177,7 @@ mod tests {
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
 
     #[test]
-    fn instantiate_with_invalid_time_error() {
-        // Test start time after end time
+    fn instantiate_with_start_time_after_end_time_error() {
         let start = Timestamp::from_seconds(2);
         let end = Timestamp::from_seconds(1);
         let msg = InstantiateMsg {
@@ -204,8 +203,10 @@ mod tests {
             ContractError::StartTimeAfterEndTime { start, end },
             msg.validate().unwrap_err()
         );
+    }
 
-        // Test start time eq end time
+    #[test]
+    fn instantiate_with_start_time_equal_end_time_error() {
         let start = Timestamp::from_seconds(1);
         let end = Timestamp::from_seconds(1);
         let msg = InstantiateMsg {
@@ -235,7 +236,6 @@ mod tests {
 
     #[test]
     fn instantiate_with_invalid_per_address_limit_error() {
-        // Test start time after end time
         let msg = InstantiateMsg {
             admin: "".to_string(),
             minter: "".to_string(),
@@ -263,7 +263,6 @@ mod tests {
 
     #[test]
     fn instantiate_with_invalid_event_uri_error() {
-        // Invalid uri
         let msg = InstantiateMsg {
             admin: "".to_string(),
             minter: "".to_string(),
@@ -287,8 +286,10 @@ mod tests {
             ContractError::InvalidEventUri {},
             msg.validate().unwrap_err()
         );
+    }
 
-        // Non ipfs uri
+    #[test]
+    fn instantiate_with_non_ipfs_event_uri_error() {
         let msg = InstantiateMsg {
             admin: "".to_string(),
             minter: "".to_string(),
@@ -316,7 +317,6 @@ mod tests {
 
     #[test]
     fn instantiate_with_invalid_base_poap_uri_error() {
-        // Invalid uri
         let msg = InstantiateMsg {
             admin: "".to_string(),
             minter: "".to_string(),
@@ -331,7 +331,7 @@ mod tests {
                 start_time: Timestamp::from_seconds(1),
                 end_time: Timestamp::from_seconds(2),
                 per_address_limit: 1,
-                base_poap_uri: "https://domain.com".to_string(),
+                base_poap_uri: "invalid_base_poap_uri".to_string(),
                 event_uri: "ipfs://domain.com".to_string(),
             },
         };
@@ -340,8 +340,10 @@ mod tests {
             ContractError::InvalidPoapUri {},
             msg.validate().unwrap_err()
         );
+    }
 
-        // Non ipfs uri
+    #[test]
+    fn instantiate_with_non_ipfs_base_poap_uri_error() {
         let msg = InstantiateMsg {
             admin: "".to_string(),
             minter: "".to_string(),
@@ -369,7 +371,6 @@ mod tests {
 
     #[test]
     fn update_event_info_start_time_after_end_time_error() {
-        // Start time after end time
         let start = Timestamp::from_seconds(2);
         let end = Timestamp::from_seconds(1);
         let msg = ExecuteMsg::UpdateEventInfo {
@@ -381,8 +382,10 @@ mod tests {
             ContractError::StartTimeAfterEndTime { start, end },
             msg.validate().unwrap_err()
         );
+    }
 
-        // Start time eq end time
+    #[test]
+    fn update_event_info_start_time_equal_end_time_error() {
         let start = Timestamp::from_seconds(1);
         let end = Timestamp::from_seconds(1);
         let msg = ExecuteMsg::UpdateEventInfo {
