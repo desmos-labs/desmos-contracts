@@ -880,15 +880,13 @@ mod tests {
     }
 
     #[test]
-    fn invalid_event_info() {
+    fn event_info_start_time_equal_end_time_error() {
         let mut deps = mock_dependencies();
         let mut env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
 
         do_instantiate(deps.as_mut());
-
         env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
-        let current_time_nanos = env.block.time.nanos();
 
         // Start time eq end time
         let msg = ExecuteMsg::UpdateEventInfo {
@@ -904,8 +902,17 @@ mod tests {
             },
             result.unwrap_err()
         );
+    }
 
-        // Start time is after end time
+    #[test]
+    fn event_info_start_time_after_end_time_error() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+        env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+
         let msg = ExecuteMsg::UpdateEventInfo {
             start_time: Timestamp::from_seconds(EVENT_START_SECONDS + 100),
             end_time: Timestamp::from_seconds(EVENT_START_SECONDS),
@@ -919,63 +926,99 @@ mod tests {
             },
             result.unwrap_err()
         );
+    }
 
-        // Start time before current time
+    #[test]
+    fn event_info_start_time_before_current_time_error() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+        env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+
         let msg = ExecuteMsg::UpdateEventInfo {
-            start_time: Timestamp::from_nanos(current_time_nanos - 100),
+            start_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS - 1),
             end_time: Timestamp::from_seconds(EVENT_END_SECONDS),
         };
 
         let result = execute(deps.as_mut(), env.clone(), info.clone(), msg);
         assert_eq!(
             ContractError::StartTimeBeforeCurrentTime {
-                start_time: Timestamp::from_nanos(current_time_nanos - 100),
-                current_time: Timestamp::from_nanos(current_time_nanos),
+                start_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS - 1),
+                current_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS),
             },
             result.unwrap_err()
         );
+    }
 
-        // Edge case start time eq current time
+    #[test]
+    fn event_info_start_time_equal_current_time_error() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+        env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+
         let msg = ExecuteMsg::UpdateEventInfo {
-            start_time: Timestamp::from_nanos(current_time_nanos),
+            start_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS),
             end_time: Timestamp::from_seconds(EVENT_END_SECONDS),
         };
 
         let result = execute(deps.as_mut(), env.clone(), info.clone(), msg);
         assert_eq!(
             ContractError::StartTimeBeforeCurrentTime {
-                start_time: Timestamp::from_nanos(current_time_nanos),
-                current_time: Timestamp::from_nanos(current_time_nanos),
+                start_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS),
+                current_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS),
             },
             result.unwrap_err()
         );
+    }
 
-        // End time before current time
+    #[test]
+    fn event_info_end_time_before_current_time_error() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+        env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+
         let msg = ExecuteMsg::UpdateEventInfo {
-            start_time: Timestamp::from_nanos(current_time_nanos),
-            end_time: Timestamp::from_nanos(current_time_nanos - 100),
+            start_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS + 2),
+            end_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS - 1),
         };
 
         let result = execute(deps.as_mut(), env.clone(), info.clone(), msg);
         assert_eq!(
             ContractError::StartTimeAfterEndTime {
-                start: Timestamp::from_nanos(current_time_nanos),
-                end: Timestamp::from_nanos(current_time_nanos - 100),
+                start: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS + 2),
+                end: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS - 1),
             },
             result.unwrap_err()
         );
+    }
 
-        // Edge case end time eq current time
+    #[test]
+    fn event_info_end_time_equal_current_time_error() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+        env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+
         let msg = ExecuteMsg::UpdateEventInfo {
-            start_time: Timestamp::from_nanos(current_time_nanos + 100),
-            end_time: Timestamp::from_nanos(current_time_nanos),
+            start_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS + 2),
+            end_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS),
         };
 
-        let result = execute(deps.as_mut(), env, info, msg);
+        let result = execute(deps.as_mut(), env.clone(), info.clone(), msg);
         assert_eq!(
             ContractError::StartTimeAfterEndTime {
-                start: Timestamp::from_nanos(current_time_nanos + 100),
-                end: Timestamp::from_nanos(current_time_nanos),
+                start: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS + 2),
+                end: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS),
             },
             result.unwrap_err()
         );
