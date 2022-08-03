@@ -13,7 +13,7 @@ pub enum ContractError {
     #[error("Invalid POAP code ID")]
     InvalidPOAPCodeID {},
 
-    #[error("Instantiate POAP error")]
+    #[error("Instantiate POAP contract error")]
     InstantiatePOAPError {},
 
     #[error("Caller is not admin")]
