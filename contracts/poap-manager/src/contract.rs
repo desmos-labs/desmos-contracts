@@ -420,7 +420,7 @@ mod tests {
     }
 
     #[test]
-    fn mint_into_with_invalid_recipient_error() {
+    fn mint_to_with_invalid_recipient_error() {
         let mut deps = mock_dependencies();
         do_instantiate(deps.as_mut());
         do_reply(deps.as_mut());
