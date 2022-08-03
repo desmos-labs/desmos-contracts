@@ -9,6 +9,6 @@ pub struct Config {
     pub poap_code_id: u64,
 }
 
-pub const POAP_ADDRESS: Item<Addr> = Item::new("poap_address");
+pub const POAP_CONTRACT_ADDRESS: Item<Addr> = Item::new("poap_contract_address");
 
 pub const CONFIG: Item<Config> = Item::new("config");

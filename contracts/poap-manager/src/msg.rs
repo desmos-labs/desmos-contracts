@@ -35,11 +35,6 @@ pub enum ExecuteMsg {
     UpdateAdmin { new_admin: String },
 }
 
-impl ExecuteMsg {
-    pub fn validate(&self) -> Result<(), ContractError> {
-        Ok(())
-    }
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub enum QueryMsg {
@@ -54,7 +49,7 @@ pub struct QueryConfigResponse {
     /// Id of the POAP contract that this contract has initialized.
     pub poap_code_id: u64,
     /// Address of the POAP contract
-    pub poap_address: Addr,
+    pub poap_contract_address: Addr,
 }
 
 #[cfg(test)]
@@ -115,28 +110,6 @@ mod tests {
                     event_uri: "ipfs://event-uri".to_string(),
                 },
             },
-        };
-        assert!(msg.validate().is_ok());
-    }
-
-    #[test]
-    fn proper_claim_msg_no_error() {
-        let msg = ExecuteMsg::Claim {};
-        assert!(msg.validate().is_ok());
-    }
-
-    #[test]
-    fn proper_mint_into_msg_no_error() {
-        let msg = ExecuteMsg::MintTo {
-            recipient: "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc".into(),
-        };
-        assert!(msg.validate().is_ok());
-    }
-
-    #[test]
-    fn update_admin_msg_into_msg_no_error() {
-        let msg = ExecuteMsg::UpdateAdmin {
-            new_admin: "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc".into(),
         };
         assert!(msg.validate().is_ok());
     }

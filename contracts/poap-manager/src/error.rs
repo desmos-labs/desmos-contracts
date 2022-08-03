@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{StdError, Addr};
 use cw_utils::ParseReplyError;
 use thiserror::Error;
 
@@ -16,8 +16,8 @@ pub enum ContractError {
     #[error("Instantiate POAP contract error")]
     InstantiatePOAPError {},
 
-    #[error("Caller is not admin")]
-    NotAdmin {},
+    #[error("Caller is not admin: {caller}")]
+    NotAdmin { caller: Addr },
 
     #[error("{0}")]
     ParseReplyError(#[from] ParseReplyError),

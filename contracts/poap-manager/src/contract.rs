@@ -12,7 +12,7 @@ use poap::msg::ExecuteMsg as POAPExecuteMsg;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg};
-use crate::state::{Config, CONFIG, POAP_ADDRESS};
+use crate::state::{Config, CONFIG, POAP_CONTRACT_ADDRESS};
 
 use std::ops::Deref;
 
@@ -46,9 +46,12 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     msg.validate()?;
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-
     let admin = deps.api.addr_validate(&msg.admin)?;
-    instantiate_config(deps, admin.clone(), msg.poap_code_id.u64())?;
+    let config = Config {
+        admin: admin.clone(),
+        poap_code_id:  msg.poap_code_id.u64(),
+    };
+    CONFIG.save(deps.storage, &config)?;
 
     // assign the minter of poap contract to the manager's contract address
     let mut poap_instantiate_msg = msg.poap_instantiate_msg;
@@ -69,19 +72,6 @@ pub fn instantiate(
         )))
 }
 
-fn instantiate_config(
-    deps: DepsMut<impl CustomQuery>,
-    admin: Addr,
-    poap_code_id: u64,
-) -> Result<(), ContractError> {
-    let config = Config {
-        admin,
-        poap_code_id: poap_code_id,
-    };
-    CONFIG.save(deps.storage, &config)?;
-    Ok(())
-}
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(
     deps: DepsMut<impl CustomQuery>,
@@ -100,7 +90,7 @@ fn resolve_instantiate_poap_reply(
 ) -> Result<Response, ContractError> {
     let res = parse_reply_instantiate_data(msg)?;
     let address = deps.api.addr_validate(&res.contract_address)?;
-    POAP_ADDRESS.save(deps.storage, &address)?;
+    POAP_CONTRACT_ADDRESS.save(deps.storage, &address)?;
     Ok(Response::new().add_attribute(ATTRIBUTE_ACTION, ACTION_INSTANTIATE_POAP_REPLY))
 }
 
@@ -111,7 +101,6 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    msg.validate()?;
     match msg {
         ExecuteMsg::Claim {} => execute_claim(deps, info),
         ExecuteMsg::MintTo { recipient } => execute_mint_to(deps, info, recipient),
@@ -123,7 +112,7 @@ fn execute_claim(
     deps: DepsMut<impl CustomQuery>,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
-    let poap_address = POAP_ADDRESS.load(deps.storage)?;
+    let poap_contract_address = POAP_CONTRACT_ADDRESS.load(deps.storage)?;
     if !check_eligibility(deps, info.sender.clone())? {
         return Err(ContractError::NoEligibilityError {});
     }
@@ -131,7 +120,7 @@ fn execute_claim(
         .add_attribute(ATTRIBUTE_ACTION, ACTION_CLAIM)
         .add_attribute(ATTRIBUTE_SENDER, &info.sender)
         .add_message(wasm_execute(
-            poap_address,
+            poap_contract_address,
             &POAPExecuteMsg::MintTo {
                 recipient: info.sender.into(),
             },
@@ -149,13 +138,13 @@ fn execute_mint_to(
     info: MessageInfo,
     recipient: String,
 ) -> Result<Response, ContractError> {
-    let poap_address = POAP_ADDRESS.load(deps.storage)?;
+    let poap_contract_address = POAP_CONTRACT_ADDRESS.load(deps.storage)?;
     deps.api.addr_validate(&recipient)?;
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_MINT_TO)
         .add_attribute(ATTRIBUTE_SENDER, &info.sender)
         .add_message(wasm_execute(
-            poap_address,
+            poap_contract_address,
             &POAPExecuteMsg::MintTo { recipient },
             info.funds,
         )?))
@@ -169,7 +158,7 @@ fn execute_update_admin(
     let new_admin = deps.api.addr_validate(&user)?;
     CONFIG.update(deps.storage, |mut config| -> Result<_, ContractError> {
         if config.admin != info.sender {
-            return Err(ContractError::NotAdmin {});
+            return Err(ContractError::NotAdmin { caller: info.sender.clone() });
         }
         config.admin = new_admin.clone();
         Ok(config)
@@ -192,7 +181,7 @@ fn query_config(deps: Deps<impl CustomQuery>) -> StdResult<QueryConfigResponse> 
     Ok(QueryConfigResponse {
         admin: config.admin,
         poap_code_id: config.poap_code_id,
-        poap_address: POAP_ADDRESS.load(deps.storage)?,
+        poap_contract_address: POAP_CONTRACT_ADDRESS.load(deps.storage)?,
     })
 }
 
@@ -393,7 +382,7 @@ mod tests {
         let env = mock_env();
         let result = reply(deps.as_mut(), env, get_valid_instantiate_reply());
         assert!(result.is_ok());
-        let address = POAP_ADDRESS.load(&deps.storage).unwrap();
+        let address = POAP_CONTRACT_ADDRESS.load(&deps.storage).unwrap();
         let expected = Addr::unchecked("poap_contract_address");
         assert_eq!(address, expected);
     }
@@ -454,6 +443,19 @@ mod tests {
         let info = mock_info(CREATOR, &vec![]);
         let msg = ExecuteMsg::UpdateAdmin {
             new_admin: "".into(),
+        };
+        assert!(execute(deps.as_mut(), env, info, msg).is_err())
+    }
+
+    #[test]
+    fn update_admin_without_permission_error() {
+        let mut deps = mock_dependencies();
+        do_instantiate(deps.as_mut());
+        do_reply(deps.as_mut());
+        let env = mock_env();
+        let info = mock_info(NEW_ADMIN, &vec![]);
+        let msg = ExecuteMsg::UpdateAdmin {
+            new_admin: NEW_ADMIN.into(),
         };
         assert!(execute(deps.as_mut(), env, info, msg).is_err())
     }
