@@ -194,7 +194,7 @@ mod tests {
     use cosmwasm_std::{StdError, SubMsgResponse, SubMsgResult, Timestamp};
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
     use cw_utils::ParseReplyError;
-    use desmos_bindings::mocks::mock_dependencies_with_custom_querier;
+    use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
     use poap::msg::{EventInfo, InstantiateMsg as POAPInstantiateMsg};
     use prost::Message;
 
