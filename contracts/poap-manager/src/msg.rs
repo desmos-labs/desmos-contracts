@@ -53,7 +53,7 @@ pub struct QueryConfigResponse {
     pub admin: Addr,
     /// Id of the POAP contract that this contract has initialized.
     pub poap_code_id: u64,
-    /// Address of the POAP contract that this contract
+    /// Address of the POAP contract
     pub poap_address: Addr,
 }
 
