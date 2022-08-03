@@ -154,7 +154,10 @@ mod tests {
 
         // check if poap minter is manager contract
         let poap_config: POAPQueryConfigResponse = querier
-            .query_wasm_smart(manager_config.poap_contract_address, &POAPQueryMsg::Config {})
+            .query_wasm_smart(
+                manager_config.poap_contract_address,
+                &POAPQueryMsg::Config {},
+            )
             .unwrap();
         assert_eq!(manager_addr, poap_config.minter);
     }

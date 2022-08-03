@@ -49,7 +49,7 @@ pub fn instantiate(
     let admin = deps.api.addr_validate(&msg.admin)?;
     let config = Config {
         admin: admin.clone(),
-        poap_code_id:  msg.poap_code_id.u64(),
+        poap_code_id: msg.poap_code_id.u64(),
     };
     CONFIG.save(deps.storage, &config)?;
 
@@ -158,7 +158,9 @@ fn execute_update_admin(
     let new_admin = deps.api.addr_validate(&user)?;
     CONFIG.update(deps.storage, |mut config| -> Result<_, ContractError> {
         if config.admin != info.sender {
-            return Err(ContractError::NotAdmin { caller: info.sender.clone() });
+            return Err(ContractError::NotAdmin {
+                caller: info.sender.clone(),
+            });
         }
         config.admin = new_admin.clone();
         Ok(config)

@@ -35,7 +35,6 @@ pub enum ExecuteMsg {
     UpdateAdmin { new_admin: String },
 }
 
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub enum QueryMsg {
     /// Return a ConfigResponse containing the configuration info of the Manager contract
