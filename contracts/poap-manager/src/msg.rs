@@ -9,7 +9,7 @@ use poap::msg::InstantiateMsg as POAPInstantiateMsg;
 pub struct InstantiateMsg {
     /// Address of who will have the right to administer the contract.
     pub admin: String,
-    /// Id of the POAP contract to initialize together with this contract.
+    /// Id of the POAP contract to be initialized along with this contract.
     pub poap_code_id: Uint64,
     /// Initialization message of the POAP contract.
     pub poap_instantiate_msg: POAPInstantiateMsg,
