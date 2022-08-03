@@ -11,7 +11,7 @@ pub struct InstantiateMsg {
     pub admin: String,
     /// Id of the POAP contract to initialize together with this contract.
     pub poap_code_id: Uint64,
-    /// Initialization message that will be sent to the POAP contract.
+    /// Initialization message of the POAP contract.
     pub poap_instantiate_msg: POAPInstantiateMsg,
 }
 
