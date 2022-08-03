@@ -27,6 +27,27 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "description": "Returns the amount of poaps minted from `user` as [`QueryMintedAmountResponse`].",
+      "type": "object",
+      "required": [
+        "minted_amount"
+      ],
+      "properties": {
+        "minted_amount": {
+          "type": "object",
+          "required": [
+            "user"
+          ],
+          "properties": {
+            "user": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     }
   ]
 }
