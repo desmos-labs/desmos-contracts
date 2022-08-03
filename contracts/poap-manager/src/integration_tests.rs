@@ -66,7 +66,7 @@ mod tests {
         }
     }
 
-    fn proper_instantiate() -> (App, Addr) {
+    fn proper_instantiate() -> (App, Addr, (u64, u64, u64)) {
         let mut app = mock_app();
         let (cw721_code_id, poap_code_id, poap_manager_code_id) = store_contracts(&mut app);
         let poap_manager_contract_addr = app
@@ -83,7 +83,7 @@ mod tests {
             // update the time to start time of event
             block.time = Timestamp::from_seconds(10);
         });
-        (app, poap_manager_contract_addr)
+        (app, poap_manager_contract_addr, (cw721_code_id, poap_code_id, poap_manager_code_id))
     }
 
     #[test]
@@ -143,7 +143,7 @@ mod tests {
 
     #[test]
     fn instantiate_propery() {
-        let (app, manager_addr) = proper_instantiate();
+        let (app, manager_addr, (_, paop_code_id, _)) = proper_instantiate();
         let querier = app.wrap();
 
         // check manager config set properly
@@ -151,7 +151,8 @@ mod tests {
             .query_wasm_smart(&manager_addr, &QueryMsg::Config {})
             .unwrap();
         assert_eq!(manager_config.admin, ADMIN);
-
+        assert_eq!(manager_config.poap_code_id, paop_code_id);
+        
         // check if poap minter is manager contract
         let poap_config: POAPQueryConfigResponse = querier
             .query_wasm_smart(
@@ -174,8 +175,8 @@ mod tests {
 
     #[test]
     fn mint_poap_to_recipient_properly() {
-        let (mut app, manager_addr) = proper_instantiate();
-        let result = app.execute(
+        let (mut app, manager_addr, _) = proper_instantiate();
+        app.execute(
             Addr::unchecked(ADMIN),
             wasm_execute(
                 &manager_addr,
@@ -186,8 +187,7 @@ mod tests {
             )
             .unwrap()
             .into(),
-        );
-        assert!(result.is_ok());
+        ).unwrap();
 
         // check the state of poap contract
         let querier = app.wrap();

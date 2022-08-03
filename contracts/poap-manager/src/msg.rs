@@ -18,7 +18,7 @@ pub struct InstantiateMsg {
 impl InstantiateMsg {
     pub fn validate(&self) -> Result<(), ContractError> {
         if self.poap_code_id == Uint64::zero() {
-            return Err(ContractError::InstantiatePOAPError {});
+            return Err(ContractError::InvalidPOAPCodeID {});
         }
         Ok(())
     }
@@ -83,7 +83,10 @@ mod tests {
             },
         };
         let result = msg.validate();
-        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err(),
+            ContractError::InvalidPOAPCodeID{},
+        )
     }
 
     #[test]
@@ -110,6 +113,6 @@ mod tests {
                 },
             },
         };
-        assert!(msg.validate().is_ok());
+        msg.validate().unwrap();
     }
 }

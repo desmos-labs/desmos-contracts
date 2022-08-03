@@ -191,7 +191,8 @@ fn query_config(deps: Deps<impl CustomQuery>) -> StdResult<QueryConfigResponse> 
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{SubMsgResponse, SubMsgResult, Timestamp};
+    use cosmwasm_std::{StdError, SubMsgResponse, SubMsgResult, Timestamp};
+    use cw_utils::ParseReplyError;
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
     use desmos_bindings::mocks::mock_dependencies_with_custom_querier;
     use poap::msg::{EventInfo, InstantiateMsg as POAPInstantiateMsg};
@@ -257,7 +258,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let valid_msg = get_valid_instantiate();
-        assert!(instantiate(deps, env, info, valid_msg).is_ok());
+        instantiate(deps, env, info, valid_msg).unwrap();
     }
 
     #[test]
@@ -267,7 +268,7 @@ mod tests {
         let info = mock_info(CREATOR, &vec![]);
         let invalid_msg = InstantiateMsg {
             admin: "".into(),
-            poap_code_id: 1u64.into(),
+            poap_code_id: 0u64.into(),
             poap_instantiate_msg: POAPInstantiateMsg {
                 admin: CREATOR.into(),
                 minter: CREATOR.into(),
@@ -287,7 +288,10 @@ mod tests {
                 },
             },
         };
-        assert!(instantiate(deps.as_mut(), env, info, invalid_msg).is_err())
+        assert_eq!(
+            instantiate(deps.as_mut(), env, info, invalid_msg).unwrap_err(),
+            ContractError::InvalidPOAPCodeID{},
+        )
     }
 
     #[test]
@@ -317,7 +321,12 @@ mod tests {
                 },
             },
         };
-        assert!(instantiate(deps.as_mut(), env, info, invalid_msg).is_err())
+        assert_eq!(
+            instantiate(deps.as_mut(), env, info, invalid_msg).unwrap_err(),
+            ContractError::Std(StdError::generic_err(
+                "Invalid input: human address too short"
+            ))
+        )
     }
 
     #[test]
@@ -349,7 +358,10 @@ mod tests {
                 }),
             },
         );
-        assert!(result.is_err())
+        assert_eq!(
+            result.unwrap_err(),
+            ContractError::InvalidReplyID{},
+        )
     }
 
     #[test]
@@ -368,7 +380,10 @@ mod tests {
                 }),
             },
         );
-        assert!(result.is_err())
+        assert_eq!(
+            result.unwrap_err(),
+            ContractError::ParseReplyError(ParseReplyError::ParseFailure("Missing reply data".into()))
+        )
     }
 
     #[test]
@@ -390,47 +405,64 @@ mod tests {
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let msg = ExecuteMsg::Claim {};
-        assert!(execute(deps.as_mut(), env, info, msg).is_err())
+        assert_eq!(
+            execute(deps.as_mut(), env, info, msg).unwrap_err(),
+            ContractError::Std(StdError::not_found(
+                "cosmwasm_std::addresses::Addr"
+            ))
+        )
     }
 
     #[test]
     fn claim_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&vec![]);
         do_instantiate(deps.as_mut());
-        POAP_CONTRACT_ADDRESS.save(deps.as_mut().storage, &Addr::unchecked("")).unwrap();
+        POAP_CONTRACT_ADDRESS
+            .save(deps.as_mut().storage, &Addr::unchecked(""))
+            .unwrap();
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let msg = ExecuteMsg::Claim {};
-        assert!(execute(deps.as_mut(), env, info, msg).is_ok())
+        execute(deps.as_mut(), env, info, msg).unwrap();
     }
 
     #[test]
     fn mint_to_with_invalid_recipient_error() {
         let mut deps = mock_dependencies();
         do_instantiate(deps.as_mut());
+        POAP_CONTRACT_ADDRESS
+            .save(deps.as_mut().storage, &Addr::unchecked(""))
+            .unwrap();
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let msg = ExecuteMsg::MintTo {
             recipient: "a".into(),
         };
-        assert!(execute(deps.as_mut(), env, info, msg).is_err())
+        assert_eq!(
+            execute(deps.as_mut(), env, info, msg).unwrap_err(),
+            ContractError::Std(StdError::generic_err(
+                "Invalid input: human address too short"
+            ))
+        )
     }
 
     #[test]
     fn mint_to_properly() {
         let mut deps = mock_dependencies();
         do_instantiate(deps.as_mut());
-        POAP_CONTRACT_ADDRESS.save(deps.as_mut().storage, &Addr::unchecked("")).unwrap();
+        POAP_CONTRACT_ADDRESS
+            .save(deps.as_mut().storage, &Addr::unchecked(""))
+            .unwrap();
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let msg = ExecuteMsg::MintTo {
             recipient: CREATOR.into(),
         };
-        assert!(execute(deps.as_mut(), env, info, msg).is_ok())
+        execute(deps.as_mut(), env, info, msg).unwrap();
     }
 
     #[test]
-    fn update_admin_with_invalid_msg_error() {
+    fn update_admin_with_invalid_new_admin_error() {
         let mut deps = mock_dependencies();
         do_instantiate(deps.as_mut());
         let env = mock_env();
@@ -438,7 +470,12 @@ mod tests {
         let msg = ExecuteMsg::UpdateAdmin {
             new_admin: "".into(),
         };
-        assert!(execute(deps.as_mut(), env, info, msg).is_err())
+        assert_eq!(
+            execute(deps.as_mut(), env, info, msg).unwrap_err(),
+            ContractError::Std(StdError::generic_err(
+                "Invalid input: human address too short"
+            ))
+        )
     }
 
     #[test]
@@ -450,7 +487,12 @@ mod tests {
         let msg = ExecuteMsg::UpdateAdmin {
             new_admin: NEW_ADMIN.into(),
         };
-        assert!(execute(deps.as_mut(), env, info, msg).is_err())
+        assert_eq!(
+            execute(deps.as_mut(), env, info, msg).unwrap_err(),
+            ContractError::NotAdmin {
+                caller: Addr::unchecked(NEW_ADMIN)
+            }
+        )
     }
 
     #[test]
@@ -462,7 +504,12 @@ mod tests {
         let msg = ExecuteMsg::UpdateAdmin {
             new_admin: "a".into(),
         };
-        assert!(execute(deps.as_mut(), env, info, msg).is_err())
+        assert_eq!(
+            execute(deps.as_mut(), env, info, msg).unwrap_err(),
+            ContractError::Std(StdError::generic_err(
+                "Invalid input: human address too short"
+            ))
+        )
     }
 
     #[test]
