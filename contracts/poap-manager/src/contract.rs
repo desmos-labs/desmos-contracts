@@ -50,7 +50,7 @@ pub fn instantiate(
     let admin = deps.api.addr_validate(&msg.admin)?;
     instantiate_config(deps, admin.clone(), msg.poap_code_id.u64())?;
 
-    // assign the admin and minter of poap to the contract address
+    // assign the minter of poap contract to the manager's contract address
     let mut poap_instantiate_msg = msg.poap_instantiate_msg;
     poap_instantiate_msg.minter = env.contract.address.into();
 
