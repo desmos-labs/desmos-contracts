@@ -260,12 +260,6 @@ mod tests {
         assert!(instantiate(deps, env, info, valid_msg).is_ok());
     }
 
-    fn do_reply(deps: DepsMut<impl CustomQuery>) {
-        let env = mock_env();
-        let valid_reply = get_valid_instantiate_reply();
-        assert!(reply(deps, env, valid_reply).is_ok())
-    }
-
     #[test]
     fn instatiate_with_invalid_msg_error() {
         let mut deps = mock_dependencies();
@@ -403,7 +397,7 @@ mod tests {
     fn claim_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&vec![]);
         do_instantiate(deps.as_mut());
-        do_reply(deps.as_mut());
+        POAP_CONTRACT_ADDRESS.save(deps.as_mut().storage, &Addr::unchecked("")).unwrap();
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let msg = ExecuteMsg::Claim {};
@@ -414,7 +408,6 @@ mod tests {
     fn mint_to_with_invalid_recipient_error() {
         let mut deps = mock_dependencies();
         do_instantiate(deps.as_mut());
-        do_reply(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let msg = ExecuteMsg::MintTo {
@@ -427,7 +420,7 @@ mod tests {
     fn mint_to_properly() {
         let mut deps = mock_dependencies();
         do_instantiate(deps.as_mut());
-        do_reply(deps.as_mut());
+        POAP_CONTRACT_ADDRESS.save(deps.as_mut().storage, &Addr::unchecked("")).unwrap();
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let msg = ExecuteMsg::MintTo {
@@ -440,7 +433,6 @@ mod tests {
     fn update_admin_with_invalid_msg_error() {
         let mut deps = mock_dependencies();
         do_instantiate(deps.as_mut());
-        do_reply(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let msg = ExecuteMsg::UpdateAdmin {
@@ -453,7 +445,6 @@ mod tests {
     fn update_admin_without_permission_error() {
         let mut deps = mock_dependencies();
         do_instantiate(deps.as_mut());
-        do_reply(deps.as_mut());
         let env = mock_env();
         let info = mock_info(NEW_ADMIN, &vec![]);
         let msg = ExecuteMsg::UpdateAdmin {
@@ -466,7 +457,6 @@ mod tests {
     fn update_admin_with_invalid_address_error() {
         let mut deps = mock_dependencies();
         do_instantiate(deps.as_mut());
-        do_reply(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let msg = ExecuteMsg::UpdateAdmin {
@@ -479,7 +469,6 @@ mod tests {
     fn update_admin_properly() {
         let mut deps = mock_dependencies();
         do_instantiate(deps.as_mut());
-        do_reply(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let msg = ExecuteMsg::UpdateAdmin {
