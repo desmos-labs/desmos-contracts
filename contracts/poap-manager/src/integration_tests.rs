@@ -83,7 +83,11 @@ mod tests {
             // update the time to start time of event
             block.time = Timestamp::from_seconds(10);
         });
-        (app, poap_manager_contract_addr, (cw721_code_id, poap_code_id, poap_manager_code_id))
+        (
+            app,
+            poap_manager_contract_addr,
+            (cw721_code_id, poap_code_id, poap_manager_code_id),
+        )
     }
 
     #[test]
@@ -152,7 +156,7 @@ mod tests {
             .unwrap();
         assert_eq!(manager_config.admin, ADMIN);
         assert_eq!(manager_config.poap_code_id, paop_code_id);
-        
+
         // check if poap minter is manager contract
         let poap_config: POAPQueryConfigResponse = querier
             .query_wasm_smart(
@@ -187,7 +191,8 @@ mod tests {
             )
             .unwrap()
             .into(),
-        ).unwrap();
+        )
+        .unwrap();
 
         // check the state of poap contract
         let querier = app.wrap();

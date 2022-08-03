@@ -192,8 +192,8 @@ mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{StdError, SubMsgResponse, SubMsgResult, Timestamp};
-    use cw_utils::ParseReplyError;
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
+    use cw_utils::ParseReplyError;
     use desmos_bindings::mocks::mock_dependencies_with_custom_querier;
     use poap::msg::{EventInfo, InstantiateMsg as POAPInstantiateMsg};
     use prost::Message;
@@ -290,7 +290,7 @@ mod tests {
         };
         assert_eq!(
             instantiate(deps.as_mut(), env, info, invalid_msg).unwrap_err(),
-            ContractError::InvalidPOAPCodeID{},
+            ContractError::InvalidPOAPCodeID {},
         )
     }
 
@@ -358,10 +358,7 @@ mod tests {
                 }),
             },
         );
-        assert_eq!(
-            result.unwrap_err(),
-            ContractError::InvalidReplyID{},
-        )
+        assert_eq!(result.unwrap_err(), ContractError::InvalidReplyID {},)
     }
 
     #[test]
@@ -382,7 +379,9 @@ mod tests {
         );
         assert_eq!(
             result.unwrap_err(),
-            ContractError::ParseReplyError(ParseReplyError::ParseFailure("Missing reply data".into()))
+            ContractError::ParseReplyError(ParseReplyError::ParseFailure(
+                "Missing reply data".into()
+            ))
         )
     }
 
@@ -407,9 +406,7 @@ mod tests {
         let msg = ExecuteMsg::Claim {};
         assert_eq!(
             execute(deps.as_mut(), env, info, msg).unwrap_err(),
-            ContractError::Std(StdError::not_found(
-                "cosmwasm_std::addresses::Addr"
-            ))
+            ContractError::Std(StdError::not_found("cosmwasm_std::addresses::Addr"))
         )
     }
 

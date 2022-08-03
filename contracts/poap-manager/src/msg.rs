@@ -83,10 +83,7 @@ mod tests {
             },
         };
         let result = msg.validate();
-        assert_eq!(
-            result.unwrap_err(),
-            ContractError::InvalidPOAPCodeID{},
-        )
+        assert_eq!(result.unwrap_err(), ContractError::InvalidPOAPCodeID {},)
     }
 
     #[test]
