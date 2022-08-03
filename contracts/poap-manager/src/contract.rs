@@ -433,7 +433,7 @@ mod tests {
     }
 
     #[test]
-    fn mint_into_properly() {
+    fn mint_to_properly() {
         let mut deps = mock_dependencies();
         do_instantiate(deps.as_mut());
         do_reply(deps.as_mut());
