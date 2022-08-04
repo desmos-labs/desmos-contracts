@@ -10,7 +10,7 @@ use crate::state::{
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, wasm_execute, wasm_instantiate, Addr, Binary, Deps, DepsMut, Env, MessageInfo,
-    Reply, Response, StdResult, SubMsg, Timestamp, Empty,
+    Reply, Response, StdResult, SubMsg, Timestamp,
 };
 use cw2::set_contract_version;
 use cw721_base::{
@@ -423,13 +423,10 @@ pub fn reply(deps: DepsMut<DesmosQuery>, _env: Env, msg: Reply) -> Result<Respon
 
 #[cfg(test)]
 mod tests {
-    use crate::contract::{execute, instantiate};
-    use crate::msg::ExecuteMsg;
-    use crate::state::{CONFIG, CW721_ADDRESS, EVENT_INFO};
+    use super::*;
     use crate::test_utils::{
         get_valid_init_msg, EVENT_END_SECONDS, EVENT_START_SECONDS, INITIAL_BLOCK_TIME_SECONDS,
     };
-    use crate::ContractError;
     use crate::ContractError::Unauthorized;
     use cosmwasm_std::testing::{mock_env, mock_info};
     use cosmwasm_std::{DepsMut, Timestamp};
@@ -647,7 +644,7 @@ mod tests {
 
     #[test]
     fn instantiate_with_non_ipfs_poap_uri_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
         let mut init_msg = get_valid_init_msg(1);
@@ -828,7 +825,7 @@ mod tests {
 
     #[test]
     fn event_info_update_after_event_terminated_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
 
@@ -867,7 +864,7 @@ mod tests {
 
     #[test]
     fn event_info_update_properly() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
 
@@ -911,7 +908,7 @@ mod tests {
 
     #[test]
     fn event_info_start_time_after_end_time_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
 
@@ -935,7 +932,7 @@ mod tests {
 
     #[test]
     fn event_info_start_time_before_current_time_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
 
@@ -959,7 +956,7 @@ mod tests {
 
     #[test]
     fn event_info_start_time_equal_current_time_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
 
@@ -983,7 +980,7 @@ mod tests {
 
     #[test]
     fn event_info_end_time_before_current_time_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
 
@@ -1007,7 +1004,7 @@ mod tests {
 
     #[test]
     fn event_info_end_time_equal_current_time_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
 
@@ -1168,7 +1165,7 @@ mod tests {
 
     #[test]
     fn mint_limit() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
 
@@ -1231,7 +1228,7 @@ mod tests {
 
     #[test]
     fn mint_to_limit() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
 
@@ -1298,7 +1295,7 @@ mod tests {
 
     #[test]
     fn mint_to_from_user_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
 
         do_instantiate(deps.as_mut());
@@ -1320,7 +1317,7 @@ mod tests {
 
     #[test]
     fn mint_to_from_minter_properly() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
 
         do_instantiate(deps.as_mut());
@@ -1342,7 +1339,7 @@ mod tests {
 
     #[test]
     fn mint_to_from_admin_properly() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
 
         do_instantiate(deps.as_mut());

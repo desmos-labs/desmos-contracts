@@ -44,3 +44,5 @@ url = "2.2.2"
 [dev-dependencies]
 cosmwasm-schema = "1.0.0"
 cw-multi-test = { version = "0.13.4" }
+cw721 = { git = "https://github.com/desmos-labs/cw-nfts", branch = "paul/update-custom-msg-query" }
+

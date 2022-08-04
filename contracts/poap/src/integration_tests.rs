@@ -9,8 +9,10 @@ mod tests {
         get_valid_init_msg, ADMIN, CREATOR, EVENT_END_SECONDS, EVENT_START_SECONDS, EVENT_URI,
         INITIAL_BLOCK_TIME_SECONDS, MINTER, USER,
     };
-    use cosmwasm_std::{Addr, Timestamp, Uint64};
+    use cosmwasm_std::{Addr, Timestamp, Uint64, Empty};
     use cw721_base::{MinterResponse, QueryMsg as Cw721QueryMsg};
+    use cw721::TokensResponse;
+
     use cw_multi_test::{Contract, ContractWrapper, Executor};
     use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery, mocks::mock_apps::{mock_desmos_app, DesmosApp}};
 
@@ -40,6 +42,9 @@ mod tests {
 
     fn proper_instantiate() -> (DesmosApp, Addr) {
         let mut app = mock_app();
+        app.update_block(|block_info| {
+            block_info.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS)
+        });
         let (cw721_code_id, poap_code_id) = store_contracts(&mut app);
         let msg = get_valid_init_msg(cw721_code_id);
 
@@ -185,7 +190,7 @@ mod tests {
         let response: TokensResponse = querier
             .query_wasm_smart(
                 config.cw721_contract.as_str(),
-                &Cw721QueryMsg::Tokens {
+                &Cw721QueryMsg::<Empty>::Tokens {
                     owner: USER.to_string(),
                     start_after: None,
                     limit: None,
