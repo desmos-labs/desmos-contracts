@@ -1342,7 +1342,7 @@ mod tests {
     }
 
     #[test]
-    fn mint_to_from_user_error() {
+    fn mint_to_without_permission_error() {
         let mut deps = mock_dependencies();
         let mut env = mock_env();
 
