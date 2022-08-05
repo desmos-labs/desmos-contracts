@@ -1088,7 +1088,7 @@ mod tests {
     }
 
     #[test]
-    fn update_minter_only_from_admin() {
+    fn update_minter_permission_error() {
         let mut deps = mock_dependencies();
         let env = mock_env();
         const NEW_MINTER: &str = "minter2";
@@ -1099,23 +1099,39 @@ mod tests {
             new_minter: NEW_MINTER.to_string(),
         };
 
-        let info = mock_info(USER, &vec![]);
-        let result = execute(deps.as_mut(), env.clone(), info, msg.clone());
-        // User can't update minter
+        let result = execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info(USER, &vec![]),
+            msg.clone(),
+        );
         assert_eq!(ContractError::Unauthorized {}, result.unwrap_err());
 
-        let info = mock_info(CREATOR, &vec![]);
-        let result = execute(deps.as_mut(), env.clone(), info, msg.clone());
-        // Creator can't update minter
+        let result = execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info(CREATOR, &vec![]),
+            msg.clone(),
+        );
         assert_eq!(ContractError::Unauthorized {}, result.unwrap_err());
 
-        let info = mock_info(MINTER, &vec![]);
-        let result = execute(deps.as_mut(), env.clone(), info, msg.clone());
-        // Minter can't update minter
+        let result = execute(deps.as_mut(), env.clone(), mock_info(MINTER, &vec![]), msg);
         assert_eq!(ContractError::Unauthorized {}, result.unwrap_err());
+    }
 
-        let info = mock_info(ADMIN, &vec![]);
-        execute(deps.as_mut(), env.clone(), info, msg.clone()).unwrap();
+    #[test]
+    fn update_minter_with_permission_properly() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        const NEW_MINTER: &str = "minter2";
+
+        do_instantiate(deps.as_mut());
+
+        let msg = ExecuteMsg::UpdateMinter {
+            new_minter: NEW_MINTER.to_string(),
+        };
+
+        execute(deps.as_mut(), env.clone(), mock_info(ADMIN, &vec![]), msg).unwrap();
 
         let config = CONFIG.load(&deps.storage).unwrap();
         assert_eq!(NEW_MINTER, config.minter.as_str());
