@@ -1041,29 +1041,47 @@ mod tests {
     }
 
     #[test]
-    fn update_admin_only_from_admin() {
+    fn update_admin_permission_error() {
         let mut deps = mock_dependencies();
         let env = mock_env();
         const NEW_ADMIN: &str = "admin2";
 
         do_instantiate(deps.as_mut());
 
-        let info = mock_info(USER, &vec![]);
         let msg = ExecuteMsg::UpdateAdmin {
             new_admin: NEW_ADMIN.to_string(),
         };
 
-        let result = execute(deps.as_mut(), env.clone(), info, msg.clone());
+        let result = execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info(USER, &vec![]),
+            msg.clone(),
+        );
         assert_eq!(ContractError::Unauthorized {}, result.unwrap_err());
 
-        let info = mock_info(CREATOR, &vec![]);
-
-        let result = execute(deps.as_mut(), env.clone(), info, msg.clone());
+        let result = execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info(CREATOR, &vec![]),
+            msg.clone(),
+        );
         assert_eq!(ContractError::Unauthorized {}, result.unwrap_err());
+    }
 
-        let info = mock_info(ADMIN, &vec![]);
+    #[test]
+    fn update_admin_with_permission_properly() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        const NEW_ADMIN: &str = "admin2";
 
-        execute(deps.as_mut(), env.clone(), info, msg.clone()).unwrap();
+        do_instantiate(deps.as_mut());
+
+        let msg = ExecuteMsg::UpdateAdmin {
+            new_admin: NEW_ADMIN.to_string(),
+        };
+
+        execute(deps.as_mut(), env.clone(), mock_info(ADMIN, &vec![]), msg).unwrap();
 
         let config = CONFIG.load(&deps.storage).unwrap();
         assert_eq!(NEW_ADMIN, config.admin.as_str());
