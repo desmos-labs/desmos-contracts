@@ -2,7 +2,7 @@
 mod tests {
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg};
     use crate::test_utils::*;
-    use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery, mocks::mock_apps::{mock_desmos_app, DesmosApp}};
+    use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery, mocks::mock_apps::{mock_desmos_app, mock_failing_desmos_app, DesmosApp, FailingDesmosApp}};
     use cosmwasm_std::{wasm_execute, Addr, Timestamp};
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
     use cw_multi_test::{Contract, ContractWrapper, Executor};
@@ -15,14 +15,6 @@ mod tests {
     const ADMIN: &str = "admin";
     const RECIPIENT: &str = "recipient";
 
-    fn mock_app() -> DesmosApp {
-        let mut app = mock_desmos_app();
-        app.update_block(|block| {
-            block.time = Timestamp::from_seconds(0);
-        });
-        app
-    }
-
     fn contract_poap_manager() -> Box<dyn Contract<DesmosMsg, DesmosQuery>> {
         let contract = ContractWrapper::new(
             crate::contract::execute,
@@ -34,6 +26,13 @@ mod tests {
     }
 
     fn store_contracts(app: &mut DesmosApp) -> (u64, u64, u64) {
+        let cw721_code_id = app.store_code(CW721TestContract::success_contract());
+        let poap_code_id = app.store_code(POAPTestContract::success_contract());
+        let poap_manager_code_id = app.store_code(contract_poap_manager());
+        (cw721_code_id, poap_code_id, poap_manager_code_id)
+    }
+
+    fn store_contracts_to_failing_app(app: &mut FailingDesmosApp) -> (u64, u64, u64) {
         let cw721_code_id = app.store_code(CW721TestContract::success_contract());
         let poap_code_id = app.store_code(POAPTestContract::success_contract());
         let poap_manager_code_id = app.store_code(contract_poap_manager());
@@ -66,8 +65,40 @@ mod tests {
     }
 
     fn proper_instantiate() -> (DesmosApp, Addr, (u64, u64, u64)) {
-        let mut app = mock_app();
+        let mut app = mock_desmos_app();
+        app.update_block(|block| {
+            // init the time to before the event
+            block.time = Timestamp::from_seconds(0);
+        });
         let (cw721_code_id, poap_code_id, poap_manager_code_id) = store_contracts(&mut app);
+        let poap_manager_contract_addr = app
+            .instantiate_contract(
+                poap_manager_code_id,
+                Addr::unchecked(ADMIN),
+                &get_valid_init_msg(cw721_code_id, poap_code_id),
+                &[],
+                "poap_manager_contract",
+                None,
+            )
+            .unwrap();
+        app.update_block(|block| {
+            // update the time to start time of event
+            block.time = Timestamp::from_seconds(10);
+        });
+        (
+            app,
+            poap_manager_contract_addr,
+            (cw721_code_id, poap_code_id, poap_manager_code_id),
+        )
+    }
+
+    fn proper_instantiate_failing_app() -> (FailingDesmosApp, Addr, (u64, u64, u64)) {
+        let mut app = mock_failing_desmos_app();
+        app.update_block(|block| {
+            // init the time to before the event
+            block.time = Timestamp::from_seconds(0);
+        });
+        let (cw721_code_id, poap_code_id, poap_manager_code_id) = store_contracts_to_failing_app(&mut app);
         let poap_manager_contract_addr = app
             .instantiate_contract(
                 poap_manager_code_id,
@@ -91,7 +122,7 @@ mod tests {
 
     #[test]
     fn instantiate_with_invalid_poap_code_id_error() {
-        let mut app = mock_app();
+        let mut app = mock_desmos_app();
         let (cw721_code_id, poap_code_id, poap_manager_code_id) = store_contracts(&mut app);
         let mut init_msg = get_valid_init_msg(cw721_code_id, poap_code_id);
         // change code poap_code_id to the invalid one
@@ -109,7 +140,7 @@ mod tests {
 
     #[test]
     fn instantiate_with_invalid_cw721_code_id_error() {
-        let mut app = mock_app();
+        let mut app = mock_desmos_app();
         let (cw721_code_id, poap_code_id, poap_manager_code_id) = store_contracts(&mut app);
         let mut init_msg = get_valid_init_msg(cw721_code_id, poap_code_id);
         // change cw721_code_id to the invalid one
@@ -127,7 +158,7 @@ mod tests {
 
     #[test]
     fn instantiate_with_failing_poap_contract_error() {
-        let mut app = mock_app();
+        let mut app = mock_desmos_app();
         let (cw721_code_id, _, poap_manager_code_id) = store_contracts(&mut app);
         let failing_poap_code_id = app.store_code(POAPTestContract::failing_contract());
         let mut init_msg = get_valid_init_msg(cw721_code_id, failing_poap_code_id);
@@ -168,12 +199,65 @@ mod tests {
 
     #[test]
     fn user_claim_without_profile_error() {
-        // TODO: build a test after desmos_bindings::mocks::mock_apps is released
+        let (mut app, manager_addr, _) = proper_instantiate_failing_app();
+        let result = app.execute(
+            Addr::unchecked(ADMIN),
+            wasm_execute(
+                &manager_addr,
+                &ExecuteMsg::Claim {},
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        );
+        assert!(result.is_err());
+
+        // check the state of poap contract
+        let querier = app.wrap();
+        let manager_config: QueryConfigResponse = querier
+            .query_wasm_smart(&manager_addr, &QueryMsg::Config {})
+            .unwrap();
+        let minted_amount_response: POAPQueryMintedAmountResponse = querier
+            .query_wasm_smart(
+                manager_config.poap_contract_address,
+                &POAPQueryMsg::MintedAmount {
+                    user: ADMIN.into(),
+                },
+            )
+            .unwrap();
+        assert_eq!(minted_amount_response.user, ADMIN);
+        assert_eq!(minted_amount_response.amount, 0)
     }
 
     #[test]
     fn user_claim_poap_properly() {
-        // TODO: build a test after desmos_bindings::mocks::mock_apps is released
+        let (mut app, manager_addr, _) = proper_instantiate();
+       app.execute(
+            Addr::unchecked(ADMIN),
+            wasm_execute(
+                &manager_addr,
+                &ExecuteMsg::Claim {},
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        ).unwrap();
+
+        // check the state of poap contract
+        let querier = app.wrap();
+        let manager_config: QueryConfigResponse = querier
+            .query_wasm_smart(&manager_addr, &QueryMsg::Config {})
+            .unwrap();
+        let minted_amount_response: POAPQueryMintedAmountResponse = querier
+            .query_wasm_smart(
+                manager_config.poap_contract_address,
+                &POAPQueryMsg::MintedAmount {
+                    user: ADMIN.into(),
+                },
+            )
+            .unwrap();
+        assert_eq!(minted_amount_response.user, ADMIN);
+        assert_eq!(minted_amount_response.amount, 1)
     }
 
     #[test]
