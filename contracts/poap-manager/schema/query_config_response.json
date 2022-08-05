@@ -4,20 +4,12 @@
   "type": "object",
   "required": [
     "admin",
-    "poap_address",
-    "poap_code_id"
+    "poap_code_id",
+    "poap_contract_address"
   ],
   "properties": {
     "admin": {
       "description": "Address of the contract administrator.",
-      "allOf": [
-        {
-          "$ref": "#/definitions/Addr"
-        }
-      ]
-    },
-    "poap_address": {
-      "description": "Address of the POAP contract that this contract",
       "allOf": [
         {
           "$ref": "#/definitions/Addr"
@@ -29,6 +21,14 @@
       "type": "integer",
       "format": "uint64",
       "minimum": 0.0
+    },
+    "poap_contract_address": {
+      "description": "Address of the POAP contract",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Addr"
+        }
+      ]
     }
   },
   "definitions": {

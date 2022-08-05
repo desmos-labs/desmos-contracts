@@ -13,7 +13,7 @@
       "type": "string"
     },
     "poap_code_id": {
-      "description": "Id of the POAP contract to initialize together with this contract.",
+      "description": "Id of the POAP contract to be initialized along with this contract.",
       "allOf": [
         {
           "$ref": "#/definitions/Uint64"
@@ -21,7 +21,7 @@
       ]
     },
     "poap_instantiate_msg": {
-      "description": "Initialization message that will be sent to the POAP contract.",
+      "description": "Initialization message of the POAP contract.",
       "allOf": [
         {
           "$ref": "#/definitions/InstantiateMsg"
