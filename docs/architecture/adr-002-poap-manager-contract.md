@@ -6,10 +6,11 @@
 - July 12, 2022: Initial draft finished;
 - July 14, 2022: First review;
 - July 15, 2022: Second review;
-- July 25, 2022: Third review;
+- July 25, 2022: Third review.
+- July 26, 2022: Accepted ADR.
 
 ## Status
-DRAFTED
+ACCEPTED (Implemented)
 
 ## Abstract
 This ADR defines the architecture of the POAP Manager contract. This contract give a user the possibility to manage

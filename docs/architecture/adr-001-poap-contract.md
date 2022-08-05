@@ -11,7 +11,7 @@
 - July 18, 2022: Accepted ADR.
 
 ## Status
-ACCEPTED (Not implemented)
+ACCEPTED (Implemented)
 
 ## Abstract
 This ADR defines the architecture of a [**POAP**](https://academy.binance.com/en/glossary/proof-of-attendance-protocol-poap) generator contract.
