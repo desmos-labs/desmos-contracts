@@ -1212,7 +1212,7 @@ mod tests {
     }
 
     #[test]
-    fn mint_limit() {
+    fn mint_out_of_max_amount_error() {
         let mut deps = mock_dependencies();
         let mut env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -1275,7 +1275,7 @@ mod tests {
     }
 
     #[test]
-    fn mint_to_limit() {
+    fn mint_to_out_of_max_amount_error() {
         let mut deps = mock_dependencies();
         let mut env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
