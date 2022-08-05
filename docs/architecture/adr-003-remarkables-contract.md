@@ -1,8 +1,8 @@
-# ADR 002: Remarkables Contract
+# ADR 003: Remarkables Contract
 
 ## Changelog
 
-- Aug 5, 2022: Initial draft;
+- Aug 5, 2022: Initial draft.
 
 ## Status
 DRAFTED
@@ -43,49 +43,118 @@ pub struct InstantiateMsg {
   pub cw721_code_id: u64,
   pub cw721_instantiate_msg: Cw721InstantiateMsg,
   pub subspace_id: u64,
-  pub rarity_fees: (u64, )
+  pub rarity_mint_fees: Vec<RarityMintFee>,
+  pub engagement_thresholds: Vec<EngagementTreshold>
 }
 ```
 
 * The `admin` identifies the user that controls the contract;
-* The `poap_contract_code_id` identifies the code id of the contract necessary for the instantiation;
-* The `poap_instantiate_msg` instantiate the poap contract that the manager controls;
+* The `cw721_code_id` refers to a previously uploaded `CW721-base` contract on the chain;
+* The `cw721_instantiate_msg` contains the info to instantiate the `CW721-base`;
+* The `subspace_id` identifies the application which is deploying the contract;
+* The `rarity_mint_fees` identifies the mint fees related to a particular rarity level
+* The `engagement_thresholds` identifies the levels of engagement needed to be able to mint a remarkable of a particular rarity
+
+***NOTE***
+The `Config` of the contract should also contain the `minter` address associated to the `CW721-base` contract
+
+##### RarityMinFee
+```rust
+pub struct RarityMintFee {
+  pub rarity_level: u64,
+  pub mint_fee: Vec<Coin>
+}
+```
+
+* The `rarity_level` identifies the rarity level of the Remarkable
+* The `mint_fee` identifies the amount of tokens needed to mint the remarkable
+
+##### EngagementThreshold
+```rust
+pub struct EngagementThreshold {
+  pub engagement_threshold: u64,
+  pub rarity_level: u64
+}
+```
+
+* The `engagement_threshold` field identifies the sum of the amounts of comments and reactions received
+* The `rarity_level` identifies the rarity level associated with the `engagement_threshold`
+
+During the instantiation, we should:
+* Check that the `subspace_id` identifies an existent subspace
+* Check that the `admin` is the subspace admin
 
 #### Execute
 ```rust
 pub enum ExecuteMsg{
-  Claim{post_id: u64},
-  MintTo{user: String},
+  MintTo{post_id: u64, remarkable_uri: String, rarity_level: u64},
+  UpdateRarityMintFee{rarity_level: u64, new_fee: Vec<Coin>},
   UpdateAdmin{new_admin: String}
 }
 ```
 
-##### Claim
-With the `Claim{}` message the user call the contract to try claiming the POAP. The claim will be successful only if the user has created a profile before.
+##### Mint
+With the `MintTo{post_id}` message the user call the contract to try minting the Remarkable. The contract will perform some checks before
+calling the `CW721-base` to proceed with the mint:
+* Checks if the `post_id` exists inside the subspace;
+* Checks the validity of the `remarkable_uri` (as IPFS uri);
+* Checks that the `sender` is the posts author;
+* Check if the `rarity_level` reached match the `engagement_threshold` of the post (sum the amount of post's reactions and comments);
+* Check that the rarity level exists and the fees are covered (we can pass the fees with the `MessageInfo` `funds` field).
 
-##### MintTo
-With the `MintTo{user}` message the admin of the contract can bypass the claim procedure and mint the POAP to a user (that still need to have a profile).
+The `Mint<T>` message fields of the `CW721-base` should be filled as follows:
+* The `token_id` should be equal to the `post_id`. This will grant the uniqueness of the NFT;
+* The `owner` is the contract `sender` (the post `author`);
+* The `token_uri` should be equal to the `remarkable_uri`;
+
+The usage of the extention field here is not needed.
+
+##### UpdateRarityMintFee
+With the `UpdateRarityMintFee{rarity_level, new_fee}` message the `admin` of the contract can update the fees associated with
+a given rarity level. Here we need to check that:
+* The contract `sender` is the admin;
+* The `rarity_level` exists;
+* The `new_fee` is not equal to the existent one.
 
 ##### UpdateAdmin
 With the `UpdateAdmin{new_admin}` message, the current admin can choose another admin to which give the control of the contract.
+Here we need to check that:
+* The contract `sender` is the admin;
+* The `new_admin` is the new admin of the subspace also.
 
 ### Query
 ```rust
 pub enum QueryMsg {
   /// Return a ConfigResponse containing the configuration info of the contract
   Config{},
+  EngagementThresholds{},
+  RarityMintFees{}
 }
 ```
 
 #### Config
-The `Config{}` query returns the contract's information inside a `ConfigResponse`.
+The `Config{}` query returns the contract's configuration inside a `ConfigResponse`.
 ```rust
 pub struct ConfigResponse {
   pub admin: Addr,
-  pub poap_contract_code_id: u64,
-  pub poap_contract_address: Addr,
+  pub cw721_minter: Addr,
+  pub cw721_code_id: u64,
+  pub subspace_id: u64,
 }
 ```
 
-## References
-- [POAP-Contract](https://github.com/desmos-labs/desmos-contracts/blob/leonardo/adr-001/docs/architecture/adr-001-poap-contract.md)
+#### EngagementThresholds
+The `EngagementThresholds` query returns the thresholds needed to mint a particular Remarkable inside a `EngagementThresholdsResponse`.
+```rust
+pub struct EngagementThresholdsResponse {
+  pub engagement_thresholds: Vec<EngagementThreshold>
+}
+```
+
+#### RarityMintFees
+The `RarityMintFees` query return the rarity mint fees required to mint a specific Remarkable inside a `RarityMintFeesResponse`.
+```rust
+pub struct RarityMintFeesResponse {
+  pub rarity_mint_fees: Vec<RarityMintFee>
+}
+```

@@ -49,7 +49,7 @@ pub struct InstantiateMsg {
 #### Execute
 ```rust
 pub enum ExecuteMsg{
-  Claim{post_id: u64},
+  Claim{},
   MintTo{user: String},
   UpdateAdmin{new_admin: String}
 }
