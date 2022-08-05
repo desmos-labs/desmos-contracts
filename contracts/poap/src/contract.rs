@@ -17,6 +17,7 @@ use cw721_base::{
     msg::ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg, MintMsg,
 };
 use cw_utils::parse_reply_instantiate_data;
+use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:poap";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -37,11 +38,11 @@ const INSTANTIATE_CW721_REPLY_ID: u64 = 1;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    deps: DepsMut,
+    deps: DepsMut<DesmosQuery>,
     env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     msg.validate()?;
@@ -125,11 +126,11 @@ pub fn instantiate(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    deps: DepsMut,
+    deps: DepsMut<DesmosQuery>,
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     msg.validate()?;
 
     match msg {
@@ -153,10 +154,10 @@ pub fn execute(
 }
 
 fn execute_set_mint_enabled(
-    deps: DepsMut,
+    deps: DepsMut<DesmosQuery>,
     info: MessageInfo,
     mint_enabled: bool,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     let mut config = CONFIG.load(deps.storage)?;
 
     // Check that the sender is the admin
@@ -180,14 +181,14 @@ fn execute_set_mint_enabled(
 }
 
 fn execute_mint(
-    deps: DepsMut,
+    deps: DepsMut<DesmosQuery>,
     env: Env,
     info: MessageInfo,
     action: &str,
     recipient_addr: Addr,
     bypass_mint_enable: bool,
     check_authorized_to_mint: bool,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     let event_info = EVENT_INFO.load(deps.storage)?;
 
@@ -233,7 +234,7 @@ fn execute_mint(
     let poap_id = NEXT_POAP_ID.may_load(deps.storage)?.unwrap_or(1);
 
     // Create the cw721 message to send to mint the poap
-    let mint_msg = Cw721ExecuteMsg::Mint(MintMsg::<String> {
+    let mint_msg = Cw721ExecuteMsg::<String, String>::Mint(MintMsg::<String> {
         token_id: poap_id.to_string(),
         owner: recipient_addr.to_string(),
         token_uri: Some(event_info.base_poap_uri),
@@ -263,12 +264,12 @@ fn execute_mint(
 }
 
 fn execute_update_event_info(
-    deps: DepsMut,
+    deps: DepsMut<DesmosQuery>,
     env: Env,
     info: MessageInfo,
     start_time: Timestamp,
     end_time: Timestamp,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     let mut event_info = EVENT_INFO.load(deps.storage)?;
 
     // Check that is the event creator that is changing the event time frame
@@ -313,10 +314,10 @@ fn execute_update_event_info(
 }
 
 fn execute_update_admin(
-    deps: DepsMut,
+    deps: DepsMut<DesmosQuery>,
     info: MessageInfo,
     admin_address: String,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     let mut config = CONFIG.load(deps.storage)?;
 
     // Check that the sender is the admin
@@ -335,10 +336,10 @@ fn execute_update_admin(
 }
 
 fn execute_update_minter(
-    deps: DepsMut,
+    deps: DepsMut<DesmosQuery>,
     info: MessageInfo,
     minter_address: String,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     let mut config = CONFIG.load(deps.storage)?;
 
     // Check that the sender is the admin
@@ -357,7 +358,7 @@ fn execute_update_minter(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps<DesmosQuery>, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::EventInfo {} => to_binary(&query_event_info(deps)?),
@@ -365,7 +366,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
-fn query_config(deps: Deps) -> StdResult<QueryConfigResponse> {
+fn query_config(deps: Deps<DesmosQuery>) -> StdResult<QueryConfigResponse> {
     let config = CONFIG.load(deps.storage)?;
     let cw721_address = CW721_ADDRESS.load(deps.storage)?;
 
@@ -379,7 +380,7 @@ fn query_config(deps: Deps) -> StdResult<QueryConfigResponse> {
     })
 }
 
-fn query_event_info(deps: Deps) -> StdResult<QueryEventInfoResponse> {
+fn query_event_info(deps: Deps<DesmosQuery>) -> StdResult<QueryEventInfoResponse> {
     let event_info = EVENT_INFO.load(deps.storage)?;
 
     Ok(QueryEventInfoResponse {
@@ -390,7 +391,7 @@ fn query_event_info(deps: Deps) -> StdResult<QueryEventInfoResponse> {
     })
 }
 
-fn query_minted_amount(deps: Deps, user: String) -> StdResult<QueryMintedAmountResponse> {
+fn query_minted_amount(deps: Deps<DesmosQuery>, user: String) -> StdResult<QueryMintedAmountResponse> {
     let user_addr = deps.api.addr_validate(&user)?;
 
     let minted_amount = MINTER_ADDRESS
@@ -405,7 +406,7 @@ fn query_minted_amount(deps: Deps, user: String) -> StdResult<QueryMintedAmountR
 
 // Reply callback triggered from cw721 contract instantiation
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+pub fn reply(deps: DepsMut<DesmosQuery>, _env: Env, msg: Reply) -> Result<Response<DesmosMsg>, ContractError> {
     if msg.id != INSTANTIATE_CW721_REPLY_ID {
         return Err(ContractError::InvalidReplyID {});
     }
@@ -422,28 +423,32 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 
 #[cfg(test)]
 mod tests {
-    use crate::contract::{execute, instantiate};
-    use crate::msg::ExecuteMsg;
-    use crate::state::{CONFIG, EVENT_INFO};
+    use super::*;
     use crate::test_utils::{
         get_valid_init_msg, EVENT_END_SECONDS, EVENT_START_SECONDS, INITIAL_BLOCK_TIME_SECONDS,
     };
-    use crate::ContractError;
     use crate::ContractError::Unauthorized;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::testing::{mock_env, mock_info};
     use cosmwasm_std::{DepsMut, Timestamp};
+    use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
 
     const CREATOR: &str = "creator";
     const ADMIN: &str = "admin";
     const MINTER: &str = "minter";
     const USER: &str = "user";
+    const FAKE_CW721_ADDRESS: &str = "cw721-contract";
 
-    fn do_instantiate(deps: DepsMut) {
+    fn do_instantiate(deps: DepsMut<DesmosQuery>) {
         let mut env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
 
         // Change block time to event start.
         env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+
+        // Since replay is not called, fake the stored cw721 contract address.
+        CW721_ADDRESS
+            .save(deps.storage, &Addr::unchecked(FAKE_CW721_ADDRESS))
+            .unwrap();
 
         let msg = get_valid_init_msg(1);
         assert!(instantiate(deps, env, info, msg).is_ok());
@@ -451,7 +456,7 @@ mod tests {
 
     #[test]
     fn instantiate_with_invalid_admin_addr() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
 
@@ -464,7 +469,7 @@ mod tests {
 
     #[test]
     fn instantiate_with_invalid_minter_addr() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
 
@@ -477,7 +482,7 @@ mod tests {
 
     #[test]
     fn instantiate_with_invalid_creator_addr() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
 
@@ -490,7 +495,7 @@ mod tests {
 
     #[test]
     fn instantiate_with_event_start_before_current_time() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
 
@@ -512,7 +517,7 @@ mod tests {
 
     #[test]
     fn instantiate_with_event_start_equal_current_time() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
         let mut init_msg = get_valid_init_msg(1);
@@ -533,7 +538,7 @@ mod tests {
 
     #[test]
     fn instantiate_with_event_end_before_current_time() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
         let mut init_msg = get_valid_init_msg(1);
@@ -557,7 +562,7 @@ mod tests {
 
     #[test]
     fn instantiate_with_event_end_equal_current_time() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
         let mut init_msg = get_valid_init_msg(1);
@@ -579,7 +584,7 @@ mod tests {
 
     #[test]
     fn instantiate_with_event_start_after_end() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
         let mut init_msg = get_valid_init_msg(1);
@@ -603,7 +608,7 @@ mod tests {
 
     #[test]
     fn instantiate_with_event_start_eq_end() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
         let mut init_msg = get_valid_init_msg(1);
@@ -625,7 +630,7 @@ mod tests {
 
     #[test]
     fn instantiate_with_invalid_poap_uri() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
         let mut init_msg = get_valid_init_msg(1);
@@ -635,8 +640,11 @@ mod tests {
 
         let init_result = instantiate(deps.as_mut(), env, info, init_msg);
         assert!(init_result.is_err());
+    }
 
-        // Non ipfs uri
+    #[test]
+    fn instantiate_with_non_ipfs_poap_uri_error() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
         let mut init_msg = get_valid_init_msg(1);
@@ -649,7 +657,7 @@ mod tests {
 
     #[test]
     fn instantiate_with_invalid_event_uri() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
         let mut init_msg = get_valid_init_msg(1);
@@ -673,7 +681,7 @@ mod tests {
 
     #[test]
     fn enable_mint() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
 
@@ -688,7 +696,7 @@ mod tests {
 
     #[test]
     fn normal_user_can_not_enable_mint() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(USER, &vec![]);
 
@@ -701,7 +709,7 @@ mod tests {
 
     #[test]
     fn disable_mint() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
 
@@ -716,7 +724,7 @@ mod tests {
 
     #[test]
     fn normal_user_can_not_disable_mint() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(USER, &vec![]);
 
@@ -729,7 +737,7 @@ mod tests {
 
     #[test]
     fn creator_change_event_info_properly() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let new_start_time = Timestamp::from_seconds(env.block.time.seconds() + 100);
@@ -753,7 +761,7 @@ mod tests {
 
     #[test]
     fn non_creator_change_event_info() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(USER, &vec![]);
         let new_start_time = Timestamp::from_seconds(env.block.time.seconds() + 100);
@@ -779,7 +787,7 @@ mod tests {
 
     #[test]
     fn event_info_update_only_if_event_not_started_or_ended() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
 
@@ -787,8 +795,7 @@ mod tests {
 
         let msg = ExecuteMsg::UpdateEventInfo {
             start_time: Timestamp::from_seconds(EVENT_START_SECONDS),
-            // Add 300 seconds to prevent end time to be already passed
-            end_time: Timestamp::from_seconds(EVENT_END_SECONDS + 300),
+            end_time: Timestamp::from_seconds(EVENT_END_SECONDS),
         };
 
         // Fake current time to event in progress
@@ -814,6 +821,21 @@ mod tests {
             },
             result.unwrap_err()
         );
+    }
+
+    #[test]
+    fn event_info_update_after_event_terminated_error() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(EVENT_START_SECONDS),
+            // Add 300 seconds to prevent end time to be already passed
+            end_time: Timestamp::from_seconds(EVENT_END_SECONDS + 300),
+        };
 
         // Fake current time to event ended
         env.block.time = Timestamp::from_seconds(EVENT_END_SECONDS + 100);
@@ -838,6 +860,20 @@ mod tests {
             },
             result.unwrap_err()
         );
+    }
+
+    #[test]
+    fn event_info_update_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        let msg = ExecuteMsg::UpdateEventInfo {
+            start_time: Timestamp::from_seconds(EVENT_START_SECONDS),
+            end_time: Timestamp::from_seconds(EVENT_END_SECONDS + 300),
+        };
 
         // Current time is before event started
         env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS - 100);
@@ -847,14 +883,12 @@ mod tests {
 
     #[test]
     fn invalid_event_info() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
 
         do_instantiate(deps.as_mut());
-
         env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
-        let current_time_nanos = env.block.time.nanos();
 
         // Start time eq end time
         let msg = ExecuteMsg::UpdateEventInfo {
@@ -870,8 +904,17 @@ mod tests {
             },
             result.unwrap_err()
         );
+    }
 
-        // Start time is after end time
+    #[test]
+    fn event_info_start_time_after_end_time_error() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+        env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+
         let msg = ExecuteMsg::UpdateEventInfo {
             start_time: Timestamp::from_seconds(EVENT_START_SECONDS + 100),
             end_time: Timestamp::from_seconds(EVENT_START_SECONDS),
@@ -885,63 +928,99 @@ mod tests {
             },
             result.unwrap_err()
         );
+    }
 
-        // Start time before current time
+    #[test]
+    fn event_info_start_time_before_current_time_error() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+        env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+
         let msg = ExecuteMsg::UpdateEventInfo {
-            start_time: Timestamp::from_nanos(current_time_nanos - 100),
+            start_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS - 1),
             end_time: Timestamp::from_seconds(EVENT_END_SECONDS),
         };
 
         let result = execute(deps.as_mut(), env.clone(), info.clone(), msg);
         assert_eq!(
             ContractError::StartTimeBeforeCurrentTime {
-                start_time: Timestamp::from_nanos(current_time_nanos - 100),
-                current_time: Timestamp::from_nanos(current_time_nanos),
+                start_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS - 1),
+                current_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS),
             },
             result.unwrap_err()
         );
+    }
 
-        // Edge case start time eq current time
+    #[test]
+    fn event_info_start_time_equal_current_time_error() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+        env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+
         let msg = ExecuteMsg::UpdateEventInfo {
-            start_time: Timestamp::from_nanos(current_time_nanos),
+            start_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS),
             end_time: Timestamp::from_seconds(EVENT_END_SECONDS),
         };
 
         let result = execute(deps.as_mut(), env.clone(), info.clone(), msg);
         assert_eq!(
             ContractError::StartTimeBeforeCurrentTime {
-                start_time: Timestamp::from_nanos(current_time_nanos),
-                current_time: Timestamp::from_nanos(current_time_nanos),
+                start_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS),
+                current_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS),
             },
             result.unwrap_err()
         );
+    }
 
-        // End time before current time
+    #[test]
+    fn event_info_end_time_before_current_time_error() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+        env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+
         let msg = ExecuteMsg::UpdateEventInfo {
-            start_time: Timestamp::from_nanos(current_time_nanos),
-            end_time: Timestamp::from_nanos(current_time_nanos - 100),
+            start_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS + 2),
+            end_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS - 1),
         };
 
         let result = execute(deps.as_mut(), env.clone(), info.clone(), msg);
         assert_eq!(
             ContractError::StartTimeAfterEndTime {
-                start: Timestamp::from_nanos(current_time_nanos),
-                end: Timestamp::from_nanos(current_time_nanos - 100),
+                start: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS + 2),
+                end: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS - 1),
             },
             result.unwrap_err()
         );
+    }
 
-        // Edge case end time eq current time
+    #[test]
+    fn event_info_end_time_equal_current_time_error() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut env = mock_env();
+        let info = mock_info(CREATOR, &vec![]);
+
+        do_instantiate(deps.as_mut());
+        env.block.time = Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS);
+
         let msg = ExecuteMsg::UpdateEventInfo {
-            start_time: Timestamp::from_nanos(current_time_nanos + 100),
-            end_time: Timestamp::from_nanos(current_time_nanos),
+            start_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS + 2),
+            end_time: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS),
         };
 
-        let result = execute(deps.as_mut(), env, info, msg);
+        let result = execute(deps.as_mut(), env.clone(), info.clone(), msg);
         assert_eq!(
             ContractError::StartTimeAfterEndTime {
-                start: Timestamp::from_nanos(current_time_nanos + 100),
-                end: Timestamp::from_nanos(current_time_nanos),
+                start: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS + 2),
+                end: Timestamp::from_seconds(INITIAL_BLOCK_TIME_SECONDS),
             },
             result.unwrap_err()
         );
@@ -949,7 +1028,7 @@ mod tests {
 
     #[test]
     fn update_admin_only_from_admin() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         const NEW_ADMIN: &str = "admin2";
 
@@ -978,7 +1057,7 @@ mod tests {
 
     #[test]
     fn update_minter_only_from_admin() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         const NEW_MINTER: &str = "minter2";
 
@@ -1012,7 +1091,7 @@ mod tests {
 
     #[test]
     fn mint_event_not_started() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
 
@@ -1040,7 +1119,7 @@ mod tests {
 
     #[test]
     fn mint_event_terminated() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
 
@@ -1068,7 +1147,7 @@ mod tests {
 
     #[test]
     fn mint_without_permissions() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(USER, &vec![]);
 
@@ -1082,5 +1161,201 @@ mod tests {
 
         // Event is not started
         assert_eq!(ContractError::MintDisabled {}, result.unwrap_err());
+    }
+
+    #[test]
+    fn mint_limit() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        // Change current time to event start
+        env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS);
+
+        execute(deps.as_mut(), env.clone(), info, ExecuteMsg::EnableMint {}).unwrap();
+
+        let info = mock_info(USER, &vec![]);
+        // Mint the first poap
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::Mint {},
+        )
+        .unwrap();
+        // Mint the second poap
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::Mint {},
+        )
+        .unwrap();
+
+        let response = execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::Mint {},
+        );
+        assert_eq!(
+            ContractError::MaxPerAddressLimitExceeded {
+                recipient_addr: USER.to_string()
+            },
+            response.unwrap_err()
+        );
+
+        // Ensure that mint to also fails when minting for the user
+        let info = mock_info(ADMIN, &vec![]);
+        let response = execute(
+            deps.as_mut(),
+            env.clone(),
+            info,
+            ExecuteMsg::MintTo {
+                recipient: USER.to_string(),
+            },
+        );
+
+        assert_eq!(
+            ContractError::MaxPerAddressLimitExceeded {
+                recipient_addr: USER.to_string()
+            },
+            response.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn mint_to_limit() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+
+        do_instantiate(deps.as_mut());
+
+        // Change current time to event start
+        env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS);
+
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::EnableMint {},
+        )
+        .unwrap();
+
+        // Mint the first poap
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::MintTo {
+                recipient: USER.to_string(),
+            },
+        )
+        .unwrap();
+        // Mint the second and last allowed poap
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::MintTo {
+                recipient: USER.to_string(),
+            },
+        )
+        .unwrap();
+
+        let response = execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            ExecuteMsg::MintTo {
+                recipient: USER.to_string(),
+            },
+        );
+        // Should fail since the user have already received the max allowed poaps.
+        assert_eq!(
+            ContractError::MaxPerAddressLimitExceeded {
+                recipient_addr: USER.to_string()
+            },
+            response.unwrap_err()
+        );
+
+        // Test also with Mint from use
+        let info = mock_info(USER, &vec![]);
+        let response = execute(deps.as_mut(), env.clone(), info, ExecuteMsg::Mint {});
+        assert_eq!(
+            ContractError::MaxPerAddressLimitExceeded {
+                recipient_addr: USER.to_string()
+            },
+            response.unwrap_err()
+        );
+    }
+
+    #[test]
+    fn mint_to_from_user_error() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut env = mock_env();
+
+        do_instantiate(deps.as_mut());
+
+        // Change current time to event start
+        env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS);
+
+        let response = execute(
+            deps.as_mut(),
+            env,
+            mock_info(USER, &vec![]),
+            ExecuteMsg::MintTo {
+                recipient: USER.to_string(),
+            },
+        );
+        // User should not be authorized to use the mint to action
+        assert_eq!(ContractError::Unauthorized {}, response.unwrap_err());
+    }
+
+    #[test]
+    fn mint_to_from_minter_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut env = mock_env();
+
+        do_instantiate(deps.as_mut());
+
+        // Change current time to event start
+        env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS);
+
+        // Test that minter can call mint to
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info(MINTER, &vec![]),
+            ExecuteMsg::MintTo {
+                recipient: USER.to_string(),
+            },
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn mint_to_from_admin_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut env = mock_env();
+
+        do_instantiate(deps.as_mut());
+
+        // Change current time to event start
+        env.block.time = Timestamp::from_seconds(EVENT_START_SECONDS);
+
+        // Test that minter can call mint to
+        execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info(ADMIN, &vec![]),
+            ExecuteMsg::MintTo {
+                recipient: USER.to_string(),
+            },
+        )
+        .unwrap();
     }
 }

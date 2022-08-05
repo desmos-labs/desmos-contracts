@@ -1,7 +1,7 @@
 [package]
 name = "poap"
 version = "0.1.0"
-authors = ["Manuel <manuel.turetta94@gmail.com>"]
+authors = ["Manuel <manuel@forbole.com>"]
 edition = "2018"
 
 exclude = [
@@ -37,11 +37,12 @@ cw-utils = "0.13.4"
 schemars = "0.8.8"
 serde = { version = "1.0.137", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.31" }
-desmos-bindings = { version = "1.0.0" }
-cw721-base = { version = "0.13.2", features = ["library"] }
+desmos-bindings = { version = "1.0.2", default-features = false, features = ["mocks"]}
+cw721-base = { git = "https://github.com/desmos-labs/cw-nfts", features = ["library"], branch = "paul/update-custom-msg-query" }
 url = "2.2.2"
-cw-multi-test = "0.13.4"
 
 [dev-dependencies]
 cosmwasm-schema = "1.0.0"
+cw-multi-test = { version = "0.13.4" }
+cw721 = { git = "https://github.com/desmos-labs/cw-nfts", branch = "paul/update-custom-msg-query" }
 

@@ -16,9 +16,11 @@
     },
     "cw721_code_id": {
       "description": "Id of the CW721 contract to initialize together with this contract.",
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
+      "allOf": [
+        {
+          "$ref": "#/definitions/Uint64"
+        }
+      ]
     },
     "cw721_initiate_msg": {
       "description": "Initialization message that will be sent to the CW721 contract.",
@@ -47,7 +49,6 @@
       "required": [
         "base_poap_uri",
         "creator",
-        "cw721_code_id",
         "end_time",
         "event_uri",
         "per_address_limit",
@@ -61,12 +62,6 @@
         "creator": {
           "description": "User that created the event.",
           "type": "string"
-        },
-        "cw721_code_id": {
-          "description": "Id of the cw721 contract that the POAP contract initialise.",
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 0.0
         },
         "end_time": {
           "description": "Time at which the event ends.",
