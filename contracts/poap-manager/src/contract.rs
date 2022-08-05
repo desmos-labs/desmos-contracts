@@ -7,7 +7,7 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 use cw_utils::parse_reply_instantiate_data;
 
-use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery, profiles::querier::ProfilesQuerier};
+use desmos_bindings::{msg::DesmosMsg, profiles::querier::ProfilesQuerier, query::DesmosQuery};
 use poap::msg::ExecuteMsg as POAPExecuteMsg;
 
 use crate::error::ContractError;

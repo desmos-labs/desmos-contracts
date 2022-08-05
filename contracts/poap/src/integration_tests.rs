@@ -9,12 +9,16 @@ mod tests {
         get_valid_init_msg, ADMIN, CREATOR, EVENT_END_SECONDS, EVENT_START_SECONDS, EVENT_URI,
         INITIAL_BLOCK_TIME_SECONDS, MINTER, USER,
     };
-    use cosmwasm_std::{Addr, Timestamp, Uint64, Empty};
-    use cw721_base::{MinterResponse, QueryMsg as Cw721QueryMsg};
+    use cosmwasm_std::{Addr, Empty, Timestamp, Uint64};
     use cw721::TokensResponse;
+    use cw721_base::{MinterResponse, QueryMsg as Cw721QueryMsg};
 
     use cw_multi_test::{Contract, ContractWrapper, Executor};
-    use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery, mocks::mock_apps::{mock_desmos_app, DesmosApp}};
+    use desmos_bindings::{
+        mocks::mock_apps::{mock_desmos_app, DesmosApp},
+        msg::DesmosMsg,
+        query::DesmosQuery,
+    };
 
     fn contract_poap() -> Box<dyn Contract<DesmosMsg, DesmosQuery>> {
         let contract = ContractWrapper::new(
@@ -133,7 +137,10 @@ mod tests {
         assert_eq!(EVENT_URI, poap_event_info.event_uri.as_str());
 
         let cw721_minter_response: MinterResponse = querier
-            .query_wasm_smart(&poap_config.cw721_contract, &Cw721QueryMsg::<String>::Minter {})
+            .query_wasm_smart(
+                &poap_config.cw721_contract,
+                &Cw721QueryMsg::<String>::Minter {},
+            )
             .unwrap();
 
         // The cw721 minter should be the poap contract address.

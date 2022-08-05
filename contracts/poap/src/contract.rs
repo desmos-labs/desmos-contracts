@@ -391,7 +391,10 @@ fn query_event_info(deps: Deps<DesmosQuery>) -> StdResult<QueryEventInfoResponse
     })
 }
 
-fn query_minted_amount(deps: Deps<DesmosQuery>, user: String) -> StdResult<QueryMintedAmountResponse> {
+fn query_minted_amount(
+    deps: Deps<DesmosQuery>,
+    user: String,
+) -> StdResult<QueryMintedAmountResponse> {
     let user_addr = deps.api.addr_validate(&user)?;
 
     let minted_amount = MINTER_ADDRESS
@@ -406,7 +409,11 @@ fn query_minted_amount(deps: Deps<DesmosQuery>, user: String) -> StdResult<Query
 
 // Reply callback triggered from cw721 contract instantiation
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut<DesmosQuery>, _env: Env, msg: Reply) -> Result<Response<DesmosMsg>, ContractError> {
+pub fn reply(
+    deps: DepsMut<DesmosQuery>,
+    _env: Env,
+    msg: Reply,
+) -> Result<Response<DesmosMsg>, ContractError> {
     if msg.id != INSTANTIATE_CW721_REPLY_ID {
         return Err(ContractError::InvalidReplyID {});
     }
