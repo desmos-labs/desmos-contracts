@@ -2,9 +2,10 @@
 mod tests {
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg};
     use crate::test_utils::*;
-    use cosmwasm_std::{wasm_execute, Addr, BlockInfo, Empty, Timestamp};
+    use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery, mocks::mock_apps::{mock_desmos_app, DesmosApp}};
+    use cosmwasm_std::{wasm_execute, Addr, Timestamp};
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
-    use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
+    use cw_multi_test::{Contract, ContractWrapper, Executor};
     use poap::msg::{
         EventInfo, InstantiateMsg as POAPInstantiateMsg,
         QueryConfigResponse as POAPQueryConfigResponse,
@@ -14,17 +15,15 @@ mod tests {
     const ADMIN: &str = "admin";
     const RECIPIENT: &str = "recipient";
 
-    fn mock_app() -> App {
-        AppBuilder::new()
-            .with_block(BlockInfo {
-                height: 42,
-                time: Timestamp::from_seconds(0),
-                chain_id: "testchain".to_string(),
-            })
-            .build(|_, _, _| {})
+    fn mock_app() -> DesmosApp {
+        let mut app = mock_desmos_app();
+        app.update_block(|block| {
+            block.time = Timestamp::from_seconds(0);
+        });
+        app
     }
 
-    fn contract_poap_manger() -> Box<dyn Contract<Empty>> {
+    fn contract_poap_manager() -> Box<dyn Contract<DesmosMsg, DesmosQuery>> {
         let contract = ContractWrapper::new(
             crate::contract::execute,
             crate::contract::instantiate,
@@ -34,10 +33,10 @@ mod tests {
         Box::new(contract)
     }
 
-    fn store_contracts(app: &mut App) -> (u64, u64, u64) {
+    fn store_contracts(app: &mut DesmosApp) -> (u64, u64, u64) {
         let cw721_code_id = app.store_code(CW721TestContract::success_contract());
         let poap_code_id = app.store_code(POAPTestContract::success_contract());
-        let poap_manager_code_id = app.store_code(contract_poap_manger());
+        let poap_manager_code_id = app.store_code(contract_poap_manager());
         (cw721_code_id, poap_code_id, poap_manager_code_id)
     }
 
@@ -66,7 +65,7 @@ mod tests {
         }
     }
 
-    fn proper_instantiate() -> (App, Addr, (u64, u64, u64)) {
+    fn proper_instantiate() -> (DesmosApp, Addr, (u64, u64, u64)) {
         let mut app = mock_app();
         let (cw721_code_id, poap_code_id, poap_manager_code_id) = store_contracts(&mut app);
         let poap_manager_contract_addr = app

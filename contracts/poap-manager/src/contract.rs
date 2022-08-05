@@ -1,13 +1,13 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, wasm_execute, wasm_instantiate, Addr, CustomQuery, Deps, DepsMut, Env, MessageInfo,
+    to_binary, wasm_execute, wasm_instantiate, Addr, Deps, DepsMut, Env, MessageInfo,
     QueryResponse, Reply, Response, StdResult, SubMsg,
 };
 use cw2::set_contract_version;
 use cw_utils::parse_reply_instantiate_data;
 
-use desmos_bindings::profiles::querier::ProfilesQuerier;
+use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery, profiles::querier::ProfilesQuerier};
 use poap::msg::ExecuteMsg as POAPExecuteMsg;
 
 use crate::error::ContractError;
@@ -39,11 +39,11 @@ const INSTANTIATE_POAP_REPLY_ID: u64 = 1;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    deps: DepsMut<impl CustomQuery>,
+    deps: DepsMut<DesmosQuery>,
     env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     msg.validate()?;
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     let admin = deps.api.addr_validate(&msg.admin)?;
@@ -74,10 +74,10 @@ pub fn instantiate(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(
-    deps: DepsMut<impl CustomQuery>,
+    deps: DepsMut<DesmosQuery>,
     _env: Env,
     msg: Reply,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     match msg.id {
         INSTANTIATE_POAP_REPLY_ID => resolve_instantiate_poap_reply(deps, msg),
         _ => Err(ContractError::InvalidReplyID {}),
@@ -85,9 +85,9 @@ pub fn reply(
 }
 
 fn resolve_instantiate_poap_reply(
-    deps: DepsMut<impl CustomQuery>,
+    deps: DepsMut<DesmosQuery>,
     msg: Reply,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     let res = parse_reply_instantiate_data(msg)?;
     let address = deps.api.addr_validate(&res.contract_address)?;
     POAP_CONTRACT_ADDRESS.save(deps.storage, &address)?;
@@ -96,11 +96,11 @@ fn resolve_instantiate_poap_reply(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    deps: DepsMut<impl CustomQuery>,
+    deps: DepsMut<DesmosQuery>,
     _env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     match msg {
         ExecuteMsg::Claim {} => execute_claim(deps, info),
         ExecuteMsg::MintTo { recipient } => execute_mint_to(deps, info, recipient),
@@ -109,9 +109,9 @@ pub fn execute(
 }
 
 fn execute_claim(
-    deps: DepsMut<impl CustomQuery>,
+    deps: DepsMut<DesmosQuery>,
     info: MessageInfo,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     let poap_contract_address = POAP_CONTRACT_ADDRESS.load(deps.storage)?;
     if !check_eligibility(deps, info.sender.clone())? {
         return Err(ContractError::NoEligibilityError {});
@@ -128,16 +128,16 @@ fn execute_claim(
         )?))
 }
 
-fn check_eligibility(deps: DepsMut<impl CustomQuery>, user: Addr) -> Result<bool, ContractError> {
+fn check_eligibility(deps: DepsMut<DesmosQuery>, user: Addr) -> Result<bool, ContractError> {
     ProfilesQuerier::new(deps.querier.deref()).query_profile(user)?;
     Ok(true)
 }
 
 fn execute_mint_to(
-    deps: DepsMut<impl CustomQuery>,
+    deps: DepsMut<DesmosQuery>,
     info: MessageInfo,
     recipient: String,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     let poap_contract_address = POAP_CONTRACT_ADDRESS.load(deps.storage)?;
     deps.api.addr_validate(&recipient)?;
     Ok(Response::new()
@@ -151,10 +151,10 @@ fn execute_mint_to(
 }
 
 fn execute_update_admin(
-    deps: DepsMut<impl CustomQuery>,
+    deps: DepsMut<DesmosQuery>,
     info: MessageInfo,
     user: String,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     let new_admin = deps.api.addr_validate(&user)?;
     CONFIG.update(deps.storage, |mut config| -> Result<_, ContractError> {
         if config.admin != info.sender {
@@ -172,13 +172,13 @@ fn execute_update_admin(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps<impl CustomQuery>, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
+pub fn query(deps: Deps<DesmosQuery>, _env: Env, msg: QueryMsg) -> StdResult<QueryResponse> {
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
     }
 }
 
-fn query_config(deps: Deps<impl CustomQuery>) -> StdResult<QueryConfigResponse> {
+fn query_config(deps: Deps<DesmosQuery>) -> StdResult<QueryConfigResponse> {
     let config = CONFIG.load(deps.storage)?;
     Ok(QueryConfigResponse {
         admin: config.admin,
@@ -190,7 +190,7 @@ fn query_config(deps: Deps<impl CustomQuery>) -> StdResult<QueryConfigResponse> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::testing::{mock_env, mock_info};
     use cosmwasm_std::{StdError, SubMsgResponse, SubMsgResult, Timestamp};
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
     use cw_utils::ParseReplyError;
@@ -254,7 +254,7 @@ mod tests {
         }
     }
 
-    fn do_instantiate(deps: DepsMut<impl CustomQuery>) {
+    fn do_instantiate(deps: DepsMut<DesmosQuery>) {
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let valid_msg = get_valid_instantiate();
@@ -263,7 +263,7 @@ mod tests {
 
     #[test]
     fn instatiate_with_invalid_msg_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let invalid_msg = InstantiateMsg {
@@ -296,7 +296,7 @@ mod tests {
 
     #[test]
     fn instatiate_with_invalid_admin_address_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let invalid_msg = InstantiateMsg {
@@ -331,7 +331,7 @@ mod tests {
 
     #[test]
     fn instatiate_properly() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         do_instantiate(deps.as_mut());
 
         let config = CONFIG.load(&deps.storage).unwrap();
@@ -344,7 +344,7 @@ mod tests {
 
     #[test]
     fn poap_instantiate_with_invalid_reply_id_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let result = reply(
@@ -363,7 +363,7 @@ mod tests {
 
     #[test]
     fn poap_instantiate_with_invalid_instantiate_msg_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let result = reply(
@@ -387,7 +387,7 @@ mod tests {
 
     #[test]
     fn poap_instantiate_reply_properly() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let result = reply(deps.as_mut(), env, get_valid_instantiate_reply());
@@ -399,7 +399,7 @@ mod tests {
 
     #[test]
     fn claim_with_unsupported_desmos_deps_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
@@ -425,7 +425,7 @@ mod tests {
 
     #[test]
     fn mint_to_with_invalid_recipient_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         do_instantiate(deps.as_mut());
         POAP_CONTRACT_ADDRESS
             .save(deps.as_mut().storage, &Addr::unchecked(""))
@@ -445,7 +445,7 @@ mod tests {
 
     #[test]
     fn mint_to_properly() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         do_instantiate(deps.as_mut());
         POAP_CONTRACT_ADDRESS
             .save(deps.as_mut().storage, &Addr::unchecked(""))
@@ -460,7 +460,7 @@ mod tests {
 
     #[test]
     fn update_admin_with_invalid_new_admin_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
@@ -477,7 +477,7 @@ mod tests {
 
     #[test]
     fn update_admin_without_permission_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(NEW_ADMIN, &vec![]);
@@ -494,7 +494,7 @@ mod tests {
 
     #[test]
     fn update_admin_with_invalid_address_error() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
@@ -511,7 +511,7 @@ mod tests {
 
     #[test]
     fn update_admin_properly() {
-        let mut deps = mock_dependencies();
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
