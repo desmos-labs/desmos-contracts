@@ -83,5 +83,8 @@ jobs:
       - name: Run cargo fmt
         run: cargo fmt --all -- --check
 
-      - name: Run cargo clippy
-        run: cargo clippy
+      - name: Run cargo clippy - POAP
+        run: cargo clippy -p poap
+
+      - name: Run cargo clippy - POAP manager
+        run: cargo clippy -p poap-manager
