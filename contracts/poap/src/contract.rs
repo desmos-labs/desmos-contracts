@@ -9,8 +9,8 @@ use crate::state::{
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, wasm_execute, wasm_instantiate, Addr, Binary, Deps, DepsMut, Env, MessageInfo,
-    Reply, Response, StdResult, SubMsg, Timestamp, Empty,
+    to_binary, wasm_execute, wasm_instantiate, Addr, Binary, Deps, DepsMut, Empty, Env,
+    MessageInfo, Reply, Response, StdResult, SubMsg, Timestamp,
 };
 use cw2::set_contract_version;
 use cw721_base::{
