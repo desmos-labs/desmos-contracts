@@ -207,7 +207,7 @@ pub struct QueryEventInfoResponse {
   pub creator: Addr,
   pub start_time: Timestamp,
   pub end_time: Timestamp,
-  pub event_uri: String,
+  pub poap_uri: String,
 }
 ```
 
