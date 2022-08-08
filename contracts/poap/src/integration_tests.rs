@@ -207,4 +207,67 @@ mod tests {
 
         assert_eq!(1, response.tokens.len());
     }
+
+    #[test]
+    fn mint_to_with_permission_properly() {
+        let (mut app, poap_contract_addr) = proper_instantiate();
+
+        // Change the chain time so that the event is started
+        app.update_block(|block_info| {
+            block_info.time = Timestamp::from_seconds(EVENT_START_SECONDS)
+        });
+
+        // Enable mint
+        let msg = ExecuteMsg::EnableMint {};
+        app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
+
+        // Mint should work since the event is started and the user is allowed to mint
+        let msg = ExecuteMsg::MintTo {
+            recipient: USER.to_string(),
+        };
+        app.execute_contract(
+            Addr::unchecked(ADMIN),
+            poap_contract_addr.clone(),
+            &msg,
+            &vec![],
+        )
+        .unwrap();
+
+        let querier = app.wrap();
+        let response: QueryMintedAmountResponse = querier
+            .query_wasm_smart(
+                &poap_contract_addr,
+                &QueryMsg::MintedAmount {
+                    user: USER.to_string(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(Addr::unchecked(USER), response.user);
+        assert_eq!(1, response.amount);
+
+        let config: QueryConfigResponse = querier
+            .query_wasm_smart(&poap_contract_addr, &QueryMsg::Config {})
+            .unwrap();
+
+        let querier = app.wrap();
+        let response: TokensResponse = querier
+            .query_wasm_smart(
+                config.cw721_contract.as_str(),
+                &Cw721QueryMsg::<Empty>::Tokens {
+                    owner: USER.to_string(),
+                    start_after: None,
+                    limit: None,
+                },
+            )
+            .unwrap();
+
+        assert_eq!(1, response.tokens.len());
+    }
 }
