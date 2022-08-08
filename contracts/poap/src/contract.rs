@@ -10,7 +10,7 @@ use crate::state::{
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, wasm_execute, wasm_instantiate, Addr, Binary, Deps, DepsMut, Env, MessageInfo,
-    Reply, Response, StdResult, SubMsg, Timestamp,
+    Reply, Response, StdResult, SubMsg, Timestamp, Empty,
 };
 use cw2::set_contract_version;
 use cw721_base::{
@@ -234,7 +234,7 @@ fn execute_mint(
     let poap_id = NEXT_POAP_ID.may_load(deps.storage)?.unwrap_or(1);
 
     // Create the cw721 message to send to mint the poap
-    let mint_msg = Cw721ExecuteMsg::<String, String>::Mint(MintMsg::<String> {
+    let mint_msg = Cw721ExecuteMsg::<String, Empty>::Mint(MintMsg::<String> {
         token_id: poap_id.to_string(),
         owner: recipient_addr.to_string(),
         token_uri: Some(event_info.base_poap_uri),
@@ -462,7 +462,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate_with_invalid_admin_addr() {
+    fn instantiate_with_invalid_admin_addr_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -475,7 +475,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate_with_invalid_minter_addr() {
+    fn instantiate_with_invalid_minter_addr_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -488,7 +488,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate_with_invalid_creator_addr() {
+    fn instantiate_with_invalid_creator_addr_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -501,7 +501,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate_with_event_start_before_current_time() {
+    fn instantiate_with_event_start_before_current_time_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -523,7 +523,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate_with_event_start_equal_current_time() {
+    fn instantiate_with_event_start_equal_current_time_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -544,7 +544,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate_with_event_end_before_current_time() {
+    fn instantiate_with_event_end_before_current_time_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -568,7 +568,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate_with_event_end_equal_current_time() {
+    fn instantiate_with_event_end_equal_current_time_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -590,7 +590,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate_with_event_start_after_end() {
+    fn instantiate_with_event_start_after_end_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -614,7 +614,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate_with_event_start_eq_end() {
+    fn instantiate_with_event_start_equal_end_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -636,7 +636,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate_with_invalid_poap_uri() {
+    fn instantiate_with_invalid_poap_uri_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -663,7 +663,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate_with_invalid_event_uri() {
+    fn instantiate_with_invalid_event_uri_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -687,7 +687,20 @@ mod tests {
     }
 
     #[test]
-    fn enable_mint() {
+    fn instantiate_with_non_ipfs_event_uri_error() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+        let mut init_msg = get_valid_init_msg(1);
+
+        init_msg.event_info.event_uri = "https://random_domain.com".to_string();
+
+        let init_result = instantiate(deps.as_mut(), env, info, init_msg);
+        assert_eq!(ContractError::InvalidEventUri {}, init_result.unwrap_err());
+    }
+
+    #[test]
+    fn enable_mint_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -702,7 +715,7 @@ mod tests {
     }
 
     #[test]
-    fn normal_user_can_not_enable_mint() {
+    fn enable_mint_without_permission_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(USER, &vec![]);
@@ -715,7 +728,7 @@ mod tests {
     }
 
     #[test]
-    fn disable_mint() {
+    fn disable_mint_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -730,7 +743,7 @@ mod tests {
     }
 
     #[test]
-    fn normal_user_can_not_disable_mint() {
+    fn normal_user_can_not_disable_mint_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(USER, &vec![]);
@@ -767,7 +780,7 @@ mod tests {
     }
 
     #[test]
-    fn non_creator_change_event_info() {
+    fn non_creator_change_event_info_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         let info = mock_info(USER, &vec![]);
@@ -793,7 +806,7 @@ mod tests {
     }
 
     #[test]
-    fn event_info_update_only_if_event_not_started_or_ended() {
+    fn event_info_update_after_event_started_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
@@ -889,7 +902,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_event_info() {
+    fn event_info_start_time_equal_end_time_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
@@ -1034,36 +1047,54 @@ mod tests {
     }
 
     #[test]
-    fn update_admin_only_from_admin() {
+    fn update_admin_without_permission_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         const NEW_ADMIN: &str = "admin2";
 
         do_instantiate(deps.as_mut());
 
-        let info = mock_info(USER, &vec![]);
         let msg = ExecuteMsg::UpdateAdmin {
             new_admin: NEW_ADMIN.to_string(),
         };
 
-        let result = execute(deps.as_mut(), env.clone(), info, msg.clone());
+        let result = execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info(USER, &vec![]),
+            msg.clone(),
+        );
         assert_eq!(ContractError::Unauthorized {}, result.unwrap_err());
 
-        let info = mock_info(CREATOR, &vec![]);
-
-        let result = execute(deps.as_mut(), env.clone(), info, msg.clone());
+        let result = execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info(CREATOR, &vec![]),
+            msg.clone(),
+        );
         assert_eq!(ContractError::Unauthorized {}, result.unwrap_err());
+    }
 
-        let info = mock_info(ADMIN, &vec![]);
+    #[test]
+    fn update_admin_with_permission_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let env = mock_env();
+        const NEW_ADMIN: &str = "admin2";
 
-        execute(deps.as_mut(), env.clone(), info, msg.clone()).unwrap();
+        do_instantiate(deps.as_mut());
+
+        let msg = ExecuteMsg::UpdateAdmin {
+            new_admin: NEW_ADMIN.to_string(),
+        };
+
+        execute(deps.as_mut(), env.clone(), mock_info(ADMIN, &vec![]), msg).unwrap();
 
         let config = CONFIG.load(&deps.storage).unwrap();
         assert_eq!(NEW_ADMIN, config.admin.as_str());
     }
 
     #[test]
-    fn update_minter_only_from_admin() {
+    fn update_minter_permission_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let env = mock_env();
         const NEW_MINTER: &str = "minter2";
@@ -1074,30 +1105,46 @@ mod tests {
             new_minter: NEW_MINTER.to_string(),
         };
 
-        let info = mock_info(USER, &vec![]);
-        let result = execute(deps.as_mut(), env.clone(), info, msg.clone());
-        // User can't update minter
+        let result = execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info(USER, &vec![]),
+            msg.clone(),
+        );
         assert_eq!(ContractError::Unauthorized {}, result.unwrap_err());
 
-        let info = mock_info(CREATOR, &vec![]);
-        let result = execute(deps.as_mut(), env.clone(), info, msg.clone());
-        // Creator can't update minter
+        let result = execute(
+            deps.as_mut(),
+            env.clone(),
+            mock_info(CREATOR, &vec![]),
+            msg.clone(),
+        );
         assert_eq!(ContractError::Unauthorized {}, result.unwrap_err());
 
-        let info = mock_info(MINTER, &vec![]);
-        let result = execute(deps.as_mut(), env.clone(), info, msg.clone());
-        // Minter can't update minter
+        let result = execute(deps.as_mut(), env.clone(), mock_info(MINTER, &vec![]), msg);
         assert_eq!(ContractError::Unauthorized {}, result.unwrap_err());
+    }
 
-        let info = mock_info(ADMIN, &vec![]);
-        execute(deps.as_mut(), env.clone(), info, msg.clone()).unwrap();
+    #[test]
+    fn update_minter_with_permission_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let env = mock_env();
+        const NEW_MINTER: &str = "minter2";
+
+        do_instantiate(deps.as_mut());
+
+        let msg = ExecuteMsg::UpdateMinter {
+            new_minter: NEW_MINTER.to_string(),
+        };
+
+        execute(deps.as_mut(), env.clone(), mock_info(ADMIN, &vec![]), msg).unwrap();
 
         let config = CONFIG.load(&deps.storage).unwrap();
         assert_eq!(NEW_MINTER, config.minter.as_str());
     }
 
     #[test]
-    fn mint_event_not_started() {
+    fn mint_with_event_not_started_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -1125,7 +1172,7 @@ mod tests {
     }
 
     #[test]
-    fn mint_event_terminated() {
+    fn mint_with_event_terminated_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -1153,7 +1200,7 @@ mod tests {
     }
 
     #[test]
-    fn mint_without_permissions() {
+    fn mint_without_permissions_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(USER, &vec![]);
@@ -1171,7 +1218,7 @@ mod tests {
     }
 
     #[test]
-    fn mint_limit() {
+    fn mint_out_of_max_amount_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -1234,7 +1281,7 @@ mod tests {
     }
 
     #[test]
-    fn mint_to_limit() {
+    fn mint_to_out_of_max_amount_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
@@ -1301,7 +1348,7 @@ mod tests {
     }
 
     #[test]
-    fn mint_to_from_user_error() {
+    fn mint_to_without_permission_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
         let mut env = mock_env();
 
