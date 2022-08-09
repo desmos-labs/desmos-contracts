@@ -2,7 +2,8 @@
 
 ## Changelog
 
-- Aug 5, 2022: Initial draft.
+- Aug 5, 2022: Initial draft;
+- Aug 9, 2022: First review.
 
 ## Status
 DRAFTED
@@ -14,7 +15,7 @@ For example, a _remarkable_ post can be one that reached the goal of 50 comments
 goal reached, the rarer the _remarkable_ will be.
 
 ## Context
-Applications like the new DFP are going to be a new definition of social apps merging classic social networks features to
+Applications like the new DFP (_Desmos Flagship Product_) are going to be a new definition of social apps merging classic social networks features to
 crypto ones. Lately, we saw a daily increase of interest towards NFTs from the major players in the social network market
 such as Instagram, Facebook, Twitter. This because the growing interest of the masses towards them. NFTs can, and are the bridges
 with which layman users started moving their first steps in the crypto world. Even tho they can interact with them and buy/sell/send them,
@@ -135,7 +136,7 @@ pub enum QueryMsg {
 #### Config
 The `Config{}` query returns the contract's configuration inside a `ConfigResponse`.
 ```rust
-pub struct ConfigResponse {
+pub struct QueryConfigResponse {
   pub admin: Addr,
   pub cw721_minter: Addr,
   pub cw721_code_id: u64,
@@ -146,7 +147,7 @@ pub struct ConfigResponse {
 #### EngagementThresholds
 The `EngagementThresholds` query returns the thresholds needed to mint a particular Remarkable inside a `EngagementThresholdsResponse`.
 ```rust
-pub struct EngagementThresholdsResponse {
+pub struct QueryEngagementThresholdsResponse {
   pub engagement_thresholds: Vec<EngagementThreshold>
 }
 ```
@@ -154,7 +155,7 @@ pub struct EngagementThresholdsResponse {
 #### RarityMintFees
 The `RarityMintFees` query return the rarity mint fees required to mint a specific Remarkable inside a `RarityMintFeesResponse`.
 ```rust
-pub struct RarityMintFeesResponse {
+pub struct QueryRarityMintFeesResponse {
   pub rarity_mint_fees: Vec<RarityMintFee>
 }
 ```
