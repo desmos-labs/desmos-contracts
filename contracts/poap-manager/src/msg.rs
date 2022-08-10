@@ -77,8 +77,7 @@ mod tests {
                     start_time: Timestamp::from_seconds(10),
                     end_time: Timestamp::from_seconds(20),
                     per_address_limit: 2,
-                    base_poap_uri: "ipfs://popap-uri".to_string(),
-                    event_uri: "ipfs://event-uri".to_string(),
+                    poap_uri: "ipfs://popap-uri".to_string(),
                 },
             },
         };
@@ -105,8 +104,7 @@ mod tests {
                     start_time: Timestamp::from_seconds(10),
                     end_time: Timestamp::from_seconds(20),
                     per_address_limit: 2,
-                    base_poap_uri: "ipfs://popap-uri".to_string(),
-                    event_uri: "ipfs://event-uri".to_string(),
+                    poap_uri: "ipfs://popap-uri".to_string(),
                 },
             },
         };
