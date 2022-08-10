@@ -113,7 +113,7 @@ fn execute_claim(
     info: MessageInfo,
 ) -> Result<Response<DesmosMsg>, ContractError> {
     let poap_contract_address = POAP_CONTRACT_ADDRESS.load(deps.storage)?;
-    if !check_eligibility(deps, info.sender.clone())? {
+    if !check_eligibility(deps, info.sender.clone()) {
         return Err(ContractError::NoEligibilityError {});
     }
     Ok(Response::new()
@@ -128,9 +128,8 @@ fn execute_claim(
         )?))
 }
 
-fn check_eligibility(deps: DepsMut<DesmosQuery>, user: Addr) -> Result<bool, ContractError> {
-    ProfilesQuerier::new(deps.querier.deref()).query_profile(user)?;
-    Ok(true)
+fn check_eligibility(deps: DepsMut<DesmosQuery>, user: Addr) -> bool {
+    ProfilesQuerier::new(deps.querier.deref()).query_profile(user).is_ok()
 }
 
 fn execute_mint_to(
@@ -196,7 +195,6 @@ mod tests {
     use cw_utils::ParseReplyError;
     use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
     use poap::msg::{EventInfo, InstantiateMsg as POAPInstantiateMsg};
-    use prost::Message;
 
     const CREATOR: &str = "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc";
     const NEW_ADMIN: &str = "desmos1fcrca0eyvj32yeqwyqgs245gjmq4ee9vjjdlnz";
@@ -223,34 +221,6 @@ mod tests {
                     event_uri: "ipfs://event-uri".to_string(),
                 },
             },
-        }
-    }
-
-    #[derive(Clone, PartialEq, Message)]
-    struct MsgInstantiateContractResponse {
-        #[prost(string, tag = "1")]
-        pub contract_address: ::prost::alloc::string::String,
-        #[prost(bytes, tag = "2")]
-        pub data: ::prost::alloc::vec::Vec<u8>,
-    }
-
-    fn get_valid_instantiate_reply() -> Reply {
-        let instantiate_reply = MsgInstantiateContractResponse {
-            contract_address: "poap_contract_address".into(),
-            data: vec![],
-        };
-        let mut encoded_instantiate_reply =
-            Vec::<u8>::with_capacity(instantiate_reply.encoded_len());
-
-        instantiate_reply
-            .encode(&mut encoded_instantiate_reply)
-            .unwrap();
-        Reply {
-            id: 1,
-            result: SubMsgResult::Ok(SubMsgResponse {
-                events: vec![],
-                data: Some(encoded_instantiate_reply.into()),
-            }),
         }
     }
 
@@ -385,17 +355,6 @@ mod tests {
         )
     }
 
-    #[test]
-    fn poap_instantiate_reply_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
-        do_instantiate(deps.as_mut());
-        let env = mock_env();
-        let result = reply(deps.as_mut(), env, get_valid_instantiate_reply());
-        assert!(result.is_ok());
-        let address = POAP_CONTRACT_ADDRESS.load(&deps.storage).unwrap();
-        let expected = Addr::unchecked("poap_contract_address");
-        assert_eq!(address, expected);
-    }
 
     #[test]
     fn claim_with_unsupported_desmos_deps_error() {
