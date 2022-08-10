@@ -10,9 +10,9 @@ fn cw721_execute(
     deps: DepsMut<DesmosQuery>,
     env: Env,
     info: MessageInfo,
-    msg: Cw721ExecuteMsg<String, Empty>,
+    msg: Cw721ExecuteMsg<Empty, Empty>,
 ) -> Result<Response<DesmosMsg>, Cw721ContractError> {
-    Cw721Contract::<'static, String, Empty, Empty, DesmosMsg, DesmosQuery>::default()
+    Cw721Contract::<'static, Empty, Empty, Empty, DesmosMsg, DesmosQuery>::default()
         .execute(deps, env, info, msg)
 }
 
