@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "contracts/poap"
+    "contracts/poap",
+    "contracts/poap-manager",
 ]
 
 [profile.release]
