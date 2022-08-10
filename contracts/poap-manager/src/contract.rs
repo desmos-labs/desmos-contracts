@@ -129,7 +129,9 @@ fn execute_claim(
 }
 
 fn check_eligibility(deps: DepsMut<DesmosQuery>, user: Addr) -> bool {
-    ProfilesQuerier::new(deps.querier.deref()).query_profile(user).is_ok()
+    ProfilesQuerier::new(deps.querier.deref())
+        .query_profile(user)
+        .is_ok()
 }
 
 fn execute_mint_to(
@@ -354,7 +356,6 @@ mod tests {
             ))
         )
     }
-
 
     #[test]
     fn claim_with_unsupported_desmos_deps_error() {
