@@ -23,7 +23,7 @@ jobs:
       - name: Generate coverage report 🧪
         uses: actions-rs/tarpaulin@v0.1.3
         with:
-          args: '--avoid-cfg-tarpaulin --all-features'
+          args: '--avoid-cfg-tarpaulin'
 
       - name: Upload coverage 📤
         uses: codecov/codecov-action@v1.0.2
