@@ -18,8 +18,7 @@ pub struct EventInfo {
     pub creator: Addr,
     pub start_time: Timestamp,
     pub end_time: Timestamp,
-    pub base_poap_uri: String,
-    pub event_uri: String,
+    pub poap_uri: String,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
@@ -58,8 +57,7 @@ mod tests {
             creator: Addr::unchecked(""),
             start_time: Timestamp::from_seconds(start),
             end_time: Timestamp::from_seconds(end),
-            base_poap_uri: "".to_string(),
-            event_uri: "".to_string(),
+            poap_uri: "".to_string(),
         }
     }
 

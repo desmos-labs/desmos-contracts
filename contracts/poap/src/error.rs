@@ -30,14 +30,11 @@ pub enum ContractError {
         end_time: Timestamp,
     },
 
-    #[error("Invalid base poap URI (must be an IPFS URI)")]
+    #[error("Invalid poap URI (must be an IPFS URI)")]
     InvalidPoapUri {},
 
     #[error("Invalid per address limit value")]
     InvalidPerAddressLimit {},
-
-    #[error("Invalid event URI")]
-    InvalidEventUri {},
 
     #[error("Mint operation is disabled")]
     MintDisabled {},

@@ -30,9 +30,7 @@ pub struct EventInfo {
     /// Max amount of poap that a single user can mint.
     pub per_address_limit: u32,
     /// Identifies a valid IPFS URI corresponding to where the assets and metadata of the POAPs are stored.
-    pub base_poap_uri: String,
-    /// Uri of the poap event
-    pub event_uri: String,
+    pub poap_uri: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -99,7 +97,7 @@ pub struct QueryEventInfoResponse {
     /// Time at which the event ends.
     pub end_time: Timestamp,
     /// IPFS uri where the event's metadata are stored
-    pub event_uri: String,
+    pub poap_uri: String,
 }
 
 /// Response to [`QueryMsg::MintedAmount`].
@@ -129,17 +127,10 @@ impl InstantiateMsg {
         }
 
         // Check that the poap uri is a valid IPFS url
-        let poap_uri = Url::parse(&self.event_info.base_poap_uri)
+        let poap_uri = Url::parse(&self.event_info.poap_uri)
             .map_err(|_err| ContractError::InvalidPoapUri {})?;
         if poap_uri.scheme() != "ipfs" {
             return Err(ContractError::InvalidPoapUri {});
-        }
-
-        // Check that the event uri is a valid IPFS url
-        let event_uri = Url::parse(&self.event_info.event_uri)
-            .map_err(|_err| ContractError::InvalidEventUri {})?;
-        if event_uri.scheme() != "ipfs" {
-            return Err(ContractError::InvalidEventUri {});
         }
 
         Ok(())
@@ -194,8 +185,7 @@ mod tests {
                 start_time: start.clone(),
                 end_time: end.clone(),
                 per_address_limit: 1,
-                base_poap_uri: "ipfs://domain.com".to_string(),
-                event_uri: "ipfs://domain.com".to_string(),
+                poap_uri: "ipfs://domain.com".to_string(),
             },
         };
 
@@ -223,8 +213,7 @@ mod tests {
                 start_time: start.clone(),
                 end_time: end.clone(),
                 per_address_limit: 1,
-                base_poap_uri: "ipfs://domain.com".to_string(),
-                event_uri: "ipfs://domain.com".to_string(),
+                poap_uri: "ipfs://domain.com".to_string(),
             },
         };
 
@@ -250,8 +239,7 @@ mod tests {
                 start_time: Timestamp::from_seconds(1),
                 end_time: Timestamp::from_seconds(2),
                 per_address_limit: 0,
-                base_poap_uri: "ipfs://domain.com".to_string(),
-                event_uri: "ipfs://domain.com".to_string(),
+                poap_uri: "ipfs://domain.com".to_string(),
             },
         };
 
@@ -262,7 +250,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate_with_invalid_event_uri_error() {
+    fn instantiate_with_invalid_poap_uri_error() {
         let msg = InstantiateMsg {
             admin: "".to_string(),
             minter: "".to_string(),
@@ -277,62 +265,7 @@ mod tests {
                 start_time: Timestamp::from_seconds(1),
                 end_time: Timestamp::from_seconds(2),
                 per_address_limit: 1,
-                base_poap_uri: "ipfs://domain.com".to_string(),
-                event_uri: "invalid_event_uri".to_string(),
-            },
-        };
-
-        assert_eq!(
-            ContractError::InvalidEventUri {},
-            msg.validate().unwrap_err()
-        );
-    }
-
-    #[test]
-    fn instantiate_with_non_ipfs_event_uri_error() {
-        let msg = InstantiateMsg {
-            admin: "".to_string(),
-            minter: "".to_string(),
-            cw721_code_id: 0u64.into(),
-            cw721_initiate_msg: Cw721InstantiateMsg {
-                name: "".to_string(),
-                minter: "".to_string(),
-                symbol: "".to_string(),
-            },
-            event_info: EventInfo {
-                creator: "".to_string(),
-                start_time: Timestamp::from_seconds(1),
-                end_time: Timestamp::from_seconds(2),
-                per_address_limit: 1,
-                base_poap_uri: "ipfs://domain.com".to_string(),
-                event_uri: "https://domain.com".to_string(),
-            },
-        };
-
-        assert_eq!(
-            ContractError::InvalidEventUri {},
-            msg.validate().unwrap_err()
-        );
-    }
-
-    #[test]
-    fn instantiate_with_invalid_base_poap_uri_error() {
-        let msg = InstantiateMsg {
-            admin: "".to_string(),
-            minter: "".to_string(),
-            cw721_code_id: 0u64.into(),
-            cw721_initiate_msg: Cw721InstantiateMsg {
-                name: "".to_string(),
-                minter: "".to_string(),
-                symbol: "".to_string(),
-            },
-            event_info: EventInfo {
-                creator: "".to_string(),
-                start_time: Timestamp::from_seconds(1),
-                end_time: Timestamp::from_seconds(2),
-                per_address_limit: 1,
-                base_poap_uri: "invalid_base_poap_uri".to_string(),
-                event_uri: "ipfs://domain.com".to_string(),
+                poap_uri: "invalid_base_poap_uri".to_string(),
             },
         };
 
@@ -343,7 +276,7 @@ mod tests {
     }
 
     #[test]
-    fn instantiate_with_non_ipfs_base_poap_uri_error() {
+    fn instantiate_with_non_ipfs_poap_uri_error() {
         let msg = InstantiateMsg {
             admin: "".to_string(),
             minter: "".to_string(),
@@ -358,8 +291,7 @@ mod tests {
                 start_time: Timestamp::from_seconds(1),
                 end_time: Timestamp::from_seconds(2),
                 per_address_limit: 1,
-                base_poap_uri: "https://domain.com".to_string(),
-                event_uri: "ipfs://domain.com".to_string(),
+                poap_uri: "https://domain.com".to_string(),
             },
         };
 
