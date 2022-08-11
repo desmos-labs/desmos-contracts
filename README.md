@@ -6,3 +6,5 @@ A collection of smart contracts built in [CosmWasm](https://www.cosmwasm.com/) f
 
 | Contracts | Tests | Crates.io |
 | ------------- | ------ | ------ |
+| [POAP](https://github.com/desmos-labs/desmos-contracts/tree/master/contracts/poap) | | **NA** |
+| [POAP Manager](https://github.com/desmos-labs/desmos-contracts/tree/master/contracts/poap-manager) | | **NA** |
