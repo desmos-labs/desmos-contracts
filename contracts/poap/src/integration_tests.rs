@@ -6,8 +6,8 @@ mod tests {
         QueryMsg,
     };
     use crate::test_utils::{
-        get_valid_init_msg, ADMIN, CREATOR, EVENT_END_SECONDS, EVENT_START_SECONDS, EVENT_URI,
-        INITIAL_BLOCK_TIME_SECONDS, MINTER, USER,
+        get_valid_init_msg, ADMIN, CREATOR, EVENT_END_SECONDS, EVENT_START_SECONDS,
+        INITIAL_BLOCK_TIME_SECONDS, MINTER, POAP_URI, USER,
     };
     use cosmwasm_std::{Addr, Empty, Timestamp, Uint64};
     use cw721::TokensResponse;
@@ -134,7 +134,7 @@ mod tests {
             Timestamp::from_seconds(EVENT_END_SECONDS),
             poap_event_info.end_time
         );
-        assert_eq!(EVENT_URI, poap_event_info.event_uri.as_str());
+        assert_eq!(POAP_URI, poap_event_info.poap_uri.as_str());
 
         let cw721_minter_response: MinterResponse = querier
             .query_wasm_smart(

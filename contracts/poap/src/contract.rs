@@ -86,8 +86,7 @@ pub fn instantiate(
         creator: creator.clone(),
         start_time: msg.event_info.start_time,
         end_time: msg.event_info.end_time,
-        base_poap_uri: msg.event_info.base_poap_uri.clone(),
-        event_uri: msg.event_info.event_uri.clone(),
+        poap_uri: msg.event_info.poap_uri.clone(),
     };
     // Save the event info
     EVENT_INFO.save(deps.storage, &event_info)?;
@@ -118,8 +117,7 @@ pub fn instantiate(
             "per_address_limit",
             msg.event_info.per_address_limit.to_string(),
         )
-        .add_attribute("base_poap_uri", &msg.event_info.base_poap_uri)
-        .add_attribute("event_uri", &msg.event_info.event_uri)
+        .add_attribute("poap_uri", &msg.event_info.poap_uri)
         .add_attribute("cw721_code_id", &msg.cw721_code_id.to_string())
         .add_submessage(cw721_submessage))
 }
@@ -234,11 +232,11 @@ fn execute_mint(
     let poap_id = NEXT_POAP_ID.may_load(deps.storage)?.unwrap_or(1);
 
     // Create the cw721 message to send to mint the poap
-    let mint_msg = Cw721ExecuteMsg::<String, Empty>::Mint(MintMsg::<String> {
+    let mint_msg = Cw721ExecuteMsg::<Empty, Empty>::Mint(MintMsg::<Empty> {
         token_id: poap_id.to_string(),
         owner: recipient_addr.to_string(),
-        token_uri: Some(event_info.base_poap_uri),
-        extension: event_info.event_uri,
+        token_uri: Some(event_info.poap_uri),
+        extension: Empty {},
     });
 
     let cw721_address = CW721_ADDRESS.load(deps.storage)?;
@@ -387,7 +385,7 @@ fn query_event_info(deps: Deps<DesmosQuery>) -> StdResult<QueryEventInfoResponse
         creator: event_info.creator,
         start_time: event_info.start_time,
         end_time: event_info.end_time,
-        event_uri: event_info.event_uri,
+        poap_uri: event_info.poap_uri,
     })
 }
 
@@ -643,7 +641,7 @@ mod tests {
         let mut init_msg = get_valid_init_msg(1);
 
         // Invalid uri
-        init_msg.event_info.base_poap_uri = "invalid_uri".to_string();
+        init_msg.event_info.poap_uri = "invalid_uri".to_string();
 
         let init_result = instantiate(deps.as_mut(), env, info, init_msg);
         assert!(init_result.is_err());
@@ -656,47 +654,10 @@ mod tests {
         let info = mock_info(ADMIN, &vec![]);
         let mut init_msg = get_valid_init_msg(1);
 
-        init_msg.event_info.base_poap_uri = "https://random_domain.com".to_string();
+        init_msg.event_info.poap_uri = "https://random_domain.com".to_string();
 
         let init_result = instantiate(deps.as_mut(), env, info, init_msg);
         assert_eq!(ContractError::InvalidPoapUri {}, init_result.unwrap_err());
-    }
-
-    #[test]
-    fn instantiate_with_invalid_event_uri_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
-        let env = mock_env();
-        let info = mock_info(ADMIN, &vec![]);
-        let mut init_msg = get_valid_init_msg(1);
-
-        // Invalid uri
-        init_msg.event_info.event_uri = "invalid_uri".to_string();
-
-        let init_result = instantiate(deps.as_mut(), env, info, init_msg);
-        assert!(init_result.is_err());
-
-        // Non ipfs uri
-        let env = mock_env();
-        let info = mock_info(ADMIN, &vec![]);
-        let mut init_msg = get_valid_init_msg(1);
-
-        init_msg.event_info.event_uri = "https://random_domain.com".to_string();
-
-        let init_result = instantiate(deps.as_mut(), env, info, init_msg);
-        assert_eq!(ContractError::InvalidEventUri {}, init_result.unwrap_err());
-    }
-
-    #[test]
-    fn instantiate_with_non_ipfs_event_uri_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
-        let env = mock_env();
-        let info = mock_info(ADMIN, &vec![]);
-        let mut init_msg = get_valid_init_msg(1);
-
-        init_msg.event_info.event_uri = "https://random_domain.com".to_string();
-
-        let init_result = instantiate(deps.as_mut(), env, info, init_msg);
-        assert_eq!(ContractError::InvalidEventUri {}, init_result.unwrap_err());
     }
 
     #[test]

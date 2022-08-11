@@ -9,7 +9,7 @@ pub const CREATOR: &str = "creator";
 pub const ADMIN: &str = "admin";
 pub const MINTER: &str = "minter";
 pub const USER: &str = "user";
-pub const EVENT_URI: &str = "ipfs://event-uri";
+pub const POAP_URI: &str = "ipfs://poap-uri";
 
 pub fn get_valid_init_msg(cw721_code_id: u64) -> InstantiateMsg {
     let start_time = Timestamp::from_seconds(EVENT_START_SECONDS);
@@ -29,8 +29,7 @@ pub fn get_valid_init_msg(cw721_code_id: u64) -> InstantiateMsg {
             start_time,
             end_time,
             per_address_limit: 2,
-            base_poap_uri: "ipfs://popap-uri".to_string(),
-            event_uri: EVENT_URI.to_string(),
+            poap_uri: POAP_URI.to_string(),
         },
     }
 }
