@@ -1,0 +1,29 @@
+name: Lints
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  lints:
+    name: Lints
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v2
+
+      - name: Setup Rust ⚙️
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.59.0
+          override: true
+          components: rustfmt, clippy
+
+      - name: Run cargo fmt ✅
+        run: cargo fmt --all -- --check
+
+      - name: Run cargo clippy ✅
+        run: cargo clippy
