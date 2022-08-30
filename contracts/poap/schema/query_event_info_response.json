@@ -6,7 +6,7 @@
   "required": [
     "creator",
     "end_time",
-    "event_uri",
+    "poap_uri",
     "start_time"
   ],
   "properties": {
@@ -26,7 +26,7 @@
         }
       ]
     },
-    "event_uri": {
+    "poap_uri": {
       "description": "IPFS uri where the event's metadata are stored",
       "type": "string"
     },
