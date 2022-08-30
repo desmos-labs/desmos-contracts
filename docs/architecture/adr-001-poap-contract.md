@@ -31,6 +31,7 @@ NFTs in CosmWasm.
 The `CW721-base` will take care of store all the information related to:
 - Associations between POAPs and attendees/claimers;
 - Association between POAPs and owners;
+- Associations between POAPs and metadata;
 The `POAP` contract will store events information and handle the `Mint` operations.
 
 ## Specifications
