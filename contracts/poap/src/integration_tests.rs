@@ -5,7 +5,7 @@ mod tests {
         ExecuteMsg, QueryConfigResponse, QueryEventInfoResponse, QueryMintedAmountResponse,
         QueryMsg,
     };
-    use crate::state::TokenExtInfo;
+    use crate::state::Metadata;
     use crate::test_utils::{
         get_valid_init_msg, ADMIN, CREATOR, EVENT_END_SECONDS, EVENT_START_SECONDS,
         INITIAL_BLOCK_TIME_SECONDS, MINTER, POAP_URI, USER,
@@ -208,7 +208,7 @@ mod tests {
 
         assert_eq!(1, response.tokens.len());
 
-        let minted_nft_info: NftInfoResponse<TokenExtInfo> = querier
+        let minted_nft_info: NftInfoResponse<Metadata> = querier
             .query_wasm_smart(
                 config.cw721_contract.as_str(),
                 &Cw721QueryMsg::<Empty>::NftInfo {
@@ -217,7 +217,7 @@ mod tests {
             )
             .unwrap();
         assert_eq!(
-            TokenExtInfo {
+            Metadata {
                 claimer: Addr::unchecked(USER)
             },
             minted_nft_info.extension
@@ -286,7 +286,7 @@ mod tests {
 
         assert_eq!(1, response.tokens.len());
 
-        let minted_nft_info: NftInfoResponse<TokenExtInfo> = querier
+        let minted_nft_info: NftInfoResponse<Metadata> = querier
             .query_wasm_smart(
                 config.cw721_contract.as_str(),
                 &Cw721QueryMsg::<Empty>::NftInfo {
@@ -295,7 +295,7 @@ mod tests {
             )
             .unwrap();
         assert_eq!(
-            TokenExtInfo {
+            Metadata {
                 claimer: Addr::unchecked(USER)
             },
             minted_nft_info.extension

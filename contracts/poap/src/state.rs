@@ -22,7 +22,7 @@ pub struct EventInfo {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct TokenExtInfo {
+pub struct Metadata {
     pub claimer: Addr,
 }
 

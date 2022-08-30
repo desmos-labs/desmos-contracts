@@ -147,11 +147,11 @@ The metadata should be filled as the following ones:
 ```
 * The `cw721_code_id` identifies the code of the `CW721-base` contract initialised by this contract.
 
-#### TokenExtInfo
+#### Metadata
 The `TokenInfo` is used to store the extended information inside CW721-base.
 
 ```rust
-pub struct TokenExtInfo{
+pub struct Metadata{
   pub claimer: Addr,
 }
 ```
@@ -180,11 +180,11 @@ With the `EnableMint{}` message the admin can enable the `Mint{}` message for ev
 With the `DisableMint{}` message the admin can disable the `Mint{}` message for everyone.
 
 #### Mint
-If enabled, the `Mint{}` message allows users to mint their own POAP. It also stores the user address inside CW721-base extension field as the claimer by `TokenExtInfo`.
+If enabled, the `Mint{}` message allows users to mint their own POAP. It also stores the user address inside CW721-base extension field as the claimer by `Metadata`.
 It's disabled after the event's end.
 
 #### MintTo
-With the `MintTo{recipient}` message the contract's admin or the minter can mint the POAP for a specific recipient. It also stores the user address inside CW721-base extension field as the claimer by `TokenExtInfo`.
+With the `MintTo{recipient}` message the contract's admin or the minter can mint the POAP for a specific recipient. It also stores the user address inside CW721-base extension field as the claimer by `Metadata`.
 It's disabled after the event's end.
 
 #### UpdateEventInfo
