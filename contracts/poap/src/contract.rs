@@ -4,7 +4,8 @@ use crate::msg::{
     QueryMintedAmountResponse, QueryMsg,
 };
 use crate::state::{
-    Config, EventInfo, CONFIG, CW721_ADDRESS, EVENT_INFO, MINTER_ADDRESS, NEXT_POAP_ID, TokenExtInfo,
+    Config, EventInfo, TokenExtInfo, CONFIG, CW721_ADDRESS, EVENT_INFO, MINTER_ADDRESS,
+    NEXT_POAP_ID,
 };
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -151,8 +152,6 @@ pub fn execute(
     }
 }
 
-
-
 fn execute_set_mint_enabled(
     deps: DepsMut<DesmosQuery>,
     info: MessageInfo,
@@ -238,7 +237,9 @@ fn execute_mint(
         token_id: poap_id.to_string(),
         owner: recipient_addr.to_string(),
         token_uri: Some(event_info.poap_uri),
-        extension: TokenExtInfo { claimer: recipient_addr.clone() },
+        extension: TokenExtInfo {
+            claimer: recipient_addr.clone(),
+        },
     });
 
     let cw721_address = CW721_ADDRESS.load(deps.storage)?;

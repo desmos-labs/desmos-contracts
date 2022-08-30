@@ -1,3 +1,4 @@
+use crate::state::TokenExtInfo;
 use cosmwasm_std::{Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdError, StdResult};
 use cw721_base::{
     ContractError as Cw721ContractError, Cw721Contract, ExecuteMsg as Cw721ExecuteMsg,
@@ -5,7 +6,6 @@ use cw721_base::{
 };
 use cw_multi_test::{Contract, ContractWrapper};
 use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
-use crate::state::TokenExtInfo;
 
 fn cw721_execute(
     deps: DepsMut<DesmosQuery>,

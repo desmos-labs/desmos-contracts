@@ -5,13 +5,13 @@ mod tests {
         ExecuteMsg, QueryConfigResponse, QueryEventInfoResponse, QueryMintedAmountResponse,
         QueryMsg,
     };
+    use crate::state::TokenExtInfo;
     use crate::test_utils::{
         get_valid_init_msg, ADMIN, CREATOR, EVENT_END_SECONDS, EVENT_START_SECONDS,
         INITIAL_BLOCK_TIME_SECONDS, MINTER, POAP_URI, USER,
     };
-    use crate::state::TokenExtInfo;
     use cosmwasm_std::{Addr, Empty, Timestamp, Uint64};
-    use cw721::{TokensResponse, NftInfoResponse};
+    use cw721::{NftInfoResponse, TokensResponse};
     use cw721_base::{MinterResponse, QueryMsg as Cw721QueryMsg};
 
     use cw_multi_test::{Contract, ContractWrapper, Executor};
@@ -208,11 +208,20 @@ mod tests {
 
         assert_eq!(1, response.tokens.len());
 
-        let minted_nft_info : NftInfoResponse<TokenExtInfo> = querier.query_wasm_smart(
-            config.cw721_contract.as_str(),
-            &Cw721QueryMsg::<Empty>::NftInfo { token_id: "1".to_string() },
-        ).unwrap();
-        assert_eq!(TokenExtInfo{ claimer: Addr::unchecked(USER) }, minted_nft_info.extension)
+        let minted_nft_info: NftInfoResponse<TokenExtInfo> = querier
+            .query_wasm_smart(
+                config.cw721_contract.as_str(),
+                &Cw721QueryMsg::<Empty>::NftInfo {
+                    token_id: "1".to_string(),
+                },
+            )
+            .unwrap();
+        assert_eq!(
+            TokenExtInfo {
+                claimer: Addr::unchecked(USER)
+            },
+            minted_nft_info.extension
+        )
     }
 
     #[test]
@@ -277,10 +286,19 @@ mod tests {
 
         assert_eq!(1, response.tokens.len());
 
-        let minted_nft_info : NftInfoResponse<TokenExtInfo> = querier.query_wasm_smart(
-            config.cw721_contract.as_str(),
-            &Cw721QueryMsg::<Empty>::NftInfo { token_id: "1".to_string() },
-        ).unwrap();
-        assert_eq!(TokenExtInfo{ claimer: Addr::unchecked(USER) }, minted_nft_info.extension)
+        let minted_nft_info: NftInfoResponse<TokenExtInfo> = querier
+            .query_wasm_smart(
+                config.cw721_contract.as_str(),
+                &Cw721QueryMsg::<Empty>::NftInfo {
+                    token_id: "1".to_string(),
+                },
+            )
+            .unwrap();
+        assert_eq!(
+            TokenExtInfo {
+                claimer: Addr::unchecked(USER)
+            },
+            minted_nft_info.extension
+        )
     }
 }
