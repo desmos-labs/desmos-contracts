@@ -68,7 +68,7 @@ If the checks pass successfully, then the tip record can be saved. The number of
 The record can be saved using the `Map` structure of the `cw_storage_plus` package that allows to:
 * save elements with combined keys (similar to what we do in the storages of Desmos Core modules)
 * iterate through them easily with pre-built iterators
-* faster data fetches
+* fetch data more efficiently
 
 Ideally the map should have the following key `post_id + sender + receiver` pointing at the tip amount.
 With this prefix, using the possibilities offer by the `Map`'s iterators it's possible to retrieve:
