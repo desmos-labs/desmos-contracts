@@ -8,7 +8,7 @@
 DRAFTED
 
 ## Abstract
-This ADR defines the architecture of the Tips contract. This contract manage sending and tracking of tips made within
+This ADR defines the architecture of the Tips contract. This contract manages sending and tracking of tips made within
 Desmos based applications and exposes queries that allow to gather all users sent and received tips easily.
 
 ## Context
