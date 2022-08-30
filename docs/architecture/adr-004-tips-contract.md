@@ -2,7 +2,8 @@
 
 ## Changelog
 
-- Aug 25, 2022: Initial draft.
+- Aug 25, 2022: Initial draft;
+- Aug 30, 2022: First review.
 
 ## Status
 DRAFTED
