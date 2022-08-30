@@ -21,7 +21,7 @@ This contract allows sending tips between users as well tracking sent and receiv
 The tips tracking should be limited to a maximum tracked record number that helps to keep the contract storage as small
 as possible. Also, it doesn't make much sense to store all the tips record that a user received because each one of them will
 most likely check only the latest received.
-Additionally, the contract allows its admin to set a fee that users has to pay in order to be allowed to send a tip. This fee, if not set, is equal to zero.
+Additionally, the contract allows its admin to set a fee that users have to pay in order to be allowed to send a tip. This fee, if not set, defaults to zero.
 
 ## Specifications
 Here below the specifications for the contract's messages:
