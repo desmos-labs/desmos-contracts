@@ -54,7 +54,7 @@ pub enum ExecuteMsg{
 ```
 
 ##### SendTip
-With the `SendTip` message the user call the contract to send a tip to another user to show their support towards a specific content they made.
+With the `SendTip` message the user can call the contract to send a tip to another user to show their support towards a specific content they made.
 The `MessagInfo` field of the message contains both:
 * the tip identified by the `funds` field
 * the sender identified by the `sender` field
