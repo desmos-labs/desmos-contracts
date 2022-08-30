@@ -29,8 +29,8 @@ We will create a `POAP` contract that allows a selected `minter` (ideally anothe
 collection associated with a specific event. The contract will implement the `CW721-base`, the basic implementation of
 NFTs in CosmWasm.
 The `CW721-base` will take care of store all the information related to:
-- Associations between POAPs and attendees;
-- Associations between POAPs and metadata.
+- Associations between POAPs and attendees/claimers;
+- Association between POAPs and owners;
 The `POAP` contract will store events information and handle the `Mint` operations.
 
 ## Specifications
@@ -146,6 +146,16 @@ The metadata should be filled as the following ones:
 ```
 * The `cw721_code_id` identifies the code of the `CW721-base` contract initialised by this contract.
 
+#### TokenExtInfo
+The `TokenInfo` is used to store the extended information inside CW721-base.
+
+```rust
+pub struct TokenExtInfo{
+  pub claimer: Addr,
+}
+```
+* The `claimer` field identifies the address who mint the POAP token.
+
 #### Execute
 ```rust
 pub enum ExecuteMsg {
@@ -169,10 +179,11 @@ With the `EnableMint{}` message the admin can enable the `Mint{}` message for ev
 With the `DisableMint{}` message the admin can disable the `Mint{}` message for everyone.
 
 #### Mint
-If enabled, the `Mint{}` message allows users to mint their own POAP.  It's disabled after the event's end.
+If enabled, the `Mint{}` message allows users to mint their own POAP. It also stores the user address inside CW721-base extension field as the claimer by `TokenExtInfo`.
+It's disabled after the event's end.
 
 #### MintTo
-With the `MintTo{recipient}` message the contract's admin or the minter can mint the POAP for a specific recipient.
+With the `MintTo{recipient}` message the contract's admin or the minter can mint the POAP for a specific recipient. It also stores the user address inside CW721-base extension field as the claimer by `TokenExtInfo`.
 It's disabled after the event's end.
 
 #### UpdateEventInfo
