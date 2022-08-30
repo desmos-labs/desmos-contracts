@@ -13,7 +13,7 @@ Desmos based applications and exposes queries that allow to gather all users sen
 
 ## Context
 Desmos based applications may want to leverage on the web3 features and one of the most popular one is for sure the possibility to tip users. Currently, it's easy to integrate a feature that allows sending tokens as tips between users, but it's very difficult to track those tips in an easy way.
-Plus application creators might want to integrate some form of monetization that allows them to earn a little percentage when user send tips to each other.
+Additionally, application developers might want to integrate some form of monetization that allows them to earn a little percentage when users send tips to each other.
 
 ## Decision
 The idea here is to write a contract called `Tips`, that handles the sending and tracking of user's tips.
