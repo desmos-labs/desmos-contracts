@@ -5,14 +5,15 @@ use cw721_base::{
 };
 use cw_multi_test::{Contract, ContractWrapper};
 use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
+use crate::state::TokenExtInfo;
 
 fn cw721_execute(
     deps: DepsMut<DesmosQuery>,
     env: Env,
     info: MessageInfo,
-    msg: Cw721ExecuteMsg<Empty, Empty>,
+    msg: Cw721ExecuteMsg<TokenExtInfo, Empty>,
 ) -> Result<Response<DesmosMsg>, Cw721ContractError> {
-    Cw721Contract::<'static, Empty, Empty, Empty, DesmosMsg, DesmosQuery>::default()
+    Cw721Contract::<'static, TokenExtInfo, Empty, Empty, DesmosMsg, DesmosQuery>::default()
         .execute(deps, env, info, msg)
 }
 
@@ -22,7 +23,7 @@ fn cw721_instantiate(
     info: MessageInfo,
     msg: Cw721InstantiateMsg,
 ) -> Result<Response<DesmosMsg>, StdError> {
-    Cw721Contract::<'static, Empty, Empty, Empty, DesmosMsg, DesmosQuery>::default()
+    Cw721Contract::<'static, TokenExtInfo, Empty, Empty, DesmosMsg, DesmosQuery>::default()
         .instantiate(deps, env, info, msg)
 }
 
@@ -36,7 +37,7 @@ fn failing_cw721_instantiate(
 }
 
 fn cw721_query(deps: Deps<DesmosQuery>, env: Env, msg: Cw721QueryMsg<Empty>) -> StdResult<Binary> {
-    Cw721Contract::<'static, Empty, Empty, Empty, DesmosMsg, DesmosQuery>::default()
+    Cw721Contract::<'static, TokenExtInfo, Empty, Empty, DesmosMsg, DesmosQuery>::default()
         .query(deps, env, msg)
 }
 

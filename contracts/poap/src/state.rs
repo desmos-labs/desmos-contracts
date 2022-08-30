@@ -21,6 +21,11 @@ pub struct EventInfo {
     pub poap_uri: String,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct TokenExtInfo{
+    pub claimer: Addr,
+}
+
 pub const CONFIG: Item<Config> = Item::new("config");
 pub const EVENT_INFO: Item<EventInfo> = Item::new("event_info");
 pub const CW721_ADDRESS: Item<Addr> = Item::new("cw721_address");
