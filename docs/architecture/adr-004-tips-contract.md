@@ -80,7 +80,7 @@ With this prefix, using the possibilities offer by the `Map`'s iterators it's po
 With the `UpdateServiceFee` message the user can update the previously set service fee.
 The message should make sure that the user trying to perform the change is either:
 * The contract admin
-* The subspace owner or admin
+* The contract admin
 
 ##### UpdateAdmin
 With the `UpdateAdmin` message the user can update the contract's admin.
