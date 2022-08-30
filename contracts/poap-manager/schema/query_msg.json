@@ -6,10 +6,10 @@
       "description": "Return a ConfigResponse containing the configuration info of the Manager contract",
       "type": "object",
       "required": [
-        "Config"
+        "config"
       ],
       "properties": {
-        "Config": {
+        "config": {
           "type": "object"
         }
       },
