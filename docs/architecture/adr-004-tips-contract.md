@@ -87,7 +87,7 @@ With the `UpdateAdmin` message the user can update the contract's admin.
 The message should make sure that the user trying to make the edit is the actual contract admin.
 
 ##### UpdateSavedTipsRecordThreshold
-With the `UpdateSavedTipsRecordThreshold` message the user can update the Tips records threshold.
+With the `UpdateSavedTipsRecordThreshold` message the user can update the tips records threshold.
 The message should make sure that the user tyring to make the edit is the actual contract admin.
 
 ### Query
