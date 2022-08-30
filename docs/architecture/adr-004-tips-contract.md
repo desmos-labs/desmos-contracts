@@ -12,7 +12,7 @@ This ADR defines the architecture of the Tips contract. This contract manages se
 Desmos based applications and exposes queries that allow to gather all users sent and received tips easily.
 
 ## Context
-Desmos based applications may want to leverage on the web3 features and one of the most popular one is for sure the possibility to tip users. Currently, it's easy to integrate a feature that allow an application to send tokens as tips between users but very difficult to track those tips in an easy way.
+Desmos based applications may want to leverage on the web3 features and one of the most popular one is for sure the possibility to tip users. Currently, it's easy to integrate a feature that allows sending tokens as tips between users, but it's very difficult to track those tips in an easy way.
 Plus application creators might want to integrate some form of monetization that allows them to earn a little percentage when user send tips to each other.
 
 ## Decision
