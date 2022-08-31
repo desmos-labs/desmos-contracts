@@ -148,10 +148,10 @@ The metadata should be filled as the following ones:
 * The `cw721_code_id` identifies the code of the `CW721-base` contract initialised by this contract.
 
 #### Metadata
-The `TokenInfo` is used to store the extended information inside CW721-base.
+The `Metadata` is used to store the extended information inside CW721-base.
 
 ```rust
-pub struct Metadata{
+pub struct Metadata {
   pub claimer: Addr,
 }
 ```

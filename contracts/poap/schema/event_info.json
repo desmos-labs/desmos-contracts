@@ -3,23 +3,19 @@
   "title": "EventInfo",
   "type": "object",
   "required": [
-    "base_poap_uri",
     "creator",
     "end_time",
-    "event_uri",
+    "poap_uri",
     "start_time"
   ],
   "properties": {
-    "base_poap_uri": {
-      "type": "string"
-    },
     "creator": {
       "$ref": "#/definitions/Addr"
     },
     "end_time": {
       "$ref": "#/definitions/Timestamp"
     },
-    "event_uri": {
+    "poap_uri": {
       "type": "string"
     },
     "start_time": {

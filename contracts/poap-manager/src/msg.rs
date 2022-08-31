@@ -36,6 +36,7 @@ pub enum ExecuteMsg {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     /// Return a ConfigResponse containing the configuration info of the Manager contract
     Config {},
