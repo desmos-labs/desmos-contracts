@@ -4,7 +4,7 @@ use crate::msg::{
     QueryMintedAmountResponse, QueryMsg,
 };
 use crate::state::{
-    Config, EventInfo, CONFIG, CW721_ADDRESS, EVENT_INFO, MINTER_ADDRESS, NEXT_POAP_ID,
+    Config, EventInfo, Metadata, CONFIG, CW721_ADDRESS, EVENT_INFO, MINTER_ADDRESS, NEXT_POAP_ID,
 };
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -232,11 +232,13 @@ fn execute_mint(
     let poap_id = NEXT_POAP_ID.may_load(deps.storage)?.unwrap_or(1);
 
     // Create the cw721 message to send to mint the poap
-    let mint_msg = Cw721ExecuteMsg::<Empty, Empty>::Mint(MintMsg::<Empty> {
+    let mint_msg = Cw721ExecuteMsg::<Metadata, Empty>::Mint(MintMsg::<Metadata> {
         token_id: poap_id.to_string(),
         owner: recipient_addr.to_string(),
         token_uri: Some(event_info.poap_uri),
-        extension: Empty {},
+        extension: Metadata {
+            claimer: recipient_addr.clone(),
+        },
     });
 
     let cw721_address = CW721_ADDRESS.load(deps.storage)?;
