@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[schemars(rename = "PoapInstantiateMsg", title = "InstantiateMsg")]
 pub struct InstantiateMsg {
     /// Address of who will have the right to administer the contract.
     pub admin: String,

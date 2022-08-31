@@ -14,6 +14,7 @@ pub struct Config {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[schemars(rename = "StateEventInfo")]
 pub struct EventInfo {
     pub creator: Addr,
     pub start_time: Timestamp,
