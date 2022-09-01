@@ -103,9 +103,7 @@ With this prefix, using the possibilities offer by the `Map`'s iterators it's po
 
 ##### UpdateServiceFee
 With the `UpdateServiceFee` message the user can update the previously set service fee.
-The message should make sure that the user trying to perform the change is either:
-* The contract admin
-* The contract admin
+The message should make sure that the user tyring to make the edit is the actual contract admin.
 
 ##### UpdateAdmin
 With the `UpdateAdmin` message the user can update the contract's admin.
