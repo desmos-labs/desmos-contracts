@@ -4,7 +4,7 @@ use crate::msg::{
     QueryMintedAmountResponse, QueryMsg,
 };
 use crate::state::{
-    Config, EventInfo, Metadata, CONFIG, CW721_ADDRESS, EVENT_INFO, MINTER_ADDRESS, NEXT_POAP_ID,
+    Config, EventInfo, CONFIG, CW721_ADDRESS, EVENT_INFO, MINTER_ADDRESS, NEXT_POAP_ID,
 };
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -16,6 +16,7 @@ use cw2::set_contract_version;
 use cw721_base::{
     msg::ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg, MintMsg,
 };
+use cw721_poap::Metadata;
 use cw_utils::parse_reply_instantiate_data;
 use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
 // version info for migration info
