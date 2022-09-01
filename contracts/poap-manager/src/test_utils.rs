@@ -6,6 +6,7 @@ use cw721_base::{
     ContractError as Cw721ContractError, Cw721Contract, ExecuteMsg as Cw721ExecuteMsg,
     InstantiateMsg as Cw721InstantiateMsg, QueryMsg as Cw721QueryMsg,
 };
+use cw721_poap::{Metadata};
 use cw_multi_test::{Contract, ContractWrapper};
 use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
 use poap::{
@@ -17,7 +18,6 @@ use poap::{
         ExecuteMsg as POAPExecuteMsg, InstantiateMsg as POAPInstantiateMsg,
         QueryMsg as POAPQueryMsg,
     },
-    state::Metadata,
     ContractError as POAPContractError,
 };
 
