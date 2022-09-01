@@ -5,7 +5,6 @@ mod tests {
         ExecuteMsg, QueryConfigResponse, QueryEventInfoResponse, QueryMintedAmountResponse,
         QueryMsg,
     };
-    use crate::state::Metadata;
     use crate::test_utils::{
         get_valid_init_msg, ADMIN, CREATOR, EVENT_END_SECONDS, EVENT_START_SECONDS,
         INITIAL_BLOCK_TIME_SECONDS, MINTER, POAP_URI, USER,
