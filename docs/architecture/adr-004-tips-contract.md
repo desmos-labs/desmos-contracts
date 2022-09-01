@@ -97,9 +97,9 @@ The record can be saved using the `Map` structure of the `cw_storage_plus` packa
 
 Ideally the map should have the following key `post_id + sender + receiver` pointing at the tip amount.
 With this prefix, using the possibilities offer by the `Map`'s iterators it's possible to retrieve:
-* All the post's received tips
-* All the tips sent by a user
-* All the tips received by a user
+* all the post's received tips;
+* all the tips sent by a user;
+* all the tips received by a user.
 
 ##### UpdateServiceFee
 With the `UpdateServiceFee` message the user can update the previously set service fee.
