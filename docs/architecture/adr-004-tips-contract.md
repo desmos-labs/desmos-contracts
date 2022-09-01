@@ -3,7 +3,8 @@
 ## Changelog
 
 - Aug 25, 2022: Initial draft;
-- Aug 30, 2022: First review.
+- Aug 30, 2022: First review;
+- Sept 1, 2022: Second review.
 
 ## Status
 DRAFTED
@@ -34,7 +35,7 @@ Here below the specifications for the contract's messages:
 pub struct InstantiateMsg {
   pub admin: String,
   pub subspace_id: u64,
-  pub service_fee: Vec<Coin>,
+  pub service_fee: ServiceFee,
   pub saved_tips_record_threshold: u64
 }
 ```
@@ -44,13 +45,36 @@ pub struct InstantiateMsg {
 * The `service_fee` identifies a fee that the users need to pay to use the contract;
 * The `save_tips_record_threshold` identifies the number of records saved of a user tips history.
 
+The service fee can be set in two different ways, depending on the needs of the contract's admin.
+It can be a `Fixed` or a `Percentage` fee.
+* The `Fixed` one is just a fixed amount of tokens the admin requires to be paid as a fee.
+* The `Percentage` one depends on the amount of the tip given by the tipper. The admin chooses a percentage to be deducted from the
+tip and paid to the contract.
+
+```rust
+pub enum ServiceFee {
+  Fixed {amount: Vec<Coin>},
+  Percentage{value: u64}
+}
+```
+
+* The value of the percentage is represented by a `u64` cause float can't be used inside contracts. The Service fee will then be calculated as follow so:
+  * Service Fee = `tip_amount * value/100`
+
 #### Execute
 ```rust
 pub enum ExecuteMsg{
-  SendTip{post_id: u64, receiver: String},
+  SendTip{target: Target},
   UpdateServiceFee{new_fee: Vec<Coin>},
   UpdateAdmin{new_admin: String},
   UpdateSavedTipsRecordThreshold{new_threshold: u64}
+}
+```
+
+```rust
+pub enum Target {
+  ContentTarget {post_id: u64, receiver: String},
+  UserTarget {receiver: String}
 }
 ```
 
