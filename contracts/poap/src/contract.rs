@@ -4,7 +4,7 @@ use crate::msg::{
     QueryMintedAmountResponse, QueryMsg,
 };
 use crate::state::{
-    Config, EventInfo, CONFIG, CW721_ADDRESS, EVENT_INFO, MINTER_ADDRESS, NEXT_POAP_ID,
+    Config, EventInfo, Metadata, CONFIG, CW721_ADDRESS, EVENT_INFO, MINTER_ADDRESS, NEXT_POAP_ID,
 };
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;

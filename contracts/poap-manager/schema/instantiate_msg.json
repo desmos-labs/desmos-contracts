@@ -24,7 +24,7 @@
       "description": "Initialization message of the POAP contract.",
       "allOf": [
         {
-          "$ref": "#/definitions/InstantiateMsg"
+          "$ref": "#/definitions/PoapInstantiateMsg"
         }
       ]
     }
@@ -73,6 +73,29 @@
       }
     },
     "InstantiateMsg": {
+      "type": "object",
+      "required": [
+        "minter",
+        "name",
+        "symbol"
+      ],
+      "properties": {
+        "minter": {
+          "description": "The minter is the only one who can create new NFTs. This is designed for a base NFT that is controlled by an external program or contract. You will likely replace this with custom logic in custom NFTs",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name of the NFT contract",
+          "type": "string"
+        },
+        "symbol": {
+          "description": "Symbol of the NFT contract",
+          "type": "string"
+        }
+      }
+    },
+    "PoapInstantiateMsg": {
+      "title": "InstantiateMsg",
       "type": "object",
       "required": [
         "admin",

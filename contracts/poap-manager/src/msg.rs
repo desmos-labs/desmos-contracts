@@ -6,6 +6,7 @@ use crate::error::ContractError;
 use poap::msg::InstantiateMsg as POAPInstantiateMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[schemars(rename = "PoapManagerInstantiateMsg", title = "InstantiateMsg")]
 pub struct InstantiateMsg {
     /// Address of who will have the right to administer the contract.
     pub admin: String,
