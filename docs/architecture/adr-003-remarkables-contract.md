@@ -3,10 +3,11 @@
 ## Changelog
 
 - Aug 5, 2022: Initial draft;
-- Aug 9, 2022: First review.
+- Aug 9, 2022: First review
+- Aug 12, 2022: Accepted
 
 ## Status
-DRAFTED
+ACCEPTED (Not implemented)
 
 ## Abstract
 This ADR defines the architecture of the Remarkables contract. This contract manage the creation of _Remarkables_.
