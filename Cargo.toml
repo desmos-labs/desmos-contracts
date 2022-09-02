@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "contracts/cw721-poap",
     "contracts/poap",
     "contracts/poap-manager",
 ]
