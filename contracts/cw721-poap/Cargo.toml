@@ -1,7 +1,7 @@
 [package]
-name = "poap-manager"
+name = "cw721-poap"
 version = "0.1.0"
-authors = ["Paul <paul@forbole.com>"]
+authors = ["Paul <p22626262@gmail.com>"]
 edition = "2018"
 
 exclude = [
@@ -15,6 +15,17 @@ exclude = [
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+panic = 'abort'
+incremental = false
+overflow-checks = true
+
 [features]
 # for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
@@ -25,7 +36,7 @@ library = []
 optimize = """docker run --rm -v "$(pwd)"/../..:/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/workspace-optimizer:0.12.6 ./contracts/poap-manager
+  cosmwasm/workspace-optimizer:0.12.6 ./contracts/poap
 """
 
 [dependencies]
@@ -36,15 +47,13 @@ cw2 = "0.13.2"
 schemars = "0.8.8"
 serde = { version = "1.0.137", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.31" }
-desmos-bindings = { version = "1.0.3", default-features = false, features = ["profiles", "query", "msg"]}
-poap = { path = "../poap", version = "0.1.0", features = ["library"]}
+desmos-bindings = { version = "1.0.0", default-features = false, features = ["msg", "query"] }
 cw721-base = { git = "https://github.com/desmos-labs/cw-nfts", features = ["library"], branch = "paul/update-custom-msg-query" }
-cw-utils = "0.13.4"
-cw721-poap = { path = "../cw721-poap", version = "0.1.0", features = ["library"]}
 
 [dev-dependencies]
 cosmwasm-schema = "1.0.0"
-cw-multi-test = { version = "0.13.4" }
-cw721 = { git = "https://github.com/desmos-labs/cw-nfts", branch = "paul/update-custom-msg-query" }
+cw-multi-test = "0.13.2"
 desmos-bindings = { version = "1.0.3", default-features = false, features = ["mocks"]}
+cw721 = { git = "https://github.com/desmos-labs/cw-nfts", branch = "paul/update-custom-msg-query" }
+
 
