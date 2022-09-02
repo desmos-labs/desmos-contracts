@@ -16,6 +16,7 @@ use cw2::set_contract_version;
 use cw721_base::{
     msg::ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg, MintMsg,
 };
+use cw721_poap::Metadata;
 use cw_utils::parse_reply_instantiate_data;
 use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
 // version info for migration info
@@ -232,11 +233,13 @@ fn execute_mint(
     let poap_id = NEXT_POAP_ID.may_load(deps.storage)?.unwrap_or(1);
 
     // Create the cw721 message to send to mint the poap
-    let mint_msg = Cw721ExecuteMsg::<Empty, Empty>::Mint(MintMsg::<Empty> {
+    let mint_msg = Cw721ExecuteMsg::<Metadata, Empty>::Mint(MintMsg::<Metadata> {
         token_id: poap_id.to_string(),
         owner: recipient_addr.to_string(),
         token_uri: Some(event_info.poap_uri),
-        extension: Empty {},
+        extension: Metadata {
+            claimer: recipient_addr.clone(),
+        },
     });
 
     let cw721_address = CW721_ADDRESS.load(deps.storage)?;

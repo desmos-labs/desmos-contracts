@@ -14,11 +14,17 @@ pub struct Config {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[schemars(rename = "StateEventInfo")]
 pub struct EventInfo {
     pub creator: Addr,
     pub start_time: Timestamp,
     pub end_time: Timestamp,
     pub poap_uri: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Metadata {
+    pub claimer: Addr,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");

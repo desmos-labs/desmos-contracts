@@ -47,18 +47,13 @@
     "EventInfo": {
       "type": "object",
       "required": [
-        "base_poap_uri",
         "creator",
         "end_time",
-        "event_uri",
         "per_address_limit",
+        "poap_uri",
         "start_time"
       ],
       "properties": {
-        "base_poap_uri": {
-          "description": "Identifies a valid IPFS URI corresponding to where the assets and metadata of the POAPs are stored.",
-          "type": "string"
-        },
         "creator": {
           "description": "User that created the event.",
           "type": "string"
@@ -71,15 +66,15 @@
             }
           ]
         },
-        "event_uri": {
-          "description": "Uri of the poap event",
-          "type": "string"
-        },
         "per_address_limit": {
           "description": "Max amount of poap that a single user can mint.",
           "type": "integer",
           "format": "uint32",
           "minimum": 0.0
+        },
+        "poap_uri": {
+          "description": "Identifies a valid IPFS URI corresponding to where the assets and metadata of the POAPs are stored.",
+          "type": "string"
         },
         "start_time": {
           "description": "Time at which the event begins.",
