@@ -209,7 +209,7 @@ mod tests {
                 admin: CREATOR.into(),
                 minter: CREATOR.into(),
                 cw721_code_id: 2u64.into(),
-                cw721_initiate_msg: Cw721InstantiateMsg {
+                cw721_instantiate_msg: Cw721InstantiateMsg {
                     minter: CREATOR.into(),
                     name: CREATOR.into(),
                     symbol: CREATOR.into(),
@@ -244,7 +244,7 @@ mod tests {
                 admin: CREATOR.into(),
                 minter: CREATOR.into(),
                 cw721_code_id: 2u64.into(),
-                cw721_initiate_msg: Cw721InstantiateMsg {
+                cw721_instantiate_msg: Cw721InstantiateMsg {
                     minter: CREATOR.into(),
                     name: CREATOR.into(),
                     symbol: CREATOR.into(),
@@ -276,7 +276,7 @@ mod tests {
                 admin: CREATOR.into(),
                 minter: CREATOR.into(),
                 cw721_code_id: 2u64.into(),
-                cw721_initiate_msg: Cw721InstantiateMsg {
+                cw721_instantiate_msg: Cw721InstantiateMsg {
                     minter: CREATOR.into(),
                     name: CREATOR.into(),
                     symbol: CREATOR.into(),
