@@ -169,7 +169,7 @@ pub enum ExecuteMsg {
     end_time: Timestamp,
   },
   UpdateAdmin{new_admin: String},
-  UpdateMinter{new_minter: String}
+  UpdateMinter{new_minter: String},
 }
 ```
 
@@ -207,7 +207,20 @@ pub enum QueryMsg {
     EventInfo {},
 
     /// Return the configuration info as a QueryConfigResponse
-    Config{}
+    Config{},
+
+    /// Return the nft info with approvals from cw721 contract as a AllNftInfoResponse
+    AllNftInfo{
+      token_id:String, 
+      include_expired: Option<bool>,
+    },
+
+    /// Return all the tokens ids owned by the given owner from cw721 contract as a TokensResponse
+    Tokens{
+      owner: String,
+      start_after: Option<String>,
+      limit: Option<u32>,
+    }
 }
 ```
 
@@ -233,6 +246,23 @@ pub struct QueryConfigResponse {
     pub per_address_limit: u32,
     pub cw721_contract_code: Uint64,
     pub cw721_contract: Addr,
+}
+```
+
+### AllNftInfo
+This query returns all the nft info of the token from cw721 contract
+```rust
+pub struct AllNftInfoResponse<Metadata> {
+    pub access: OwnerOfResponse,
+    pub info: NftInfoResponse<Metadata>,
+}
+```
+
+### Tokens
+This query returns all the ids of tokens owned by the given owner from cw721 contract
+```rust
+pub struct TokensResponse {
+    pub tokens: Vec<String>,
 }
 ```
 
