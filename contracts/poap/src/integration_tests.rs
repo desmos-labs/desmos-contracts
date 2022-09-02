@@ -10,7 +10,7 @@ mod tests {
         INITIAL_BLOCK_TIME_SECONDS, MINTER, POAP_URI, USER,
     };
     use cosmwasm_std::{Addr, Empty, Timestamp, Uint64};
-    use cw721::{NftInfoResponse, TokensResponse, AllNftInfoResponse, OwnerOfResponse};
+    use cw721::{AllNftInfoResponse, NftInfoResponse, OwnerOfResponse, TokensResponse};
     use cw721_base::{MinterResponse, QueryMsg as Cw721QueryMsg};
     use cw721_poap::Metadata;
 
@@ -444,22 +444,30 @@ mod tests {
                 },
             )
             .unwrap();
-       let response : AllNftInfoResponse<Metadata> = querier
-       .query_wasm_smart(
-            &poap_contract_addr,
-           &QueryMsg::AllNftInfo {
-               token_id: "1".to_string(),
-               include_expired: None,
-           },
-       )
-       .unwrap();
-       assert_eq!(cw721_response, response);
-       assert_eq!(AllNftInfoResponse{
-        access: OwnerOfResponse{ owner: USER.to_string(), approvals: vec![] },
-        info: NftInfoResponse{
-            token_uri: Some(POAP_URI.to_string()),
-            extension: Metadata{ claimer: Addr::unchecked(USER) },
-        }
-       }, response);
+        let response: AllNftInfoResponse<Metadata> = querier
+            .query_wasm_smart(
+                &poap_contract_addr,
+                &QueryMsg::AllNftInfo {
+                    token_id: "1".to_string(),
+                    include_expired: None,
+                },
+            )
+            .unwrap();
+        assert_eq!(cw721_response, response);
+        assert_eq!(
+            AllNftInfoResponse {
+                access: OwnerOfResponse {
+                    owner: USER.to_string(),
+                    approvals: vec![]
+                },
+                info: NftInfoResponse {
+                    token_uri: Some(POAP_URI.to_string()),
+                    extension: Metadata {
+                        claimer: Addr::unchecked(USER)
+                    },
+                }
+            },
+            response
+        );
     }
 }
