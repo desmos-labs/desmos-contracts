@@ -51,7 +51,7 @@ mod tests {
                 admin: ADMIN.into(),
                 minter: "".into(),
                 cw721_code_id: cw721_code_id.into(),
-                cw721_initiate_msg: Cw721InstantiateMsg {
+                cw721_instantiate_msg: Cw721InstantiateMsg {
                     minter: "".into(),
                     name: "test".into(),
                     symbol: "test".into(),

@@ -5,7 +5,7 @@
   "required": [
     "admin",
     "cw721_code_id",
-    "cw721_initiate_msg",
+    "cw721_instantiate_msg",
     "event_info",
     "minter"
   ],
@@ -22,7 +22,7 @@
         }
       ]
     },
-    "cw721_initiate_msg": {
+    "cw721_instantiate_msg": {
       "description": "Initialization message that will be sent to the CW721 contract.",
       "allOf": [
         {
