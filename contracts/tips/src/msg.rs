@@ -29,6 +29,23 @@ pub enum ServiceFee {
     },
 }
 
+impl ServiceFee {
+    pub fn validate(&self) -> Result<(), ContractError> {
+        match self {
+            ServiceFee::Fixed { .. } => Ok(()),
+            ServiceFee::Percentage { value, decimals } => {
+                let percent_value = value.u128() / 10_u128.pow(*decimals);
+
+                if percent_value == 0 || percent_value >= 100 {
+                    Err(ContractError::InvalidPercentageFee {})
+                } else {
+                    Ok(())
+                }
+            }
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     /// Address of who will have the right to administer the contract.
@@ -46,7 +63,8 @@ impl InstantiateMsg {
         if self.subspace_id == Uint64::zero() {
             return Err(ContractError::InvalidSubspaceId {});
         }
-        Ok(())
+
+        self.service_fee.validate()
     }
 }
 
@@ -94,6 +112,27 @@ pub enum ExecuteMsg {
         /// Address to which fees will be sent.
         receiver: String,
     },
+}
+
+impl ExecuteMsg {
+    pub fn validate(&self) -> Result<(), ContractError> {
+        match self {
+            ExecuteMsg::SendTip { target } => match target {
+                Target::ContentTarget { post_id } => {
+                    if post_id.is_zero() {
+                        Err(ContractError::InvalidPostId {})
+                    } else {
+                        Ok(())
+                    }
+                }
+                Target::UserTarget { .. } => Ok(()),
+            },
+            ExecuteMsg::UpdateServiceFee { new_fee } => new_fee.validate(),
+            ExecuteMsg::UpdateAdmin { .. } => Ok(()),
+            ExecuteMsg::UpdateSavedTipsRecordThreshold { .. } => Ok(()),
+            ExecuteMsg::ClaimFees { .. } => Ok(()),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
