@@ -61,7 +61,7 @@ pub enum ServiceFee {
 ```
 
 The `Percentage` fee is represented by a:
-  * `value` field that identifies the number of percentage the admin applies (e.g. value = 2 means that the percentage can be 2%, 20%, etc..based on the 2nd field);
+  * `value` field that identifies the number of percentage the admin applies (e.g. value = 2 means that the percentage can be 2%, 0,2%, etc..based on the 2nd field);
   * `decimals` field represents the number of decimal places that come before the `value`.
 
 The `Percentage` fee will then be calculated as follows so: `tip_amount * value/10^decimals`
