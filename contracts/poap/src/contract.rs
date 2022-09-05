@@ -13,10 +13,11 @@ use cosmwasm_std::{
     MessageInfo, Reply, Response, StdResult, SubMsg, Timestamp,
 };
 use cw2::set_contract_version;
+use cw721::{AllNftInfoResponse, TokensResponse};
 use cw721_base::{
     msg::ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg, MintMsg,
 };
-use cw721_poap::Metadata;
+use cw721_poap::{Metadata, QueryMsg as Cw721PoapQueryMsg};
 use cw_utils::parse_reply_instantiate_data;
 use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
 // version info for migration info
@@ -364,6 +365,15 @@ pub fn query(deps: Deps<DesmosQuery>, _env: Env, msg: QueryMsg) -> StdResult<Bin
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::EventInfo {} => to_binary(&query_event_info(deps)?),
         QueryMsg::MintedAmount { user } => to_binary(&query_minted_amount(deps, user)?),
+        QueryMsg::AllNftInfo {
+            token_id,
+            include_expired,
+        } => to_binary(&query_all_nft_info(deps, token_id, include_expired)?),
+        QueryMsg::Tokens {
+            owner,
+            start_after,
+            limit,
+        } => to_binary(&query_tokens(deps, owner, start_after, limit)?),
     }
 }
 
@@ -406,6 +416,38 @@ fn query_minted_amount(
         user: user_addr,
         amount: minted_amount,
     })
+}
+
+fn query_all_nft_info(
+    deps: Deps<DesmosQuery>,
+    token_id: String,
+    include_expired: Option<bool>,
+) -> StdResult<AllNftInfoResponse<Metadata>> {
+    let cw721_address = CW721_ADDRESS.load(deps.storage)?;
+    deps.querier.query_wasm_smart(
+        cw721_address,
+        &Cw721PoapQueryMsg::AllNftInfo {
+            token_id,
+            include_expired,
+        },
+    )
+}
+
+fn query_tokens(
+    deps: Deps<DesmosQuery>,
+    owner: String,
+    start_after: Option<String>,
+    limit: Option<u32>,
+) -> StdResult<TokensResponse> {
+    let cw721_address = CW721_ADDRESS.load(deps.storage)?;
+    deps.querier.query_wasm_smart(
+        cw721_address,
+        &Cw721PoapQueryMsg::Tokens {
+            owner,
+            start_after,
+            limit,
+        },
+    )
 }
 
 // Reply callback triggered from cw721 contract instantiation

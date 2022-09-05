@@ -3,6 +3,8 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
+use cw721::{AllNftInfoResponse, TokensResponse};
+use cw721_poap::Metadata;
 use poap::msg::{
     ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryEventInfoResponse, QueryMsg,
 };
@@ -21,4 +23,6 @@ fn main() {
     export_schema(&schema_for!(EventInfo), &out_dir);
     export_schema(&schema_for!(QueryConfigResponse), &out_dir);
     export_schema(&schema_for!(QueryEventInfoResponse), &out_dir);
+    export_schema(&schema_for!(AllNftInfoResponse<Metadata>), &out_dir);
+    export_schema(&schema_for!(TokensResponse), &out_dir);
 }
