@@ -69,7 +69,7 @@ mod tests {
                 admin: "test".into(),
                 minter: "test".into(),
                 cw721_code_id: 2u64.into(),
-                cw721_initiate_msg: Cw721InstantiateMsg {
+                cw721_instantiate_msg: Cw721InstantiateMsg {
                     minter: "".into(),
                     name: "test".into(),
                     symbol: "test".into(),
@@ -96,7 +96,7 @@ mod tests {
                 admin: "test".into(),
                 minter: "test".into(),
                 cw721_code_id: 2u64.into(),
-                cw721_initiate_msg: Cw721InstantiateMsg {
+                cw721_instantiate_msg: Cw721InstantiateMsg {
                     minter: "".into(),
                     name: "test".into(),
                     symbol: "test".into(),

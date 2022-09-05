@@ -15,7 +15,7 @@ pub struct InstantiateMsg {
     /// Id of the CW721 contract to initialize together with this contract.
     pub cw721_code_id: Uint64,
     /// Initialization message that will be sent to the CW721 contract.
-    pub cw721_initiate_msg: Cw721InstantiateMsg,
+    pub cw721_instantiate_msg: Cw721InstantiateMsg,
     /// Information about the event.
     pub event_info: EventInfo,
 }
@@ -187,7 +187,7 @@ mod tests {
             admin: "".to_string(),
             minter: "".to_string(),
             cw721_code_id: 0u64.into(),
-            cw721_initiate_msg: Cw721InstantiateMsg {
+            cw721_instantiate_msg: Cw721InstantiateMsg {
                 name: "".to_string(),
                 minter: "".to_string(),
                 symbol: "".to_string(),
@@ -215,7 +215,7 @@ mod tests {
             admin: "".to_string(),
             minter: "".to_string(),
             cw721_code_id: 0u64.into(),
-            cw721_initiate_msg: Cw721InstantiateMsg {
+            cw721_instantiate_msg: Cw721InstantiateMsg {
                 name: "".to_string(),
                 minter: "".to_string(),
                 symbol: "".to_string(),
@@ -241,7 +241,7 @@ mod tests {
             admin: "".to_string(),
             minter: "".to_string(),
             cw721_code_id: 0u64.into(),
-            cw721_initiate_msg: Cw721InstantiateMsg {
+            cw721_instantiate_msg: Cw721InstantiateMsg {
                 name: "".to_string(),
                 minter: "".to_string(),
                 symbol: "".to_string(),
@@ -267,7 +267,7 @@ mod tests {
             admin: "".to_string(),
             minter: "".to_string(),
             cw721_code_id: 0u64.into(),
-            cw721_initiate_msg: Cw721InstantiateMsg {
+            cw721_instantiate_msg: Cw721InstantiateMsg {
                 name: "".to_string(),
                 minter: "".to_string(),
                 symbol: "".to_string(),
@@ -293,7 +293,7 @@ mod tests {
             admin: "".to_string(),
             minter: "".to_string(),
             cw721_code_id: 0u64.into(),
-            cw721_initiate_msg: Cw721InstantiateMsg {
+            cw721_instantiate_msg: Cw721InstantiateMsg {
                 name: "".to_string(),
                 minter: "".to_string(),
                 symbol: "".to_string(),

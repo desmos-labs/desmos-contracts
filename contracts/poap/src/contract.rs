@@ -98,8 +98,8 @@ pub fn instantiate(
         wasm_instantiate(
             msg.cw721_code_id.into(),
             &Cw721InstantiateMsg {
-                name: msg.cw721_initiate_msg.name,
-                symbol: msg.cw721_initiate_msg.symbol,
+                name: msg.cw721_instantiate_msg.name,
+                symbol: msg.cw721_instantiate_msg.symbol,
                 minter: env.contract.address.to_string(),
             },
             info.funds,
