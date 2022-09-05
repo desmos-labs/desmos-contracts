@@ -3,6 +3,7 @@ members = [
     "contracts/cw721-poap",
     "contracts/poap",
     "contracts/poap-manager",
+    "contracts/tips",
 ]
 
 [profile.release]
