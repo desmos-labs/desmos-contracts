@@ -5,7 +5,8 @@
 - Aug 25, 2022: Initial draft;
 - Aug 30, 2022: First review;
 - Sept 1, 2022: Second review;
-- Sept 5, 2022: Third review.
+- Sept 5, 2022: Third review;
+- Sept 5, 2022: Fourth review.
 
 ## Status
 DRAFTED
@@ -55,7 +56,7 @@ tip and paid to the contract.
 ```rust
 pub enum ServiceFee {
   Fixed {amount: Vec<Coin>},
-  Percentage{value: u64, decimals: u32}
+  Percentage{value: u32, decimals: u32}
 }
 ```
 
@@ -63,7 +64,7 @@ The `Percentage` fee is represented by a:
   * `value` field that identifies the number of percentage the admin applies (e.g. value = 2 means that the percentage can be 2%, 20%, etc..based on the 2nd field);
   * `decimals` field represents the number of decimal places that come before the `value`.
 
-The `Percentage` fee will then be calculated as follows so: `tip_amount * (value*10^decimals)/(100*10^decimals)`
+The `Percentage` fee will then be calculated as follows so: `tip_amount * value/10^decimals`
 
 #### Execute
 ```rust
