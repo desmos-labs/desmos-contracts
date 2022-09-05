@@ -4,7 +4,9 @@
 
 - Aug 25, 2022: Initial draft;
 - Aug 30, 2022: First review;
-- Sept 1, 2022: Second review.
+- Sept 1, 2022: Second review;
+- Sept 5, 2022: Third review;
+- Sept 5, 2022: Fourth review.
 
 ## Status
 DRAFTED
@@ -36,7 +38,7 @@ pub struct InstantiateMsg {
   pub admin: String,
   pub subspace_id: u64,
   pub service_fee: ServiceFee,
-  pub saved_tips_record_threshold: u64
+  pub saved_tips_record_threshold: u32
 }
 ```
 
@@ -54,26 +56,31 @@ tip and paid to the contract.
 ```rust
 pub enum ServiceFee {
   Fixed {amount: Vec<Coin>},
-  Percentage{value: u64}
+  Percentage{value: u32, decimals: u32}
 }
 ```
 
-* The value of the percentage is represented by a `u64` cause float can't be used inside contracts. The Service fee will then be calculated as follow so:
-  * Service Fee = `tip_amount * value/100`
+The `Percentage` fee is represented by a:
+  * `value` field that identifies the number of percentage the admin applies (e.g. value = 2 means that the percentage can be 2%, 0,2%, etc..based on the 2nd field);
+  * `decimals` field represents the number of decimal places that come before the `value`.
+
+The `Percentage` fee will then be calculated as follows so: `tip_amount * value/10^decimals`
 
 #### Execute
 ```rust
 pub enum ExecuteMsg{
   SendTip{target: Target},
-  UpdateServiceFee{new_fee: Vec<Coin>},
+  ClaimFees{recipient: String},
+  UpdateServiceFee{new_fee: ServiceFee},
   UpdateAdmin{new_admin: String},
   UpdateSavedTipsRecordThreshold{new_threshold: u64}
+
 }
 ```
 
 ```rust
 pub enum Target {
-  ContentTarget {post_id: u64, receiver: String},
+  ContentTarget {post_id: u64},
   UserTarget {receiver: String}
 }
 ```
@@ -100,6 +107,10 @@ With this prefix, using the possibilities offer by the `Map`'s iterators it's po
 * all the post's received tips;
 * all the tips sent by a user;
 * all the tips received by a user.
+
+##### ClaimFees
+With the `ClaimFees` message the contract's admin can withdraw all the collected fees and send them to the given `recipient`.
+The `recipient` can be a user or another contract.
 
 ##### UpdateServiceFee
 With the `UpdateServiceFee` message the user can update the previously set service fee.
