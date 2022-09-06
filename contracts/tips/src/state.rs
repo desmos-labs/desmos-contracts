@@ -5,6 +5,7 @@ use cosmwasm_std::{Addr, Coin};
 use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::collections::vec_deque::VecDeque;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
@@ -22,7 +23,14 @@ pub struct Config {
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
-pub const TIPS_RECORD: Map<(u64, Addr, Addr), Vec<Coin>> = Map::new("tips_record");
+/// Tips record key where:
+/// 0. Tip sender address
+/// 1. Tip receiver address
+/// 2. Tip post, if 0 means that is not referencing a post.
+pub type TipsRecordKey = (Addr, Addr, u64);
+pub const TIPS_RECORD: Map<TipsRecordKey, Vec<Coin>> = Map::new("tips_record");
+// Keeps the keys of TIPS_RECORD ordered by insertion time, first oldest, last newest.
+pub const TIPS_KEY_LIST: Item<VecDeque<TipsRecordKey>> = Item::new("tips_key_list");
 
 impl From<ServiceFee> for StateServiceFees {
     fn from(service_fees: ServiceFee) -> Self {
