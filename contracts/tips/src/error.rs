@@ -12,6 +12,9 @@ pub enum ContractError {
     #[error("invalid subspace id")]
     InvalidSubspaceId {},
 
+    #[error("invalid saved tips threshold")]
+    InvalidSavedTipsThreshold {},
+
     #[error("invalid percentage fee")]
     InvalidPercentageFee {},
 
