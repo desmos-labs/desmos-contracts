@@ -36,12 +36,12 @@ pub struct EngagementThreshold {
 pub enum ExecuteMsg {
     MintTo {
         post_id: Uint64,
-        remarkable_uri: String,
-        rarity_level: Uint64,
+        remarkables_uri: String,
+        rarity_level: u32,
     },
     UpdateRarityMintFee {
-        rarity_level: Uint64,
-        new_fee: Vec<Coin>,
+        rarity_level: u32,
+        new_fees: Vec<Coin>,
     },
     UpdateAdmin {
         new_admin: String,
@@ -53,24 +53,18 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     /// Return a QueryConfigResponse containing the configuration info of the contract
     Config {},
-    EngagementThresholds {},
-    RarityMintFees {},
+    Rarities{},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct QueryConfigResponse {
     pub admin: Addr,
-    pub cw721_minter: Addr,
     pub cw721_code_id: Uint64,
+    pub cw721_address: Addr,
     pub subspace_id: Uint64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct QueryEngagementThresholdsResponse {
-    pub engagement_thresholds: Vec<EngagementThreshold>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct QueryRarityMintFeesResponse {
-    pub rarity_mint_fees: Vec<RarityMintFee>,
+pub struct QueryRaritiesResponse {
+    pub rarities: Vec<Rarity>,
 }

@@ -3,7 +3,7 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
 
-use remarkables::msg::{ExecuteMsg, QueryConfigResponse, QueryEngagementThresholdsResponse, QueryRarityMintFeesResponse, InstantiateMsg, QueryMsg};
+use remarkables::msg::{ExecuteMsg, QueryConfigResponse, QueryRaritiesResponse, InstantiateMsg, QueryMsg};
 use remarkables::state::RarityState;
 
 fn main() {
@@ -17,6 +17,5 @@ fn main() {
     export_schema(&schema_for!(QueryMsg), &out_dir);
     export_schema(&schema_for!(RarityState), &out_dir);
     export_schema(&schema_for!(QueryConfigResponse), &out_dir);
-    export_schema(&schema_for!(QueryEngagementThresholdsResponse), &out_dir);
-    export_schema(&schema_for!(QueryRarityMintFeesResponse), &out_dir);
+    export_schema(&schema_for!(QueryRaritiesResponse), &out_dir);
 }

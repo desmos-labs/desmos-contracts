@@ -1,22 +1,39 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, wasm_instantiate, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
-    SubMsg,
+    has_coins, to_binary, wasm_execute, wasm_instantiate, Addr, Binary, Coin, Deps, DepsMut, Empty,
+    Env, MessageInfo, Order, Querier, Reply, Response, StdResult, Storage, SubMsg, Uint64,
 };
 use cw2::set_contract_version;
-use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
-
-use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
+use cw721_base::{ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg, MintMsg};
+use cw_utils::parse_reply_instantiate_data;
+use desmos_bindings::{
+    msg::DesmosMsg, posts::querier::PostsQuerier, query::DesmosQuery,
+    reactions::querier::ReactionsQuerier, types::PageRequest,
+};
+use std::ops::Deref;
 
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{ConfigState, RarityState, CONFIG, RARITY};
+use crate::msg::{
+    ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, QueryRaritiesResponse, Rarity,
+};
+use crate::state::{ConfigState, RarityState, CONFIG, CW721_ADDRESS, NEXT_TOKEN_ID, RARITY};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:remarkables";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const INSTANTIATE_CW721_REPLY_ID: u64 = 1;
+
+// actions for executing messages
+const ACTION_INSTANTIATE: &str = "instantiate";
+const ACTION_UPDATE_ADMIN: &str = "update_admin";
+
+// attributes for executing messages
+const ATTRIBUTE_ACTION: &str = "action";
+const ATTRIBUTE_ADMIN: &str = "admin";
+const ATTRIBUTE_CW721_CODE_ID: &str = "cw721_code_id";
+const ATTRIBUTE_SENDER: &str = "sender";
+const ATTRIBUTE_NEW_ADMIN: &str = "new_admin";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -60,8 +77,9 @@ pub fn instantiate(
         INSTANTIATE_CW721_REPLY_ID,
     );
     Ok(Response::new()
-        .add_attribute("method", "instantiate")
-        .add_attribute("owner", info.sender)
+        .add_attribute(ATTRIBUTE_ACTION, "instantiate")
+        .add_attribute(ATTRIBUTE_ADMIN, msg.admin)
+        .add_attribute(ATTRIBUTE_CW721_CODE_ID, msg.cw721_code_id)
         .add_submessage(cw721_submessage))
 }
 
@@ -73,18 +91,178 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response<DesmosMsg>, ContractError> {
     match msg {
-        ExecuteMsg::MintTo { .. } => Ok(Response::new()),
-        ExecuteMsg::UpdateAdmin { .. } => Ok(Response::new()),
-        ExecuteMsg::UpdateRarityMintFee { .. } => Ok(Response::new()),
+        ExecuteMsg::MintTo {
+            post_id,
+            remarkables_uri,
+            rarity_level,
+        } => execute_mint_to(deps, info, rarity_level, post_id.into(), remarkables_uri),
+        ExecuteMsg::UpdateAdmin { new_admin } => execute_update_admin(deps, info, new_admin),
+        ExecuteMsg::UpdateRarityMintFee {
+            rarity_level,
+            new_fees,
+        } => execute_update_rarity_mint_fees(deps, info, rarity_level, new_fees),
     }
+}
+
+fn execute_mint_to(
+    deps: DepsMut<DesmosQuery>,
+    info: MessageInfo,
+    rarity_level: u32,
+    post_id: u64,
+    remarkables_uri: String,
+) -> Result<Response<DesmosMsg>, ContractError> {
+    let rarity = RARITY.load(deps.storage, rarity_level)?;
+    // Check if rarity mint fees is enough
+    let mut is_enough_fees = false;
+    for coin in rarity.mint_fees {
+        is_enough_fees = has_coins(&info.funds, &coin)
+    }
+    if !is_enough_fees {
+        return Err(ContractError::MintFeesNotEnough {});
+    }
+    // Check if post reaches the eligible threshold
+    check_eligibility(
+        deps.storage,
+        deps.querier.deref(),
+        post_id,
+        rarity.engagement_threshold,
+    )?;
+    // Create the cw721 message to send to mint the remarkables
+    let token_id = NEXT_TOKEN_ID.may_load(deps.storage)?.unwrap_or(1);
+    NEXT_TOKEN_ID.save(deps.storage, &(token_id + 1))?;
+    let mint_msg = Cw721ExecuteMsg::<Empty, Empty>::Mint(MintMsg::<Empty> {
+        token_id: token_id.to_string(),
+        owner: info.sender.into(),
+        token_uri: Some(remarkables_uri),
+        extension: Empty {},
+    });
+    let wasm_execute_mint_msg = wasm_execute(CW721_ADDRESS.load(deps.storage)?, &mint_msg, vec![])?;
+    Ok(Response::new().add_message(wasm_execute_mint_msg))
+}
+
+fn check_eligibility<'a>(
+    storage: &dyn Storage,
+    querier: &'a dyn Querier,
+    post_id: u64,
+    engagement_threshold: u32,
+) -> Result<(), ContractError> {
+    let subspace_id = CONFIG.load(storage)?.subspace_id;
+    let reaction_count = ReactionsQuerier::new(querier)
+        .query_reactions(
+            subspace_id,
+            post_id,
+            None,
+            Some(PageRequest {
+                key: None,
+                offset: None,
+                limit: Uint64::new(0),
+                count_total: true,
+                reverse: false,
+            }),
+        )?
+        .pagination
+        .unwrap()
+        .total
+        .unwrap();
+    if engagement_threshold as u64 > reaction_count.into() {
+        return Err(ContractError::NoEligibilityError {});
+    }
+    Ok(())
+}
+
+fn execute_update_admin(
+    deps: DepsMut<DesmosQuery>,
+    info: MessageInfo,
+    new_admin: String,
+) -> Result<Response<DesmosMsg>, ContractError> {
+    check_admin(deps.storage, &info)?;
+    let new_admin_addr = deps.api.addr_validate(&new_admin)?;
+    CONFIG.update(deps.storage, |mut config| -> Result<_, ContractError> {
+        config.admin = new_admin_addr.clone();
+        Ok(config)
+    })?;
+    Ok(Response::new()
+        .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_ADMIN)
+        .add_attribute(ATTRIBUTE_NEW_ADMIN, new_admin_addr)
+        .add_attribute(ATTRIBUTE_SENDER, info.sender))
+}
+
+fn execute_update_rarity_mint_fees(
+    deps: DepsMut<DesmosQuery>,
+    info: MessageInfo,
+    level: u32,
+    new_fees: Vec<Coin>,
+) -> Result<Response<DesmosMsg>, ContractError> {
+    check_admin(deps.storage, &info)?;
+    RARITY.update(deps.storage, level, |rarity| -> Result<_, ContractError> {
+        let mut new_rarity = rarity.ok_or(ContractError::RarityNotExists { level })?;
+        new_rarity.mint_fees = new_fees;
+        Ok(new_rarity)
+    })?;
+    Ok(Response::new())
+}
+
+fn check_admin(storage: &dyn Storage, info: &MessageInfo) -> Result<(), ContractError> {
+    let config = CONFIG.load(storage)?;
+    if config.admin != info.sender {
+        return Err(ContractError::NotAdmin {
+            caller: info.sender.clone(),
+        });
+    }
+    Ok(())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps<DesmosQuery>, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Config{} => Binary::from_base64(""),
-        QueryMsg::EngagementThresholds{..} => Binary::from_base64(""),
-        QueryMsg::RarityMintFees{..} => Binary::from_base64(""),
+        QueryMsg::Config {} => to_binary(&query_config(deps)?),
+        QueryMsg::Rarities {} => to_binary(&query_rarities(deps)?),
+    }
+}
+
+fn query_config(deps: Deps<DesmosQuery>) -> StdResult<QueryConfigResponse> {
+    let config = CONFIG.load(deps.storage)?;
+    let cw721_address = CW721_ADDRESS.load(deps.storage)?;
+    Ok(QueryConfigResponse {
+        admin: config.admin,
+        cw721_code_id: config.cw721_code_id.into(),
+        cw721_address,
+        subspace_id: config.subspace_id.into(),
+    })
+}
+
+fn query_rarities(deps: Deps<DesmosQuery>) -> StdResult<QueryRaritiesResponse> {
+    let res: StdResult<Vec<_>> = RARITY
+        .range(deps.storage, None, None, Order::Ascending)
+        .collect();
+    let rarities = res?
+        .iter()
+        .map(|(level, rarity)| Rarity {
+            level: *level,
+            engagement_threshold: rarity.engagement_threshold,
+            mint_fees: rarity.mint_fees.clone(),
+        })
+        .collect();
+    Ok(QueryRaritiesResponse { rarities })
+}
+
+// Reply callback triggered from cw721 contract instantiation
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn reply(
+    deps: DepsMut<DesmosQuery>,
+    _env: Env,
+    msg: Reply,
+) -> Result<Response<DesmosMsg>, ContractError> {
+    if msg.id != INSTANTIATE_CW721_REPLY_ID {
+        return Err(ContractError::InvalidReplyID {});
+    }
+    let reply = parse_reply_instantiate_data(msg);
+    match reply {
+        Ok(res) => {
+            CW721_ADDRESS.save(deps.storage, &Addr::unchecked(res.contract_address))?;
+            Ok(Response::default().add_attribute(ATTRIBUTE_ACTION, "instantiate_cw721_reply"))
+        }
+        Err(_) => Err(ContractError::InstantiateCw721Error {}),
     }
 }
 
