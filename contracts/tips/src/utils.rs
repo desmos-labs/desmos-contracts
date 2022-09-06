@@ -1,10 +1,10 @@
 use cosmwasm_std::Coin;
-use std::collections::HashMap;
+use std::collections::btree_map::BTreeMap;
 
 /// Iterates over the coins vector and merge the coins having the same `denom` value.
 /// * `coins` - Vector that will be iterated.
 pub fn merge_coins(coins: Vec<Coin>) -> Vec<Coin> {
-    let mut map: HashMap<String, u128> = HashMap::new();
+    let mut map: BTreeMap<String, u128> = BTreeMap::new();
     for coin in coins {
         let value = map
             .get(&coin.denom)
@@ -18,12 +18,6 @@ pub fn merge_coins(coins: Vec<Coin>) -> Vec<Coin> {
             denom: entry.0,
             amount: entry.1.into(),
         })
-    }
-
-    // Sort only when the target arch is not wasm32 to make this code deterministic.
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        coins.sort_by_key(|coin| coin.denom.to_owned());
     }
 
     coins
