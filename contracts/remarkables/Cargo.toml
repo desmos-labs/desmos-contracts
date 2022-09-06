@@ -47,7 +47,7 @@ cw2 = "0.13.2"
 schemars = "0.8.8"
 serde = { version = "1.0.137", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.31" }
-desmos-bindings = { version = "1.0.0", default-features = false, features = ["msg", "query", "posts", "reactions"] }
+desmos-bindings = { version = "1.0.0", default-features = false, features = ["msg", "query", "reactions"] }
 cw721-base = { git = "https://github.com/desmos-labs/cw-nfts", features = ["library"], branch = "paul/update-custom-msg-query" }
 cw-utils = "0.14.0"
 

@@ -8,7 +8,7 @@ use cw2::set_contract_version;
 use cw721_base::{ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg, MintMsg};
 use cw_utils::parse_reply_instantiate_data;
 use desmos_bindings::{
-    msg::DesmosMsg, posts::querier::PostsQuerier, query::DesmosQuery,
+    msg::DesmosMsg, query::DesmosQuery,
     reactions::querier::ReactionsQuerier, types::PageRequest,
 };
 use std::ops::Deref;
@@ -26,14 +26,21 @@ const INSTANTIATE_CW721_REPLY_ID: u64 = 1;
 
 // actions for executing messages
 const ACTION_INSTANTIATE: &str = "instantiate";
+const ACTION_INSTANTIATE_CW721_REPLY: &str = "instantiate_cw721_reply";
+const ACTION_MINT_TO: &str = "mint_to";
 const ACTION_UPDATE_ADMIN: &str = "update_admin";
+const ACTION_UPDATE_RARITY_MINT_FEES: &str = "update_rarity_mint_fees";
 
 // attributes for executing messages
 const ATTRIBUTE_ACTION: &str = "action";
+const ATTRIBUTE_SENDER: &str = "sender";
 const ATTRIBUTE_ADMIN: &str = "admin";
 const ATTRIBUTE_CW721_CODE_ID: &str = "cw721_code_id";
-const ATTRIBUTE_SENDER: &str = "sender";
 const ATTRIBUTE_NEW_ADMIN: &str = "new_admin";
+const ATTRIBUTE_RARITY_LEVEL: &str = "rarity_level";
+const ATTRIBUTE_RECIPIENT: &str = "recipient";
+const ATTRIBUTE_TOKEN_ID: &str = "token_id";
+const ATTRIBUTE_TOKEN_URI: &str = "token_uri";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -77,7 +84,8 @@ pub fn instantiate(
         INSTANTIATE_CW721_REPLY_ID,
     );
     Ok(Response::new()
-        .add_attribute(ATTRIBUTE_ACTION, "instantiate")
+        .add_attribute(ATTRIBUTE_ACTION, ACTION_INSTANTIATE)
+        .add_attribute(ATTRIBUTE_SENDER, &info.sender)
         .add_attribute(ATTRIBUTE_ADMIN, msg.admin)
         .add_attribute(ATTRIBUTE_CW721_CODE_ID, msg.cw721_code_id)
         .add_submessage(cw721_submessage))
@@ -132,12 +140,18 @@ fn execute_mint_to(
     NEXT_TOKEN_ID.save(deps.storage, &(token_id + 1))?;
     let mint_msg = Cw721ExecuteMsg::<Empty, Empty>::Mint(MintMsg::<Empty> {
         token_id: token_id.to_string(),
-        owner: info.sender.into(),
-        token_uri: Some(remarkables_uri),
+        owner: info.sender.clone().into(),
+        token_uri: Some(remarkables_uri.clone()),
         extension: Empty {},
     });
     let wasm_execute_mint_msg = wasm_execute(CW721_ADDRESS.load(deps.storage)?, &mint_msg, vec![])?;
-    Ok(Response::new().add_message(wasm_execute_mint_msg))
+    Ok(Response::new()
+        .add_attribute(ATTRIBUTE_ACTION, ACTION_MINT_TO)
+        .add_attribute(ATTRIBUTE_SENDER, &info.sender)
+        .add_attribute(ATTRIBUTE_TOKEN_ID, token_id.to_string())
+        .add_attribute(ATTRIBUTE_RECIPIENT, &info.sender)
+        .add_attribute(ATTRIBUTE_TOKEN_URI, remarkables_uri)
+        .add_message(wasm_execute_mint_msg))
 }
 
 fn check_eligibility<'a>(
@@ -147,7 +161,7 @@ fn check_eligibility<'a>(
     engagement_threshold: u32,
 ) -> Result<(), ContractError> {
     let subspace_id = CONFIG.load(storage)?.subspace_id;
-    let reaction_count = ReactionsQuerier::new(querier)
+    let reactions_pagination = ReactionsQuerier::new(querier)
         .query_reactions(
             subspace_id,
             post_id,
@@ -155,15 +169,14 @@ fn check_eligibility<'a>(
             Some(PageRequest {
                 key: None,
                 offset: None,
-                limit: Uint64::new(0),
+                limit: Uint64::new(1),
                 count_total: true,
                 reverse: false,
             }),
         )?
         .pagination
-        .unwrap()
-        .total
         .unwrap();
+    let reaction_count = reactions_pagination.total.unwrap();
     if engagement_threshold as u64 > reaction_count.into() {
         return Err(ContractError::NoEligibilityError {});
     }
@@ -183,8 +196,9 @@ fn execute_update_admin(
     })?;
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_ADMIN)
-        .add_attribute(ATTRIBUTE_NEW_ADMIN, new_admin_addr)
-        .add_attribute(ATTRIBUTE_SENDER, info.sender))
+        .add_attribute(ATTRIBUTE_SENDER, &info.sender)
+        .add_attribute(ATTRIBUTE_ADMIN, &info.sender)
+        .add_attribute(ATTRIBUTE_NEW_ADMIN, new_admin_addr))
 }
 
 fn execute_update_rarity_mint_fees(
@@ -199,7 +213,10 @@ fn execute_update_rarity_mint_fees(
         new_rarity.mint_fees = new_fees;
         Ok(new_rarity)
     })?;
-    Ok(Response::new())
+    Ok(Response::new()
+        .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_RARITY_MINT_FEES)
+        .add_attribute(ATTRIBUTE_SENDER, &info.sender)
+        .add_attribute(ATTRIBUTE_RARITY_LEVEL, level.to_string()))
 }
 
 fn check_admin(storage: &dyn Storage, info: &MessageInfo) -> Result<(), ContractError> {
@@ -260,7 +277,7 @@ pub fn reply(
     match reply {
         Ok(res) => {
             CW721_ADDRESS.save(deps.storage, &Addr::unchecked(res.contract_address))?;
-            Ok(Response::default().add_attribute(ATTRIBUTE_ACTION, "instantiate_cw721_reply"))
+            Ok(Response::default().add_attribute(ATTRIBUTE_ACTION, ACTION_INSTANTIATE_CW721_REPLY))
         }
         Err(_) => Err(ContractError::InstantiateCw721Error {}),
     }

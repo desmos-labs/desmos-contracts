@@ -20,18 +20,6 @@ pub struct Rarity {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct RarityMintFee {
-    pub rarity_level: u32,
-    pub mint_fees: Vec<Coin>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct EngagementThreshold {
-    pub engagement_threshold: u32,
-    pub rarity_level: u32,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     MintTo {
