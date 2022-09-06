@@ -1,11 +1,15 @@
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, ServiceFee, Target};
+use crate::msg::{
+    ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, ServiceFee, Target, Tip,
+    TipsResponse,
+};
 use crate::state::{Config, TipsRecordKey, CONFIG, TIPS_KEY_LIST, TIPS_RECORD};
 use crate::utils;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    Addr, BankMsg, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response, StdError, StdResult,
+    to_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
+    StdResult, Uint64,
 };
 use cw2::set_contract_version;
 use desmos_bindings::posts::querier::PostsQuerier;
@@ -241,8 +245,78 @@ fn execute_claim_fees(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(_deps: Deps<DesmosQuery>, _env: Env, _msg: QueryMsg) -> StdResult<QueryResponse> {
-    Err(StdError::generic_err("not implemented"))
+pub fn query(deps: Deps<DesmosQuery>, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
+    match msg {
+        QueryMsg::Config { .. } => to_binary(&query_config(deps)?),
+        QueryMsg::UserReceivedTips { user } => to_binary(&query_tips(
+            deps,
+            None,
+            Some(deps.api.addr_validate(&user)?),
+            None,
+        )?),
+        QueryMsg::UserSentTips { user } => to_binary(&query_tips(
+            deps,
+            Some(deps.api.addr_validate(&user)?),
+            None,
+            None,
+        )?),
+        QueryMsg::PostReceivedTips { post_id } => {
+            to_binary(&query_tips(deps, None, None, Some(post_id))?)
+        }
+    }
+    .map_err(ContractError::from)
+}
+
+pub fn query_config(deps: Deps<DesmosQuery>) -> StdResult<QueryConfigResponse> {
+    let config = CONFIG.load(deps.storage)?;
+    Ok(QueryConfigResponse {
+        admin: config.admin,
+        subspace_id: config.subspace_id.into(),
+        service_fee: config.service_fee.into(),
+        saved_tips_record_threshold: config.tips_record_threshold,
+    })
+}
+
+pub fn query_tips(
+    deps: Deps<DesmosQuery>,
+    sender: Option<Addr>,
+    receiver: Option<Addr>,
+    post_id: Option<Uint64>,
+) -> Result<TipsResponse, ContractError> {
+    if post_id.is_some() && post_id.unwrap().is_zero() {
+        return Err(ContractError::InvalidPostId {});
+    }
+
+    let tips_tuple: StdResult<Vec<(TipsRecordKey, Vec<Coin>)>> = TIPS_RECORD
+        .range(deps.storage, None, None, Order::Ascending)
+        .filter(|tuple| {
+            if let Ok(((t_sender, t_receiver, t_post_id), _)) = tuple {
+                if sender.is_some() && !sender.as_ref().unwrap().eq(t_sender) {
+                    return false;
+                }
+                if receiver.is_some() && !receiver.as_ref().unwrap().eq(t_receiver) {
+                    return false;
+                }
+                if post_id.is_some() && *t_post_id != post_id.as_ref().unwrap().u64() {
+                    return false;
+                }
+                true
+            } else {
+                false
+            }
+        })
+        .collect();
+
+    Ok(TipsResponse {
+        tips: tips_tuple?
+            .iter()
+            .map(|tuple| Tip {
+                sender: tuple.0 .0.clone(),
+                receiver: tuple.0 .1.clone(),
+                amount: tuple.1.clone(),
+            })
+            .collect(),
+    })
 }
 
 #[cfg(test)]
