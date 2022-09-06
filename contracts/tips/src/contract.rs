@@ -10,6 +10,8 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 use desmos_bindings::posts::querier::PostsQuerier;
 use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
+use std::collections::vec_deque::VecDeque;
+use std::convert::TryInto;
 use std::ops::Deref;
 
 // version info for migration info
@@ -50,11 +52,11 @@ pub fn instantiate(
         &Config {
             admin,
             subspace_id: msg.subspace_id.u64(),
-            service_fee: msg.service_fee.into(),
+            service_fee: msg.service_fee.try_into()?,
             tips_record_threshold: msg.saved_tips_threshold,
         },
     )?;
-    TIPS_KEY_LIST.save(deps.storage, &[])?;
+    TIPS_KEY_LIST.save(deps.storage, &VecDeque::new())?;
 
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_INSTANTIATE)
@@ -105,28 +107,28 @@ fn execute_send_tip(
         Target::UserTarget { receiver } => (0_u64, deps.api.addr_validate(&receiver)?),
     };
 
-    let tip_key: TipsRecordKey = (info.sender.clone(), receiver, post_id);
-    TIPS_RECORD.update(deps.storage, tip_key, |mut coins_option| {
-        // If exists already a record update it
-        if let Some(mut coins) = coins_option {
-            // Append the new coins
-            coins.extend(coin_to_send.iter());
-            // Store the merged coins
-            Ok(utils::merge_coins(coins))
-        } else {
-            // Load the key list
-            let mut item_keys = TIPS_KEY_LIST.load(deps.storage)?;
-            // If we have reached the threshold remove the oldest key
-            if item_keys.len() == config.tips_record_threshold {
-                TIPS_RECORD.remove(deps.storage, item_keys.pop_front().unwrap());
-            }
-            // Add the new key to the front
-            item_keys.push_back(tip_key.clone());
-            TIPS_KEY_LIST.save(deps.storage, &item_keys)?;
-            // Return the new coins
-            Ok(coin_to_send.clone())
+    let tip_key: TipsRecordKey = (info.sender.clone(), receiver.clone(), post_id);
+    let tip_record_key = TIPS_RECORD.key(tip_key.clone());
+    let tip_record_coins = if let Some(mut coins) = tip_record_key.may_load(deps.storage)? {
+        // Append the new coins
+        coins.extend(coin_to_send.clone());
+        utils::merge_coins(coins)
+    } else {
+        // Load the key list
+        let mut item_keys = TIPS_KEY_LIST
+            .load(deps.storage)
+            .map_err(ContractError::from)?;
+        // If we have reached the threshold remove the oldest key
+        if item_keys.len() == config.tips_record_threshold as usize {
+            TIPS_RECORD.remove(deps.storage, item_keys.pop_front().unwrap());
         }
-    })?;
+        // Add the new key to the end
+        item_keys.push_back(tip_key);
+        TIPS_KEY_LIST.save(deps.storage, &item_keys)?;
+        // Return the new coins
+        coin_to_send.clone()
+    };
+    tip_record_key.save(deps.storage, &tip_record_coins)?;
 
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_SEND_TIP)
@@ -148,8 +150,9 @@ fn execute_update_service_fee(
         return Err(ContractError::Unauthorized {});
     }
 
-    config.service_fee = service_fee.into();
+    config.service_fee = service_fee.try_into()?;
     CONFIG.save(deps.storage, &config)?;
+
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_SERVICE_FEE)
         .add_attribute(ATTRIBUTE_SENDER, info.sender))
@@ -191,13 +194,13 @@ fn execute_update_saved_tips_record_threshold(
         let mut keys = TIPS_KEY_LIST.load(deps.storage)?;
         // If we have more tips that the allowed threshold shrink the tips record
         if keys.len() > new_threshold as usize {
-            let to_remove = keys.len() - new_threshold;
+            let to_remove = keys.len() - new_threshold as usize;
             for _ in 0..to_remove {
                 if let Some(key) = keys.pop_front() {
-                    TIPS_RECORD.remove(deps.storage, key)?;
+                    TIPS_RECORD.remove(deps.storage, key);
                 }
             }
-            TIPS_KEY_LIST.save(deps.storage, &keys);
+            TIPS_KEY_LIST.save(deps.storage, &keys)?;
         }
     }
 
