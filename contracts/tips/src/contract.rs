@@ -1,10 +1,11 @@
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, ServiceFee, Target};
-use crate::state::{Config, CONFIG};
+use crate::state::{Config, TipsRecordKey, CONFIG, TIPS_KEY_LIST, TIPS_RECORD};
+use crate::utils;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    BankMsg, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response, StdError, StdResult,
+    Addr, BankMsg, Deps, DepsMut, Env, MessageInfo, QueryResponse, Response, StdError, StdResult,
 };
 use cw2::set_contract_version;
 use desmos_bindings::posts::querier::PostsQuerier;
@@ -53,6 +54,7 @@ pub fn instantiate(
             tips_record_threshold: msg.saved_tips_threshold,
         },
     )?;
+    TIPS_KEY_LIST.save(deps.storage, &[])?;
 
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_INSTANTIATE)
@@ -94,18 +96,37 @@ fn execute_send_tip(
     let config = CONFIG.load(deps.storage)?;
     // Computes the fee and the coins to be sent to the user
     let (_fees, coin_to_send) = config.service_fee.compute_fees(info.funds)?;
-    let receiver = match target {
+    let (post_id, receiver) = match target {
         Target::ContentTarget { post_id } => {
             let querier = PostsQuerier::new(deps.querier.deref());
-            querier
-                .query_post(config.subspace_id, post_id.u64())?
-                .post
-                .author
+            let post = querier.query_post(config.subspace_id, post_id.u64())?.post;
+            (post.id.u64(), post.author)
         }
-        Target::UserTarget { receiver } => deps.api.addr_validate(&receiver)?,
+        Target::UserTarget { receiver } => (0_u64, deps.api.addr_validate(&receiver)?),
     };
 
-    // TODO: Add tip record
+    let tip_key: TipsRecordKey = (info.sender.clone(), receiver, post_id);
+    TIPS_RECORD.update(deps.storage, tip_key, |mut coins_option| {
+        // If exists already a record update it
+        if let Some(mut coins) = coins_option {
+            // Append the new coins
+            coins.extend(coin_to_send.iter());
+            // Store the merged coins
+            Ok(utils::merge_coins(coins))
+        } else {
+            // Load the key list
+            let mut item_keys = TIPS_KEY_LIST.load(deps.storage)?;
+            // If we have reached the threshold remove the oldest key
+            if item_keys.len() == config.tips_record_threshold {
+                TIPS_RECORD.remove(deps.storage, item_keys.pop_front().unwrap());
+            }
+            // Add the new key to the front
+            item_keys.push_back(tip_key.clone());
+            TIPS_KEY_LIST.save(deps.storage, &item_keys)?;
+            // Return the new coins
+            Ok(coin_to_send.clone())
+        }
+    })?;
 
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_SEND_TIP)
@@ -165,10 +186,23 @@ fn execute_update_saved_tips_record_threshold(
         return Err(ContractError::Unauthorized {});
     }
 
+    // The new size is smaller of the current one maybe we have to shrink the tips record
+    if config.tips_record_threshold > new_threshold {
+        let mut keys = TIPS_KEY_LIST.load(deps.storage)?;
+        // If we have more tips that the allowed threshold shrink the tips record
+        if keys.len() > new_threshold as usize {
+            let to_remove = keys.len() - new_threshold;
+            for _ in 0..to_remove {
+                if let Some(key) = keys.pop_front() {
+                    TIPS_RECORD.remove(deps.storage, key)?;
+                }
+            }
+            TIPS_KEY_LIST.save(deps.storage, &keys);
+        }
+    }
+
     config.tips_record_threshold = new_threshold;
     CONFIG.save(deps.storage, &config)?;
-
-    // TODO: Resize tips record
 
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_SAVED_TIPS_RECORD_THRESHOLD)
