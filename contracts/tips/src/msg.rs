@@ -1,4 +1,5 @@
 use crate::error::ContractError;
+use crate::state::StateServiceFee;
 use cosmwasm_std::{Addr, Coin, Uint128, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -29,19 +30,14 @@ pub enum ServiceFee {
     },
 }
 
-impl ServiceFee {
-    pub fn validate(&self) -> Result<(), ContractError> {
-        match self {
-            ServiceFee::Fixed { .. } => Ok(()),
-            ServiceFee::Percentage { value, decimals } => {
-                let percent_value = value.u128() / 10_u128.pow(*decimals);
-
-                if percent_value == 0 || percent_value >= 100 {
-                    Err(ContractError::InvalidPercentageFee {})
-                } else {
-                    Ok(())
-                }
-            }
+impl From<StateServiceFee> for ServiceFee {
+    fn from(state_service_fees: StateServiceFee) -> Self {
+        match state_service_fees {
+            StateServiceFee::Fixed { amount } => ServiceFee::Fixed { amount },
+            StateServiceFee::Percentage { value, decimals } => ServiceFee::Percentage {
+                value: value.into(),
+                decimals,
+            },
         }
     }
 }
@@ -64,7 +60,7 @@ impl InstantiateMsg {
             return Err(ContractError::InvalidSubspaceId {});
         }
 
-        self.service_fee.validate()
+        Ok(())
     }
 }
 
@@ -127,7 +123,7 @@ impl ExecuteMsg {
                 }
                 Target::UserTarget { .. } => Ok(()),
             },
-            ExecuteMsg::UpdateServiceFee { new_fee } => new_fee.validate(),
+            ExecuteMsg::UpdateServiceFee { .. } => Ok(()),
             ExecuteMsg::UpdateAdmin { .. } => Ok(()),
             ExecuteMsg::UpdateSavedTipsRecordThreshold { .. } => Ok(()),
             ExecuteMsg::ClaimFees { .. } => Ok(()),

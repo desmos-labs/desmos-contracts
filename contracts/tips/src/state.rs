@@ -6,10 +6,11 @@ use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::vec_deque::VecDeque;
+use std::convert::TryFrom;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum StateServiceFees {
+pub enum StateServiceFee {
     Fixed { amount: Vec<Coin> },
     Percentage { value: u128, decimals: u32 },
 }
@@ -18,7 +19,7 @@ pub enum StateServiceFees {
 pub struct Config {
     pub admin: Addr,
     pub subspace_id: u64,
-    pub service_fee: StateServiceFees,
+    pub service_fee: StateServiceFee,
     pub tips_record_threshold: u32,
 }
 
@@ -32,21 +33,31 @@ pub const TIPS_RECORD: Map<TipsRecordKey, Vec<Coin>> = Map::new("tips_record");
 // Keeps the keys of TIPS_RECORD ordered by insertion time, first oldest, last newest.
 pub const TIPS_KEY_LIST: Item<VecDeque<TipsRecordKey>> = Item::new("tips_key_list");
 
-impl From<ServiceFee> for StateServiceFees {
-    fn from(service_fees: ServiceFee) -> Self {
+impl TryFrom<ServiceFee> for StateServiceFee {
+    type Error = ContractError;
+
+    fn try_from(service_fees: ServiceFee) -> Result<Self, ContractError> {
         match service_fees {
-            ServiceFee::Fixed { amount } => StateServiceFees::Fixed {
+            ServiceFee::Fixed { amount } => Ok(StateServiceFee::Fixed {
                 amount: utils::merge_coins(amount),
-            },
-            ServiceFee::Percentage { value, decimals } => StateServiceFees::Percentage {
-                value: value.u128(),
-                decimals,
-            },
+            }),
+            ServiceFee::Percentage { value, decimals } => {
+                let percent_value = value.u128() / 10_u128.pow(decimals);
+
+                if percent_value == 0 || percent_value >= 100 {
+                    Err(ContractError::InvalidPercentageFee {})
+                } else {
+                    Ok(StateServiceFee::Percentage {
+                        value: value.u128(),
+                        decimals,
+                    })
+                }
+            }
         }
     }
 }
 
-impl StateServiceFees {
+impl StateServiceFee {
     /// Computes the fees that the contract will holds and the coins that
     /// can be sent to the user.
     /// * `amount` - Coins from which to calculate the fees.
@@ -59,7 +70,7 @@ impl StateServiceFees {
         let mut to_user: Vec<Coin> = vec![];
 
         match self {
-            StateServiceFees::Fixed { amount } => {
+            StateServiceFee::Fixed { amount } => {
                 let mut received_coins_iter = received_coins.iter();
                 for fee in amount {
                     // Find the coin that have the same denom of the current fee coin
@@ -85,7 +96,7 @@ impl StateServiceFees {
                     fees.push(Coin::new(fee.amount.u128(), &received_coin.denom));
                 }
             }
-            StateServiceFees::Percentage { value, decimals } => {
+            StateServiceFee::Percentage { value, decimals } => {
                 for coin in received_coins {
                     let decimal_factor = 10_u128.pow(*decimals);
                     let coin_fee: u128 =
@@ -104,7 +115,7 @@ impl StateServiceFees {
 #[cfg(test)]
 mod tests {
     use crate::error::ContractError;
-    use crate::state::StateServiceFees;
+    use crate::state::StateServiceFee;
     use cosmwasm_std::{Coin, Uint128};
 
     #[test]
@@ -112,7 +123,7 @@ mod tests {
         let requested_amount = 20000;
         let provided_amount = 1000;
 
-        let service_fees = StateServiceFees::Fixed {
+        let service_fees = StateServiceFee::Fixed {
             amount: vec![Coin::new(requested_amount, "udsm")],
         };
 
@@ -135,7 +146,7 @@ mod tests {
         let requested_amount = 20000;
         let provided_amount = 100000;
 
-        let service_fees = StateServiceFees::Fixed {
+        let service_fees = StateServiceFee::Fixed {
             amount: vec![
                 Coin::new(requested_amount, "udsm"),
                 Coin::new(requested_amount, "uatom"),
@@ -163,7 +174,7 @@ mod tests {
             Coin::new(requested_amount, "udsm"),
         ];
 
-        let service_fees = StateServiceFees::Fixed {
+        let service_fees = StateServiceFee::Fixed {
             amount: fees.clone(),
         };
 
@@ -187,7 +198,7 @@ mod tests {
 
     #[test]
     fn percentage_fees_valid() {
-        let three_percent = StateServiceFees::Percentage {
+        let three_percent = StateServiceFee::Percentage {
             value: 3300000,
             decimals: 6,
         };
