@@ -60,6 +60,10 @@ impl InstantiateMsg {
             return Err(ContractError::InvalidSubspaceId {});
         }
 
+        if self.saved_tips_threshold == 0 {
+            return Err(ContractError::InvalidSavedTipsThreshold {});
+        }
+
         Ok(())
     }
 }
@@ -125,7 +129,13 @@ impl ExecuteMsg {
             },
             ExecuteMsg::UpdateServiceFee { .. } => Ok(()),
             ExecuteMsg::UpdateAdmin { .. } => Ok(()),
-            ExecuteMsg::UpdateSavedTipsRecordThreshold { .. } => Ok(()),
+            ExecuteMsg::UpdateSavedTipsRecordThreshold { new_threshold } => {
+                if *new_threshold == 0 {
+                    Err(ContractError::InvalidSavedTipsThreshold {})
+                } else {
+                    Ok(())
+                }
+            }
             ExecuteMsg::ClaimFees { .. } => Ok(()),
         }
     }
