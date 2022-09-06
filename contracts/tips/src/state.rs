@@ -184,7 +184,7 @@ mod tests {
             decimals: 6,
         };
 
-        let mut computed_fees = three_percent
+        let computed_fees = three_percent
             .compute_fees(vec![
                 Coin::new(100, "udsm"),
                 Coin::new(600, "uatom"),
