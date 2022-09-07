@@ -343,7 +343,7 @@ mod tests {
     use crate::contract::{execute, instantiate, query};
     use crate::error::ContractError;
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, ServiceFee, Target, Tip, TipsResponse};
-    use crate::state::{TipsRecordKey, TIPS_RECORD};
+    use crate::state::{StateServiceFee, TipsRecordKey, CONFIG, TIPS_RECORD};
     use cosmwasm_std::testing::{
         mock_env, mock_info, MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
     };
@@ -1015,6 +1015,51 @@ mod tests {
             },
         )
         .unwrap();
+
+        let config = CONFIG.load(deps.as_mut().storage).unwrap();
+        assert_eq!(
+            StateServiceFee::Fixed { amount: vec![] },
+            config.service_fee
+        );
+    }
+
+    #[test]
+    fn update_admin_with_from_non_admin_user() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 0).unwrap();
+
+        let error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER_1, &[]),
+            ExecuteMsg::UpdateAdmin {
+                new_admin: USER_1.to_string(),
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::Unauthorized {}, error);
+    }
+
+    #[test]
+    fn update_admin_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 0).unwrap();
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateAdmin {
+                new_admin: USER_1.to_string(),
+            },
+        )
+        .unwrap();
+
+        let config = CONFIG.load(deps.as_mut().storage).unwrap();
+        assert_eq!(config.admin.as_str(), USER_1);
     }
 
     #[test]
