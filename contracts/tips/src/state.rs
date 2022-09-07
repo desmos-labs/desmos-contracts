@@ -39,64 +39,82 @@ impl StateServiceFee {
     /// * `coins` - Coins from which to calculate the fees.
     pub fn compute_fees(&self, coins: Vec<Coin>) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
         let received_coins = utils::merge_coins(coins);
+        match self {
+            StateServiceFee::Fixed { amount } => {
+                StateServiceFee::compute_fixed_service_fees(amount, received_coins)
+            }
+            StateServiceFee::Percentage { value, decimals } => {
+                StateServiceFee::compute_percentage_service_fees(*value, *decimals, received_coins)
+            }
+        }
+    }
+
+    fn compute_fixed_service_fees(
+        fee_coins: &Vec<Coin>,
+        received_coins: Vec<Coin>,
+    ) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
         let mut fees: Vec<Coin> = vec![];
         let mut to_user: Vec<Coin> = vec![];
 
-        match self {
-            StateServiceFee::Fixed { amount } => {
-                for coin in received_coins {
-                    let fee_option = amount
-                        .iter()
-                        .find(|fee_coin| fee_coin.denom.eq(&coin.denom));
-                    // This coin is present inside the service fees.
-                    if let Some(fee) = fee_option {
-                        // Return error if the provided amount is not enough.
-                        if fee.amount.u128() > coin.amount.u128() {
-                            return Err(ContractError::InsufficientFee {
-                                denom: coin.denom.to_owned(),
-                                provided: coin.amount,
-                                requested: fee.amount,
-                            });
-                        }
-
-                        // Update the and the coins to send to the user
-                        fees.push(fee.clone());
-
-                        let to_user_coin =
-                            Coin::new(coin.amount.u128() - fee.amount.u128(), &coin.denom);
-                        if !to_user_coin.amount.is_zero() {
-                            to_user.push(to_user_coin);
-                        }
-                    } else {
-                        to_user.push(coin);
-                    }
+        for coin in received_coins {
+            let fee_option = fee_coins
+                .iter()
+                .find(|fee_coin| fee_coin.denom.eq(&coin.denom));
+            // This coin is present inside the service fees.
+            if let Some(fee) = fee_option {
+                // Return error if the provided amount is not enough.
+                if fee.amount.u128() > coin.amount.u128() {
+                    return Err(ContractError::InsufficientFee {
+                        denom: coin.denom.to_owned(),
+                        provided: coin.amount,
+                        requested: fee.amount,
+                    });
                 }
-                // Ensure that we have processed all the fees
-                if amount.len() > fees.len() {
-                    for fee in amount {
-                        let fee_found = fees
-                            .iter()
-                            .find(|user_fee| user_fee.denom.eq(&fee.denom))
-                            .is_some();
-                        if !fee_found {
-                            return Err(ContractError::FeeCoinNotProvided {
-                                denom: fee.denom.to_owned(),
-                            });
-                        }
-                    }
+
+                // Update the fees array
+                fees.push(fee.clone());
+
+                let to_user_coin = Coin::new(coin.amount.u128() - fee.amount.u128(), &coin.denom);
+                if !to_user_coin.amount.is_zero() {
+                    to_user.push(to_user_coin);
+                }
+            } else {
+                to_user.push(coin);
+            }
+        }
+        // Ensure that we have processed all the fees
+        if fee_coins.len() > fees.len() {
+            for fee in fee_coins {
+                let fee_found = fees
+                    .iter()
+                    .find(|user_fee| user_fee.denom.eq(&fee.denom))
+                    .is_some();
+                if !fee_found {
+                    return Err(ContractError::FeeCoinNotProvided {
+                        denom: fee.denom.to_owned(),
+                    });
                 }
             }
-            StateServiceFee::Percentage { value, decimals } => {
-                let decimal_factor = 10_u128.pow(*decimals);
-                for coin in received_coins {
-                    let coin_fee: u128 =
-                        (coin.amount.u128() * *value) / (100_u128 * decimal_factor);
+        }
 
-                    to_user.push(Coin::new(coin.amount.u128() - coin_fee, coin.denom.clone()));
-                    if coin_fee > 0 {
-                        fees.push(Coin::new(coin_fee, coin.denom));
-                    }
-                }
+        Ok((fees, to_user))
+    }
+
+    fn compute_percentage_service_fees(
+        value: u128,
+        decimals: u32,
+        received_coins: Vec<Coin>,
+    ) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
+        let mut fees: Vec<Coin> = vec![];
+        let mut to_user: Vec<Coin> = vec![];
+
+        let decimal_factor = 10_u128.pow(decimals);
+        for coin in received_coins {
+            let coin_fee: u128 = (coin.amount.u128() * value) / (100_u128 * decimal_factor);
+
+            to_user.push(Coin::new(coin.amount.u128() - coin_fee, coin.denom.clone()));
+            if coin_fee > 0 {
+                fees.push(Coin::new(coin_fee, coin.denom));
             }
         }
 
