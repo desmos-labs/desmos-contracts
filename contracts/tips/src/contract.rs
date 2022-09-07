@@ -951,6 +951,73 @@ mod tests {
     }
 
     #[test]
+    fn update_service_fees_with_invalid_admin_address() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 5).unwrap();
+
+        let update_error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER_1, &[]),
+            ExecuteMsg::UpdateServiceFee {
+                new_fee: ServiceFee::Fixed { amount: vec![] },
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::Unauthorized {}, update_error);
+    }
+
+    #[test]
+    fn update_service_fee_with_invalid_percentage() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 5).unwrap();
+
+        let update_error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateServiceFee {
+                new_fee: ServiceFee::Percentage {
+                    value: Uint128::new(100),
+                    decimals: 0,
+                },
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::InvalidPercentageFee {}, update_error);
+    }
+
+    #[test]
+    fn update_service_fee_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Percentage {
+                value: Uint128::new(100),
+                decimals: 2,
+            },
+            5,
+        )
+        .unwrap();
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateServiceFee {
+                new_fee: ServiceFee::Fixed { amount: vec![] },
+            },
+        )
+        .unwrap();
+    }
+
+    #[test]
     fn tips_record_shrink_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
