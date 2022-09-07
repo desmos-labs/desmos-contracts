@@ -74,11 +74,11 @@ impl StateServiceFee {
                 // Ensure that we have processed all the fees
                 if amount.len() > fees.len() {
                     for fee in amount {
-                        let coin_found = fees
+                        let fee_found = fees
                             .iter()
                             .find(|user_fee| user_fee.denom.eq(&fee.denom))
                             .is_some();
-                        if !coin_found {
+                        if !fee_found {
                             return Err(ContractError::FeeCoinNotProvided {
                                 denom: fee.denom.to_owned(),
                             });
@@ -130,8 +130,28 @@ impl TryFrom<ServiceFee> for StateServiceFee {
 #[cfg(test)]
 mod tests {
     use crate::error::ContractError;
+    use crate::msg::ServiceFee;
     use crate::state::StateServiceFee;
     use cosmwasm_std::{Coin, Uint128};
+    use std::convert::TryFrom;
+
+    #[test]
+    fn fixed_state_service_fee_from_service_fee_properly() {
+        let fees = vec![Coin::new(1000, "udsm")];
+        let service_fee = ServiceFee::Fixed {
+            amount: fees.clone(),
+        };
+
+        let state_service_fee = StateServiceFee::try_from(service_fee).unwrap();
+        match state_service_fee {
+            StateServiceFee::Fixed { amount } => {
+                assert_eq!(fees, amount)
+            }
+            StateServiceFee::Percentage { .. } => {
+                panic!("ServiceFee::Fixed should be converted to StateServiceFee::Fixed")
+            }
+        }
+    }
 
     #[test]
     fn fixed_fees_insufficient_amount() {
@@ -195,7 +215,7 @@ mod tests {
     }
 
     #[test]
-    fn fixed_fees_fee_coin_valid() {
+    fn fixed_fees_computes_properly() {
         let requested_amount = 20000;
         let provided_amount = 100000;
         let fees = vec![Coin::new(requested_amount, "udsm")];
@@ -223,14 +243,45 @@ mod tests {
     }
 
     #[test]
-    fn zero_percentage_fees() {
+    fn percentage_state_service_fee_from_service_fee_invalid_percentage() {
+        // Service fees at 200%
+        let service_fee = ServiceFee::Percentage {
+            value: Uint128::new(200),
+            decimals: 0,
+        };
+
+        let error = StateServiceFee::try_from(service_fee).unwrap_err();
+        assert_eq!(ContractError::InvalidPercentageFee {}, error);
+    }
+
+    #[test]
+    fn percentage_state_service_fee_from_service_fee_properly() {
+        let service_fee = ServiceFee::Percentage {
+            value: Uint128::new(1000),
+            decimals: 3,
+        };
+
+        let state_service_fee = StateServiceFee::try_from(service_fee).unwrap();
+        match state_service_fee {
+            StateServiceFee::Fixed { .. } => {
+                panic!("ServiceFee::Percentage should be converted to StateServiceFee::Percentage")
+            }
+            StateServiceFee::Percentage { value, decimals } => {
+                assert_eq!(1000, value);
+                assert_eq!(3, decimals);
+            }
+        }
+    }
+
+    #[test]
+    fn percentage_fees_zero() {
         let zero_percent = StateServiceFee::Percentage {
             value: 0,
             decimals: 6,
         };
         let tips = vec![
-            Coin::new(100000000, "udsm"),
             Coin::new(600000000, "uatom"),
+            Coin::new(100000000, "udsm"),
             Coin::new(100000000, "uosmo"),
         ];
 
@@ -241,7 +292,7 @@ mod tests {
     }
 
     #[test]
-    fn percentage_fees_valid() {
+    fn percentage_fees_compute_properly() {
         let three_percent = StateServiceFee::Percentage {
             value: 3300000,
             decimals: 6,
