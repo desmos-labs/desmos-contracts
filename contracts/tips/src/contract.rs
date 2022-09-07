@@ -13,6 +13,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use desmos_bindings::posts::querier::PostsQuerier;
+use desmos_bindings::subspaces::querier::SubspacesQuerier;
 use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
 use std::collections::vec_deque::VecDeque;
 use std::convert::TryInto;
@@ -49,7 +50,15 @@ pub fn instantiate(
 ) -> Result<Response<DesmosMsg>, ContractError> {
     msg.validate()?;
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
     let admin = deps.api.addr_validate(&msg.admin)?;
+    // Ensure that the subspace exists
+    SubspacesQuerier::new(deps.querier.deref())
+        .query_subspace(msg.subspace_id.u64())
+        .map_err(|error| ContractError::SubspaceNotExist {
+            id: msg.subspace_id.u64(),
+            error,
+        })?;
 
     CONFIG.save(
         deps.storage,
