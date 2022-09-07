@@ -181,6 +181,20 @@ mod tests {
     }
 
     #[test]
+    fn fixed_fees_empty() {
+        let provided_amount = 100000;
+
+        let service_fees = StateServiceFee::Fixed { amount: vec![] };
+
+        let (fees, to_user) = service_fees
+            .compute_fees(vec![Coin::new(provided_amount, "udsm")])
+            .unwrap();
+
+        assert!(fees.is_empty());
+        assert_eq!(vec![Coin::new(provided_amount, "udsm")], to_user);
+    }
+
+    #[test]
     fn fixed_fees_fee_coin_valid() {
         let requested_amount = 20000;
         let provided_amount = 100000;
@@ -190,40 +204,40 @@ mod tests {
             amount: fees.clone(),
         };
 
-        let computed_fees = service_fees
+        let (computed_fees, to_user) = service_fees
             .compute_fees(vec![
                 Coin::new(provided_amount, "uatom"),
                 Coin::new(provided_amount, "udsm"),
             ])
             .unwrap();
 
-        assert_eq!(fees, computed_fees.0);
+        assert_eq!(fees, computed_fees);
 
         assert_eq!(
             vec![
                 Coin::new(provided_amount, "uatom"),
                 Coin::new(provided_amount - requested_amount, "udsm"),
             ],
-            computed_fees.1
+            to_user
         );
     }
 
     #[test]
     fn zero_percentage_fees() {
         let zero_percent = StateServiceFee::Percentage {
-            value: 1,
-            decimals: 0,
+            value: 0,
+            decimals: 6,
         };
+        let tips = vec![
+            Coin::new(100000000, "udsm"),
+            Coin::new(600000000, "uatom"),
+            Coin::new(100000000, "uosmo"),
+        ];
 
-        let computed_fees = zero_percent
-            .compute_fees(vec![
-                Coin::new(1000, "udsm"),
-                Coin::new(600, "uatom"),
-                Coin::new(1000, "uosmo"),
-            ])
-            .unwrap();
+        let (computed_fees, to_user) = zero_percent.compute_fees(tips.clone()).unwrap();
 
-        assert_eq!(Vec::<Coin>::new(), computed_fees.0);
+        assert_eq!(Vec::<Coin>::new(), computed_fees);
+        assert_eq!(tips, to_user);
     }
 
     #[test]
@@ -233,7 +247,7 @@ mod tests {
             decimals: 6,
         };
 
-        let computed_fees = three_percent
+        let (computed_fees, to_user) = three_percent
             .compute_fees(vec![
                 Coin::new(100, "udsm"),
                 Coin::new(600, "uatom"),
@@ -247,7 +261,7 @@ mod tests {
                 Coin::new(3, "udsm"),
                 Coin::new(33, "uosmo"),
             ],
-            computed_fees.0
+            computed_fees
         );
         assert_eq!(
             vec![
@@ -255,7 +269,7 @@ mod tests {
                 Coin::new(97, "udsm"),
                 Coin::new(967, "uosmo"),
             ],
-            computed_fees.1
+            to_user
         );
     }
 }
