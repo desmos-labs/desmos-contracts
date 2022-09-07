@@ -36,7 +36,7 @@ cw2 = "0.14.0"
 schemars = "0.8.10"
 serde = { version = "1.0.137", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.33" }
-desmos-bindings = { version = "1.0.3", default-features = false, features = ["posts", "query"]}
+desmos-bindings = { version = "1.0.3", default-features = false, features = ["posts", "subspaces", "query"]}
 cw-utils = "0.14.0"
 
 [dev-dependencies]
