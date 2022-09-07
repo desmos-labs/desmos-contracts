@@ -732,6 +732,7 @@ mod tests {
                 DesmosQuery::Subspaces(subspaces_query) => {
                     SystemResult::Ok(mock_subspaces_query_response(subspaces_query))
                 }
+                _ => SystemResult::Err(SystemError::Unknown {}),
             });
         let mut deps = OwnedDeps {
             storage: MockStorage::default(),
