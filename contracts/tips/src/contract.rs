@@ -111,28 +111,30 @@ fn execute_send_tip(
         Target::UserTarget { receiver } => (0_u64, deps.api.addr_validate(&receiver)?),
     };
 
-    let tip_key: TipsRecordKey = (info.sender.clone(), receiver.clone(), post_id);
-    let tip_record_key = TIPS_RECORD.key(tip_key.clone());
-    let tip_record_coins = if let Some(mut coins) = tip_record_key.may_load(deps.storage)? {
-        // Append the new coins
-        coins.extend(coin_to_send.clone());
-        utils::merge_coins(coins)
-    } else {
-        // Load the key list
-        let mut item_keys = TIPS_KEY_LIST
-            .load(deps.storage)
-            .map_err(ContractError::from)?;
-        // If we have reached the threshold remove the oldest key
-        if item_keys.len() == config.tips_record_threshold as usize {
-            TIPS_RECORD.remove(deps.storage, item_keys.pop_front().unwrap());
-        }
-        // Add the new key to the end
-        item_keys.push_back(tip_key);
-        TIPS_KEY_LIST.save(deps.storage, &item_keys)?;
-        // Return the new coins
-        coin_to_send.clone()
-    };
-    tip_record_key.save(deps.storage, &tip_record_coins)?;
+    if config.tips_record_threshold > 0 {
+        let tip_key: TipsRecordKey = (info.sender.clone(), receiver.clone(), post_id);
+        let tip_record_key = TIPS_RECORD.key(tip_key.clone());
+        let tip_record_coins = if let Some(mut coins) = tip_record_key.may_load(deps.storage)? {
+            // Append the new coins
+            coins.extend(coin_to_send.clone());
+            utils::merge_coins(coins)
+        } else {
+            // Load the key list
+            let mut item_keys = TIPS_KEY_LIST
+                .load(deps.storage)
+                .map_err(ContractError::from)?;
+            // If we have reached the threshold remove the oldest key
+            if item_keys.len() == config.tips_record_threshold as usize {
+                TIPS_RECORD.remove(deps.storage, item_keys.pop_front().unwrap());
+            }
+            // Add the new key to the end
+            item_keys.push_back(tip_key);
+            TIPS_KEY_LIST.save(deps.storage, &item_keys)?;
+            // Return the new coins
+            coin_to_send.clone()
+        };
+        tip_record_key.save(deps.storage, &tip_record_coins)?;
+    }
 
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_SEND_TIP)
