@@ -332,4 +332,759 @@ pub fn query_tips(
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use crate::contract::{execute, instantiate, query};
+    use crate::error::ContractError;
+    use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, ServiceFee, Target, Tip, TipsResponse};
+    use crate::state::{TipsRecordKey, TIPS_RECORD};
+    use cosmwasm_std::testing::{
+        mock_env, mock_info, MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
+    };
+    use cosmwasm_std::{
+        from_binary, Addr, Coin, DepsMut, Order, OwnedDeps, Response, StdError, StdResult,
+        SystemError, SystemResult, Uint128, Uint64,
+    };
+    use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
+    use desmos_bindings::msg::DesmosMsg;
+    use desmos_bindings::posts::mocks::MockPostsQueries;
+    use desmos_bindings::posts::query::PostsQuery;
+    use desmos_bindings::query::DesmosQuery;
+    use desmos_bindings::subspaces::mocks::mock_subspaces_query_response;
+    use desmos_bindings::subspaces::query::SubspacesQuery;
+    use std::marker::PhantomData;
+
+    const ADMIN: &str = "admin";
+    const USER_1: &str = "user1";
+    const USER_2: &str = "user2";
+    const USER_3: &str = "user3";
+
+    fn init_contract(
+        deps: DepsMut<DesmosQuery>,
+        subspace_id: u64,
+        service_fee: ServiceFee,
+        saved_tips_threshold: u32,
+    ) -> Result<Response<DesmosMsg>, ContractError> {
+        instantiate(
+            deps,
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            InstantiateMsg {
+                admin: ADMIN.to_string(),
+                subspace_id: subspace_id.into(),
+                service_fee,
+                saved_tips_threshold,
+            },
+        )
+    }
+
+    fn tip_user(
+        deps: DepsMut<DesmosQuery>,
+        from: &str,
+        to: &str,
+        coins: &[Coin],
+    ) -> Result<Response<DesmosMsg>, ContractError> {
+        let info = mock_info(from, coins);
+        execute(
+            deps,
+            mock_env(),
+            info,
+            ExecuteMsg::SendTip {
+                target: Target::UserTarget {
+                    receiver: to.to_string(),
+                },
+            },
+        )
+    }
+
+    fn tip_post(
+        deps: DepsMut<DesmosQuery>,
+        from: &str,
+        post_id: u64,
+        coins: &[Coin],
+    ) -> Result<Response<DesmosMsg>, ContractError> {
+        let info = mock_info(from, coins);
+        execute(
+            deps,
+            mock_env(),
+            info,
+            ExecuteMsg::SendTip {
+                target: Target::ContentTarget {
+                    post_id: post_id.into(),
+                },
+            },
+        )
+    }
+
+    fn get_tips_record_items(deps: DepsMut<DesmosQuery>) -> Vec<(TipsRecordKey, Vec<Coin>)> {
+        TIPS_RECORD
+            .range(deps.storage, None, None, Order::Ascending)
+            .collect::<StdResult<Vec<(TipsRecordKey, Vec<Coin>)>>>()
+            .unwrap()
+    }
+
+    #[test]
+    fn init_contract_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 1).unwrap();
+    }
+
+    #[test]
+    fn init_contract_with_invalid_subspace_id() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        let init_err =
+            init_contract(deps.as_mut(), 0, ServiceFee::Fixed { amount: vec![] }, 1).unwrap_err();
+        assert_eq!(ContractError::InvalidSubspaceId {}, init_err);
+    }
+
+    #[test]
+    fn init_contract_with_non_existing_subspace() {
+        let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
+            .with_custom_handler(|query| match query {
+                DesmosQuery::Subspaces(subspaces_query) => match subspaces_query {
+                    SubspacesQuery::Subspace { .. } => {
+                        SystemResult::Err(SystemError::InvalidRequest {
+                            error: "subspace not found".to_string(),
+                            request: Default::default(),
+                        })
+                    }
+                    _ => SystemResult::Err(SystemError::Unknown {}),
+                },
+                _ => SystemResult::Err(SystemError::Unknown {}),
+            });
+        let mut deps = OwnedDeps {
+            storage: MockStorage::default(),
+            querier,
+            api: MockApi::default(),
+            custom_query_type: PhantomData,
+        };
+
+        let init_err =
+            init_contract(deps.as_mut(), 2, ServiceFee::Fixed { amount: vec![] }, 1).unwrap_err();
+
+        assert_eq!(
+            ContractError::SubspaceNotExist {
+                id: 2,
+                error: StdError::generic_err(
+                    "Querier system error: Cannot parse request: subspace not found in: "
+                )
+            },
+            init_err
+        );
+    }
+
+    #[test]
+    fn init_contract_with_invalid_percentage_service_fees() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        // Simulate init with 100% of service fees
+        let init_err = init_contract(
+            deps.as_mut(),
+            2,
+            ServiceFee::Percentage {
+                value: Uint128::new(100),
+                decimals: 0,
+            },
+            1,
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::InvalidPercentageFee {}, init_err);
+    }
+
+    #[test]
+    fn tip_user_with_invalid_address() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(100, "udsm"), Coin::new(100, "udsm")],
+            },
+            5,
+        )
+        .unwrap();
+
+        let tip_error =
+            tip_user(deps.as_mut(), USER_1, "a", &[Coin::new(5000, "udsm")]).unwrap_err();
+
+        assert_eq!(
+            ContractError::Std(StdError::generic_err(
+                "Invalid input: human address too short"
+            )),
+            tip_error
+        );
+    }
+
+    #[test]
+    fn tip_user_with_missing_fee_coin() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(100, "udsm"), Coin::new(100, "uatom")],
+            },
+            5,
+        )
+        .unwrap();
+
+        let tip_error =
+            tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap_err();
+
+        assert_eq!(
+            ContractError::FeeCoinNotProvided {
+                denom: "uatom".to_string()
+            },
+            tip_error
+        );
+    }
+
+    #[test]
+    fn tip_user_with_insufficient_fees() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(5000, "udsm")],
+            },
+            5,
+        )
+        .unwrap();
+
+        let tip_error =
+            tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(1000, "udsm")]).unwrap_err();
+
+        assert_eq!(
+            ContractError::InsufficientFee {
+                denom: "udsm".to_string(),
+                requested: Uint128::new(5000),
+                provided: Uint128::new(1000),
+            },
+            tip_error
+        );
+    }
+
+    #[test]
+    fn tip_user_with_amount_eq_fees() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(5000, "udsm")],
+            },
+            5,
+        )
+        .unwrap();
+
+        let tip_error =
+            tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap_err();
+
+        assert_eq!(ContractError::FoundAmountTooSmall {}, tip_error);
+    }
+
+    #[test]
+    fn tip_user_with_empty_fixed_fees_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 5).unwrap();
+
+        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
+        let tips = get_tips_record_items(deps.as_mut());
+
+        assert_eq!(
+            vec![(
+                (Addr::unchecked(USER_1), Addr::unchecked(USER_2), 0),
+                vec![Coin::new(5000, "udsm")]
+            )],
+            tips
+        );
+    }
+
+    #[test]
+    fn tip_user_with_fixed_fees_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            },
+            5,
+        )
+        .unwrap();
+
+        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
+        let tips = get_tips_record_items(deps.as_mut());
+
+        assert_eq!(
+            vec![(
+                (Addr::unchecked(USER_1), Addr::unchecked(USER_2), 0),
+                vec![Coin::new(4000, "udsm")]
+            )],
+            tips
+        );
+    }
+
+    #[test]
+    fn tip_user_with_zero_percentage_fees_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Percentage {
+                value: Uint128::new(0),
+                decimals: 2,
+            },
+            5,
+        )
+        .unwrap();
+
+        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
+        let tips = get_tips_record_items(deps.as_mut());
+
+        assert_eq!(
+            vec![(
+                (Addr::unchecked(USER_1), Addr::unchecked(USER_2), 0),
+                vec![Coin::new(5000, "udsm")]
+            )],
+            tips
+        );
+    }
+
+    #[test]
+    fn tip_user_with_percentage_fees_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Percentage {
+                value: Uint128::new(100),
+                decimals: 2,
+            },
+            5,
+        )
+        .unwrap();
+
+        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
+        let tips = get_tips_record_items(deps.as_mut());
+
+        assert_eq!(
+            vec![(
+                (Addr::unchecked(USER_1), Addr::unchecked(USER_2), 0),
+                vec![Coin::new(4950, "udsm")]
+            )],
+            tips
+        );
+    }
+
+    #[test]
+    fn tip_post_with_invalid_post_id() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(100, "udsm")],
+            },
+            5,
+        )
+        .unwrap();
+
+        let tip_error = tip_post(deps.as_mut(), USER_1, 0, &[Coin::new(5000, "udsm")]).unwrap_err();
+
+        assert_eq!(ContractError::InvalidPostId {}, tip_error);
+    }
+
+    #[test]
+    fn tip_post_with_non_existing_post_id() {
+        let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
+            .with_custom_handler(|query| match query {
+                DesmosQuery::Posts(post_query) => match post_query {
+                    PostsQuery::Post { .. } => SystemResult::Err(SystemError::InvalidRequest {
+                        error: "post not found".to_string(),
+                        request: Default::default(),
+                    }),
+                    _ => SystemResult::Err(SystemError::Unknown {}),
+                },
+                DesmosQuery::Subspaces(subspaces_query) => {
+                    SystemResult::Ok(mock_subspaces_query_response(subspaces_query))
+                }
+            });
+        let mut deps = OwnedDeps {
+            storage: MockStorage::default(),
+            querier,
+            api: MockApi::default(),
+            custom_query_type: PhantomData,
+        };
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(100, "udsm")],
+            },
+            5,
+        )
+        .unwrap();
+
+        let tip_error = tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap_err();
+
+        assert_eq!(
+            ContractError::Std(StdError::generic_err(
+                "Querier system error: Cannot parse request: post not found in: "
+            )),
+            tip_error
+        );
+    }
+
+    #[test]
+    fn tip_post_with_missing_fee_coin() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(100, "udsm"), Coin::new(100, "uatom")],
+            },
+            5,
+        )
+        .unwrap();
+
+        let tip_error = tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap_err();
+
+        assert_eq!(
+            ContractError::FeeCoinNotProvided {
+                denom: "uatom".to_string()
+            },
+            tip_error
+        );
+    }
+
+    #[test]
+    fn tip_post_with_insufficient_fees() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(5000, "udsm")],
+            },
+            5,
+        )
+        .unwrap();
+
+        let tip_error = tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(1000, "udsm")]).unwrap_err();
+
+        assert_eq!(
+            ContractError::InsufficientFee {
+                denom: "udsm".to_string(),
+                requested: Uint128::new(5000),
+                provided: Uint128::new(1000),
+            },
+            tip_error
+        );
+    }
+
+    #[test]
+    fn tip_post_with_amount_eq_fees() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(5000, "udsm")],
+            },
+            5,
+        )
+        .unwrap();
+
+        let tip_error = tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap_err();
+
+        assert_eq!(ContractError::FoundAmountTooSmall {}, tip_error);
+    }
+
+    #[test]
+    fn tip_post_with_empty_fixed_fees_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 5).unwrap();
+
+        tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap();
+        let tips = get_tips_record_items(deps.as_mut());
+
+        let post_author = MockPostsQueries::get_mocked_post(Uint64::new(1), Uint64::new(1));
+
+        assert_eq!(
+            vec![(
+                (Addr::unchecked(USER_1), post_author.author, 1),
+                vec![Coin::new(5000, "udsm")]
+            )],
+            tips
+        );
+    }
+
+    #[test]
+    fn tip_post_with_fixed_fees_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            },
+            5,
+        )
+        .unwrap();
+
+        tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap();
+        let tips = get_tips_record_items(deps.as_mut());
+
+        let post_author = MockPostsQueries::get_mocked_post(Uint64::new(1), Uint64::new(1));
+
+        assert_eq!(
+            vec![(
+                (Addr::unchecked(USER_1), post_author.author, 1),
+                vec![Coin::new(4000, "udsm")]
+            )],
+            tips
+        );
+    }
+
+    #[test]
+    fn tip_post_with_zero_percentage_fees_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Percentage {
+                value: Uint128::new(0),
+                decimals: 2,
+            },
+            5,
+        )
+        .unwrap();
+
+        tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap();
+        let tips = get_tips_record_items(deps.as_mut());
+
+        let post_author = MockPostsQueries::get_mocked_post(Uint64::new(1), Uint64::new(1));
+
+        assert_eq!(
+            vec![(
+                (Addr::unchecked(USER_1), post_author.author, 1),
+                vec![Coin::new(5000, "udsm")]
+            )],
+            tips
+        );
+    }
+
+    #[test]
+    fn tip_post_with_percentage_fees_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Percentage {
+                value: Uint128::new(100),
+                decimals: 2,
+            },
+            5,
+        )
+        .unwrap();
+
+        tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap();
+        let tips = get_tips_record_items(deps.as_mut());
+
+        let post_author = MockPostsQueries::get_mocked_post(Uint64::new(1), Uint64::new(1));
+
+        assert_eq!(
+            vec![(
+                (Addr::unchecked(USER_1), post_author.author, 1),
+                vec![Coin::new(4950, "udsm")]
+            )],
+            tips
+        );
+    }
+
+    #[test]
+    fn tip_without_tips_record_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            },
+            0,
+        )
+        .unwrap();
+
+        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
+
+        assert!(get_tips_record_items(deps.as_mut()).is_empty())
+    }
+
+    #[test]
+    fn tips_record_shrink_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            },
+            10,
+        )
+        .unwrap();
+
+        tip_user(deps.as_mut(), USER_3, USER_1, &[Coin::new(2000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(2000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_1, USER_3, &[Coin::new(2000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_3, USER_2, &[Coin::new(2000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_2, USER_1, &[Coin::new(2000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_2, USER_3, &[Coin::new(2000, "udsm")]).unwrap();
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateSavedTipsRecordThreshold { new_threshold: 3 },
+        )
+        .unwrap();
+
+        let tips = get_tips_record_items(deps.as_mut());
+
+        assert_eq!(
+            vec![
+                (
+                    (Addr::unchecked(USER_2), Addr::unchecked(USER_1), 0),
+                    vec![Coin::new(1000, "udsm")]
+                ),
+                (
+                    (Addr::unchecked(USER_2), Addr::unchecked(USER_3), 0),
+                    vec![Coin::new(1000, "udsm")]
+                ),
+                (
+                    (Addr::unchecked(USER_3), Addr::unchecked(USER_2), 0),
+                    vec![Coin::new(1000, "udsm")]
+                ),
+            ],
+            tips
+        )
+    }
+
+    #[test]
+    fn tips_record_wipe_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            },
+            10,
+        )
+        .unwrap();
+
+        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(2000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_3, USER_1, &[Coin::new(2000, "udsm")]).unwrap();
+
+        let tips = get_tips_record_items(deps.as_mut());
+        assert_eq!(
+            vec![
+                (
+                    (Addr::unchecked(USER_1), Addr::unchecked(USER_2), 0),
+                    vec![Coin::new(1000, "udsm")]
+                ),
+                (
+                    (Addr::unchecked(USER_3), Addr::unchecked(USER_1), 0),
+                    vec![Coin::new(1000, "udsm")]
+                ),
+            ],
+            tips
+        );
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateSavedTipsRecordThreshold { new_threshold: 0 },
+        )
+        .unwrap();
+
+        let tips = get_tips_record_items(deps.as_mut());
+        assert!(tips.is_empty());
+    }
+
+    #[test]
+    fn query_received_tips_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            },
+            5,
+        )
+        .unwrap();
+
+        tip_user(deps.as_mut(), USER_1, USER_3, &[Coin::new(5000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_2, USER_3, &[Coin::new(2000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_2, USER_3, &[Coin::new(2000, "udsm")]).unwrap();
+        // Some more data not related to user 3
+        tip_user(deps.as_mut(), USER_2, USER_1, &[Coin::new(100000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(100000, "udsm")]).unwrap();
+
+        let response = query(
+            deps.as_ref(),
+            mock_env(),
+            QueryMsg::UserReceivedTips {
+                user: USER_3.to_string(),
+            },
+        )
+        .unwrap();
+        let tips: TipsResponse = from_binary(&response).unwrap();
+        // Must be 2 since the two tips made from USER_2 should be merged into one
+        assert_eq!(2, tips.tips.len());
+        assert_eq!(
+            tips,
+            TipsResponse {
+                tips: vec![
+                    Tip {
+                        sender: Addr::unchecked(USER_1),
+                        receiver: Addr::unchecked(USER_3),
+                        amount: vec![Coin::new(4000, "udsm")]
+                    },
+                    Tip {
+                        sender: Addr::unchecked(USER_2),
+                        receiver: Addr::unchecked(USER_3),
+                        amount: vec![Coin::new(2000, "udsm")]
+                    },
+                ]
+            }
+        )
+    }
+}
