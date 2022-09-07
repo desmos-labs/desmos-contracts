@@ -937,6 +937,40 @@ mod tests {
     }
 
     #[test]
+    fn tip_reach_tips_record_threshold() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(100, "udsm")],
+            },
+            2,
+        )
+        .unwrap();
+
+        tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_2, USER_3, &[Coin::new(5000, "udsm")]).unwrap();
+
+        let tips = get_tips_record_items(deps.as_mut());
+        assert_eq!(
+            vec![
+                (
+                    (Addr::unchecked(USER_1), Addr::unchecked(USER_2), 0),
+                    vec![Coin::new(4900, "udsm")]
+                ),
+                (
+                    (Addr::unchecked(USER_2), Addr::unchecked(USER_3), 0),
+                    vec![Coin::new(4900, "udsm")]
+                ),
+            ],
+            tips
+        )
+    }
+
+    #[test]
     fn tip_without_tips_record_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
