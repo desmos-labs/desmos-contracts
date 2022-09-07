@@ -1493,6 +1493,33 @@ mod tests {
     }
 
     #[test]
+    fn query_tips_with_not_tipped_post_id() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            },
+            5,
+        )
+        .unwrap();
+
+        let response = query(
+            deps.as_ref(),
+            mock_env(),
+            QueryMsg::PostReceivedTips {
+                post_id: Uint64::new(7),
+            },
+        )
+        .unwrap();
+        let tips: TipsResponse = from_binary(&response).unwrap();
+
+        assert_eq!(Vec::<Tip>::new(), tips.tips);
+    }
+
+    #[test]
     fn query_post_received_tips_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
