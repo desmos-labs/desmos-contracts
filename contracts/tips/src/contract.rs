@@ -108,15 +108,22 @@ fn execute_send_tip(
     target: Target,
 ) -> Result<Response<DesmosMsg>, ContractError> {
     let config = CONFIG.load(deps.storage)?;
+
     // Computes the fee and the coins to be sent to the user
     let (_, coin_to_send) = config.service_fee.compute_fees(info.funds)?;
+
+    // Resolve the receiver and the optional post id
     let (post_id, receiver) = match target {
         Target::ContentTarget { post_id } => {
-            let querier = PostsQuerier::new(deps.querier.deref());
-            let post = querier.query_post(config.subspace_id, post_id.u64())?.post;
+            let post = PostsQuerier::new(deps.querier.deref())
+                .query_post(config.subspace_id, post_id.u64())?
+                .post;
             (post.id.u64(), post.author)
         }
-        Target::UserTarget { receiver } => (0_u64, deps.api.addr_validate(&receiver)?),
+        Target::UserTarget { receiver } => {
+            // Set the post id to 0 (invalid id) to signal that this tip is referencing an user
+            (0_u64, deps.api.addr_validate(&receiver)?)
+        }
     };
 
     if config.tips_record_threshold > 0 {
