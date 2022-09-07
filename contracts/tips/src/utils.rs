@@ -13,7 +13,7 @@ pub fn merge_coins(coins: Vec<Coin>) -> Vec<Coin> {
         let value = map.get_mut(&coin.denom);
 
         if let Some(amount) = value {
-            *amount = *amount + coin.amount.u128();
+            *amount += coin.amount.u128();
         } else {
             map.insert(coin.denom, coin.amount.u128());
         }

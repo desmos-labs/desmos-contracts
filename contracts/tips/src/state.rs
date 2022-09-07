@@ -85,10 +85,7 @@ impl StateServiceFee {
         // Ensure that we have processed all the fees
         if fee_coins.len() > fees.len() {
             for fee in fee_coins {
-                let fee_found = fees
-                    .iter()
-                    .find(|user_fee| user_fee.denom.eq(&fee.denom))
-                    .is_some();
+                let fee_found = fees.iter().any(|user_fee| user_fee.denom.eq(&fee.denom));
                 if !fee_found {
                     return Err(ContractError::FeeCoinNotProvided {
                         denom: fee.denom.to_owned(),
