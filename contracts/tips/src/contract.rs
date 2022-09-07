@@ -1467,6 +1467,32 @@ mod tests {
     }
 
     #[test]
+    fn query_tips_with_invalid_post_id() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            },
+            5,
+        )
+        .unwrap();
+
+        let error = query(
+            deps.as_ref(),
+            mock_env(),
+            QueryMsg::PostReceivedTips {
+                post_id: Uint64::new(0),
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::InvalidPostId {}, error);
+    }
+
+    #[test]
     fn query_post_received_tips_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
