@@ -1301,7 +1301,7 @@ mod tests {
     }
 
     #[test]
-    fn query_received_tips_properly() {
+    fn query_user_received_tips_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1345,6 +1345,108 @@ mod tests {
                         sender: Addr::unchecked(USER_2),
                         receiver: Addr::unchecked(USER_3),
                         amount: vec![Coin::new(2000, "udsm")]
+                    },
+                ]
+            }
+        )
+    }
+
+    #[test]
+    fn query_user_sent_tips_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            },
+            5,
+        )
+        .unwrap();
+
+        tip_user(deps.as_mut(), USER_1, USER_3, &[Coin::new(5000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_2, USER_3, &[Coin::new(2000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_2, USER_3, &[Coin::new(2000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_2, USER_1, &[Coin::new(100000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(100000, "udsm")]).unwrap();
+
+        let response = query(
+            deps.as_ref(),
+            mock_env(),
+            QueryMsg::UserSentTips {
+                user: USER_1.to_string(),
+            },
+        )
+        .unwrap();
+        let tips: TipsResponse = from_binary(&response).unwrap();
+        assert_eq!(2, tips.tips.len());
+        assert_eq!(
+            tips,
+            TipsResponse {
+                tips: vec![
+                    Tip {
+                        sender: Addr::unchecked(USER_1),
+                        receiver: Addr::unchecked(USER_2),
+                        amount: vec![Coin::new(99000, "udsm")]
+                    },
+                    Tip {
+                        sender: Addr::unchecked(USER_1),
+                        receiver: Addr::unchecked(USER_3),
+                        amount: vec![Coin::new(4000, "udsm")]
+                    },
+                ]
+            }
+        )
+    }
+
+    #[test]
+    fn query_post_received_tips_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            },
+            5,
+        )
+        .unwrap();
+
+        tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap();
+        tip_post(deps.as_mut(), USER_2, 1, &[Coin::new(2000, "udsm")]).unwrap();
+        tip_post(deps.as_mut(), USER_3, 1, &[Coin::new(100000, "udsm")]).unwrap();
+        tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(100000, "udsm")]).unwrap();
+
+        let response = query(
+            deps.as_ref(),
+            mock_env(),
+            QueryMsg::PostReceivedTips {
+                post_id: Uint64::new(1),
+            },
+        )
+        .unwrap();
+        let tips: TipsResponse = from_binary(&response).unwrap();
+        assert_eq!(3, tips.tips.len());
+        assert_eq!(
+            tips,
+            TipsResponse {
+                tips: vec![
+                    Tip {
+                        sender: Addr::unchecked(USER_1),
+                        receiver: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
+                        amount: vec![Coin::new(4000 + 99000, "udsm")]
+                    },
+                    Tip {
+                        sender: Addr::unchecked(USER_2),
+                        receiver: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
+                        amount: vec![Coin::new(1000, "udsm")]
+                    },
+                    Tip {
+                        sender: Addr::unchecked(USER_3),
+                        receiver: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
+                        amount: vec![Coin::new(99000, "udsm")]
                     },
                 ]
             }
