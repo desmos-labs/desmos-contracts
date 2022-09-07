@@ -348,8 +348,8 @@ mod tests {
         mock_env, mock_info, MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
     };
     use cosmwasm_std::{
-        from_binary, Addr, Coin, DepsMut, Order, OwnedDeps, Response, StdError, StdResult,
-        SystemError, SystemResult, Uint128, Uint64,
+        from_binary, Addr, BankMsg, Coin, DepsMut, Order, OwnedDeps, Response, StdError, StdResult,
+        SubMsg, SystemError, SystemResult, Uint128, Uint64,
     };
     use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
     use desmos_bindings::msg::DesmosMsg;
@@ -1238,6 +1238,66 @@ mod tests {
 
         let keys = TIPS_KEY_LIST.load(deps.as_mut().storage).unwrap();
         assert!(keys.is_empty());
+    }
+
+    #[test]
+    fn claim_fee_from_non_admin() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            },
+            10,
+        )
+        .unwrap();
+
+        let error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER_1, &[]),
+            ExecuteMsg::ClaimFees {
+                receiver: USER_1.to_string(),
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::Unauthorized {}, error);
+    }
+
+    #[test]
+    fn claim_fee_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[Coin::new(2000, "udsm")]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            },
+            10,
+        )
+        .unwrap();
+
+        let response = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::ClaimFees {
+                receiver: USER_1.to_string(),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            vec![SubMsg::new(BankMsg::Send {
+                amount: vec![Coin::new(2000, "udsm")],
+                to_address: USER_1.to_string()
+            })],
+            response.messages
+        );
     }
 
     #[test]
