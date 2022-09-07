@@ -1025,7 +1025,7 @@ mod tests {
     }
 
     #[test]
-    fn update_admin_with_from_non_admin_user() {
+    fn update_admin_from_non_admin_user() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 0).unwrap();
@@ -1041,6 +1041,30 @@ mod tests {
         .unwrap_err();
 
         assert_eq!(ContractError::Unauthorized {}, error);
+    }
+
+    #[test]
+    fn update_admin_with_invalid_admin_address() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 0).unwrap();
+
+        let error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateAdmin {
+                new_admin: "a".to_string(),
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(
+            ContractError::Std(StdError::generic_err(
+                "Invalid input: human address too short"
+            )),
+            error
+        );
     }
 
     #[test]
