@@ -107,10 +107,9 @@ fn execute_send_tip(
     info: MessageInfo,
     target: Target,
 ) -> Result<Response<DesmosMsg>, ContractError> {
-    // Load the config from the storage
     let config = CONFIG.load(deps.storage)?;
     // Computes the fee and the coins to be sent to the user
-    let (_fees, coin_to_send) = config.service_fee.compute_fees(info.funds)?;
+    let (_, coin_to_send) = config.service_fee.compute_fees(info.funds)?;
     let (post_id, receiver) = match target {
         Target::ContentTarget { post_id } => {
             let querier = PostsQuerier::new(deps.querier.deref());
@@ -129,20 +128,22 @@ fn execute_send_tip(
             utils::merge_coins(coins)
         } else {
             // Load the key list
-            let mut item_keys = TIPS_KEY_LIST
-                .load(deps.storage)
-                .map_err(ContractError::from)?;
+            let mut tips_key_list = TIPS_KEY_LIST.load(deps.storage)?;
             // If we have reached the threshold remove the oldest key
-            if item_keys.len() == config.tips_record_threshold as usize {
-                TIPS_RECORD.remove(deps.storage, item_keys.pop_front().unwrap());
+            if tips_key_list.len() == config.tips_record_threshold as usize {
+                TIPS_RECORD.remove(deps.storage, tips_key_list.pop_front().unwrap());
             }
             // Add the new key to the end
-            item_keys.push_back(tip_key);
-            TIPS_KEY_LIST.save(deps.storage, &item_keys)?;
+            tips_key_list.push_back(tip_key);
+            TIPS_KEY_LIST.save(deps.storage, &tips_key_list)?;
             // Return the new coins
             coin_to_send.clone()
         };
         tip_record_key.save(deps.storage, &tip_record_coins)?;
+    }
+
+    if coin_to_send.is_empty() {
+        return Err(ContractError::FoundAmountTooSmall {});
     }
 
     Ok(Response::new()
