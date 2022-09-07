@@ -342,7 +342,10 @@ pub fn query_tips(
 mod tests {
     use crate::contract::{execute, instantiate, query};
     use crate::error::ContractError;
-    use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, ServiceFee, Target, Tip, TipsResponse};
+    use crate::msg::{
+        ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, ServiceFee, Target, Tip,
+        TipsResponse,
+    };
     use crate::state::{StateServiceFee, TipsRecordKey, CONFIG, TIPS_KEY_LIST, TIPS_RECORD};
     use cosmwasm_std::testing::{
         mock_env, mock_info, MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
@@ -1298,6 +1301,34 @@ mod tests {
             })],
             response.messages
         );
+    }
+
+    #[test]
+    fn query_config_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            },
+            5,
+        )
+        .unwrap();
+
+        let response = query(deps.as_ref(), mock_env(), QueryMsg::Config {}).unwrap();
+        let config_response = from_binary::<QueryConfigResponse>(&response).unwrap();
+
+        assert_eq!(ADMIN, config_response.admin.as_str());
+        assert_eq!(Uint64::new(1), config_response.subspace_id);
+        assert_eq!(
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")]
+            },
+            config_response.service_fee
+        );
+        assert_eq!(5, config_response.saved_tips_record_threshold)
     }
 
     #[test]
