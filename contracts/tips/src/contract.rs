@@ -343,7 +343,7 @@ mod tests {
     use crate::contract::{execute, instantiate, query};
     use crate::error::ContractError;
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, ServiceFee, Target, Tip, TipsResponse};
-    use crate::state::{StateServiceFee, TipsRecordKey, CONFIG, TIPS_RECORD};
+    use crate::state::{StateServiceFee, TipsRecordKey, CONFIG, TIPS_KEY_LIST, TIPS_RECORD};
     use cosmwasm_std::testing::{
         mock_env, mock_info, MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
     };
@@ -358,6 +358,7 @@ mod tests {
     use desmos_bindings::query::DesmosQuery;
     use desmos_bindings::subspaces::mocks::mock_subspaces_query_response;
     use desmos_bindings::subspaces::query::SubspacesQuery;
+    use std::collections::VecDeque;
     use std::marker::PhantomData;
 
     const ADMIN: &str = "admin";
@@ -1063,7 +1064,54 @@ mod tests {
     }
 
     #[test]
-    fn tips_record_shrink_properly() {
+    fn update_tips_record_threshold_from_non_admin() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            },
+            10,
+        )
+        .unwrap();
+
+        let error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER_1, &[]),
+            ExecuteMsg::UpdateSavedTipsRecordThreshold { new_threshold: 3 },
+        )
+        .unwrap_err();
+        assert_eq!(ContractError::Unauthorized {}, error);
+    }
+
+    #[test]
+    fn update_tips_record_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            },
+            3,
+        )
+        .unwrap();
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateSavedTipsRecordThreshold { new_threshold: 10 },
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn update_tips_record_threshold_shrink_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1092,7 +1140,6 @@ mod tests {
         .unwrap();
 
         let tips = get_tips_record_items(deps.as_mut());
-
         assert_eq!(
             vec![
                 (
@@ -1109,11 +1156,21 @@ mod tests {
                 ),
             ],
             tips
+        );
+
+        let keys = TIPS_KEY_LIST.load(deps.as_mut().storage).unwrap();
+        assert_eq!(
+            VecDeque::from([
+                (Addr::unchecked(USER_3), Addr::unchecked(USER_2), 0),
+                (Addr::unchecked(USER_2), Addr::unchecked(USER_1), 0),
+                (Addr::unchecked(USER_2), Addr::unchecked(USER_3), 0),
+            ]),
+            keys
         )
     }
 
     #[test]
-    fn tips_record_wipe_properly() {
+    fn update_tips_record_threshold_records_wipe_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1154,6 +1211,9 @@ mod tests {
 
         let tips = get_tips_record_items(deps.as_mut());
         assert!(tips.is_empty());
+
+        let keys = TIPS_KEY_LIST.load(deps.as_mut().storage).unwrap();
+        assert!(keys.is_empty());
     }
 
     #[test]
