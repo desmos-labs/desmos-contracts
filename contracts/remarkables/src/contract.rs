@@ -8,8 +8,7 @@ use cw2::set_contract_version;
 use cw721_base::{ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg, MintMsg};
 use cw_utils::parse_reply_instantiate_data;
 use desmos_bindings::{
-    msg::DesmosMsg, query::DesmosQuery,
-    reactions::querier::ReactionsQuerier, types::PageRequest,
+    msg::DesmosMsg, query::DesmosQuery, reactions::querier::ReactionsQuerier, types::PageRequest,
 };
 use std::ops::Deref;
 
@@ -176,8 +175,8 @@ fn check_eligibility<'a>(
         )?
         .pagination
         .unwrap();
-    let reaction_count = reactions_pagination.total.unwrap();
-    if engagement_threshold as u64 > reaction_count.into() {
+    let reactions_count = reactions_pagination.total.unwrap();
+    if engagement_threshold as u64 > reactions_count.into() {
         return Err(ContractError::NoEligibilityError {});
     }
     Ok(())
@@ -286,11 +285,273 @@ pub fn reply(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coins, from_binary};
+    use crate::state::ConfigState;
+    use cosmwasm_std::testing::{mock_env, mock_info};
+    use cosmwasm_std::{coins, StdError, SubMsgResponse, SubMsgResult};
+    use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
+    use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
 
-    #[test]
-    fn proper_initialization() {
-        let mut deps = mock_dependencies();
+    const ADMIN: &str = "admin";
+    const NEW_ADMIN: &str = "new_admin";
+    const SUBSPACE_ID: u64 = 1;
+    const DENOM: &str = "test";
+    const CW721_CODE_ID: u64 = 1;
+
+    fn get_instantiate_rarities() -> Vec<Rarity> {
+        vec![Rarity {
+            level: 1,
+            engagement_threshold: 100,
+            mint_fees: coins(100, DENOM),
+        }]
+    }
+
+    fn get_valid_instantiate_msg() -> InstantiateMsg {
+        InstantiateMsg {
+            admin: ADMIN.into(),
+            cw721_code_id: CW721_CODE_ID.into(),
+            cw721_instantiate_msg: Cw721InstantiateMsg {
+                minter: ADMIN.into(),
+                name: "test".into(),
+                symbol: "test".into(),
+            },
+            subspace_id: SUBSPACE_ID.into(),
+            rarities: get_instantiate_rarities(),
+        }
+    }
+
+    fn do_instantiate(deps: DepsMut<DesmosQuery>) {
+        let env = mock_env();
+        let info = mock_info(ADMIN, &vec![]);
+        let valid_msg = get_valid_instantiate_msg();
+        instantiate(deps, env, info, valid_msg).unwrap();
+    }
+
+    mod instantiate {
+        use super::*;
+        #[test]
+        fn instatiate_with_invalid_admin_address_error() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let env = mock_env();
+            let info = mock_info(ADMIN, &vec![]);
+            let mut invalid_msg = get_valid_instantiate_msg();
+            invalid_msg.admin = "a".into();
+            assert_eq!(
+                instantiate(deps.as_mut(), env, info, invalid_msg).unwrap_err(),
+                ContractError::Std(StdError::generic_err(
+                    "Invalid input: human address too short"
+                ))
+            )
+        }
+
+        #[test]
+        fn instatiate_properly() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            do_instantiate(deps.as_mut());
+            let config = CONFIG.load(&deps.storage).unwrap();
+            let expected_config = ConfigState {
+                admin: Addr::unchecked(ADMIN),
+                cw721_code_id: CW721_CODE_ID,
+                subspace_id: SUBSPACE_ID,
+            };
+            assert_eq!(config, expected_config);
+
+            let res: StdResult<Vec<_>> = RARITY
+                .range(&deps.storage, None, None, Order::Ascending)
+                .collect();
+            let rarities: Vec<Rarity> = res
+                .unwrap()
+                .iter()
+                .map(|(level, rarity)| Rarity {
+                    level: *level,
+                    engagement_threshold: rarity.engagement_threshold,
+                    mint_fees: rarity.mint_fees.clone(),
+                })
+                .collect();
+            let expected_rarities = get_instantiate_rarities();
+            assert_eq!(expected_rarities, rarities)
+        }
+    }
+
+    mod reply {
+        use super::*;
+        #[test]
+        fn cw721_instantiate_with_invalid_reply_id_error() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let result = reply(
+                deps.as_mut(),
+                env,
+                Reply {
+                    id: 2,
+                    result: SubMsgResult::Ok(SubMsgResponse {
+                        events: vec![],
+                        data: None,
+                    }),
+                },
+            );
+            assert_eq!(result.unwrap_err(), ContractError::InvalidReplyID {},)
+        }
+
+        #[test]
+        fn cw721_instantiate_with_invalid_instantiate_msg_error() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let result = reply(
+                deps.as_mut(),
+                env,
+                Reply {
+                    id: 1,
+                    result: SubMsgResult::Ok(SubMsgResponse {
+                        events: vec![],
+                        data: None,
+                    }),
+                },
+            );
+            assert_eq!(result.unwrap_err(), ContractError::InstantiateCw721Error {})
+        }
+    }
+
+    mod mint_to {
+        use super::*;
+        #[test]
+        fn mint_to_with_not_existing_rarity_error() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let info = mock_info(NEW_ADMIN, &vec![]);
+            let msg = ExecuteMsg::MintTo {
+                post_id: 1u64.into(),
+                remarkables_uri: "ipfs://test.com".into(),
+                rarity_level: 2,
+            };
+            assert!(execute(deps.as_mut(), env, info, msg).is_err())
+        }
+        #[test]
+        fn mint_to_without_enough_fees_error() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let info = mock_info(NEW_ADMIN, &vec![]);
+            let msg = ExecuteMsg::MintTo {
+                post_id: 1u64.into(),
+                remarkables_uri: "ipfs://test.com".into(),
+                rarity_level: 1,
+            };
+            assert_eq!(
+                execute(deps.as_mut(), env, info, msg).unwrap_err(),
+                ContractError::MintFeesNotEnough {},
+            )
+        }
+    }
+
+    mod update_admin {
+        use super::*;
+        #[test]
+        fn update_admin_without_permissions_error() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let info = mock_info(NEW_ADMIN, &vec![]);
+            let msg = ExecuteMsg::UpdateAdmin {
+                new_admin: NEW_ADMIN.into(),
+            };
+            assert_eq!(
+                execute(deps.as_mut(), env, info, msg).unwrap_err(),
+                ContractError::NotAdmin {
+                    caller: Addr::unchecked(NEW_ADMIN)
+                }
+            )
+        }
+        #[test]
+        fn update_admin_with_invalid_address_error() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let info = mock_info(ADMIN, &vec![]);
+            let msg = ExecuteMsg::UpdateAdmin {
+                new_admin: "a".into(),
+            };
+            assert_eq!(
+                execute(deps.as_mut(), env, info, msg).unwrap_err(),
+                ContractError::Std(StdError::generic_err(
+                    "Invalid input: human address too short"
+                ))
+            )
+        }
+        #[test]
+        fn update_admin_properly() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let info = mock_info(ADMIN, &vec![]);
+            let msg = ExecuteMsg::UpdateAdmin {
+                new_admin: NEW_ADMIN.into(),
+            };
+            assert!(execute(deps.as_mut(), env, info, msg).is_ok());
+            let config = CONFIG.load(&deps.storage).unwrap();
+            let expected = ConfigState {
+                admin: Addr::unchecked(NEW_ADMIN),
+                cw721_code_id: CW721_CODE_ID,
+                subspace_id: SUBSPACE_ID,
+            };
+            assert_eq!(config, expected)
+        }
+    }
+
+    mod update_rarity_mint_fees {
+        use super::*;
+        #[test]
+        fn update_rarity_mint_fees_without_permissions_error() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let info = mock_info(NEW_ADMIN, &vec![]);
+            let msg = ExecuteMsg::UpdateRarityMintFee {
+                rarity_level: 1,
+                new_fees: coins(50, DENOM),
+            };
+            assert_eq!(
+                execute(deps.as_mut(), env, info, msg).unwrap_err(),
+                ContractError::NotAdmin {
+                    caller: Addr::unchecked(NEW_ADMIN)
+                }
+            )
+        }
+        #[test]
+        fn update_no_existing_rarity_mint_fees_error() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let info = mock_info(ADMIN, &vec![]);
+            let msg = ExecuteMsg::UpdateRarityMintFee {
+                rarity_level: 2,
+                new_fees: coins(50, DENOM),
+            };
+            assert_eq!(
+                execute(deps.as_mut(), env, info, msg).unwrap_err(),
+                ContractError::RarityNotExists { level: 2 },
+            )
+        }
+        #[test]
+        fn update_rarity_mint_fees_properly() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let info = mock_info(ADMIN, &vec![]);
+            let msg = ExecuteMsg::UpdateRarityMintFee {
+                rarity_level: 1,
+                new_fees: coins(50, DENOM),
+            };
+            execute(deps.as_mut(), env, info, msg).unwrap();
+            let new_rarity = RARITY.load(&deps.storage, 1).unwrap();
+            let expected = RarityState {
+                level: 1,
+                engagement_threshold: 100,
+                mint_fees: coins(50, DENOM),
+            };
+            assert_eq!(expected, new_rarity);
+        }
     }
 }
