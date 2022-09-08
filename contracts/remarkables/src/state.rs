@@ -21,4 +21,3 @@ pub struct ConfigState {
 pub const RARITY: Map<u32, RarityState> = Map::new("rarity");
 pub const CONFIG: Item<ConfigState> = Item::new("config");
 pub const CW721_ADDRESS: Item<Addr> = Item::new("cw721_address");
-pub const NEXT_TOKEN_ID: Item<u64> = Item::new("next_token_id");

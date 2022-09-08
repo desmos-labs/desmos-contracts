@@ -42,6 +42,17 @@ pub enum QueryMsg {
     /// Return a QueryConfigResponse containing the configuration info of the contract
     Config {},
     Rarities{},
+     /// Returns the nft info with approvals from cw721 contract as a [`AllNftInfoResponse`]
+     AllNftInfo {
+        token_id: String,
+        include_expired: Option<bool>,
+    },
+    /// Returns all the tokens ids owned by the given owner from cw721 contract as a [`TokensResponse`]
+    Tokens {
+        owner: String,
+        start_after: Option<String>,
+        limit: Option<u32>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

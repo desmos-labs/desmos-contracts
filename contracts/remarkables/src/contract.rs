@@ -5,7 +5,8 @@ use cosmwasm_std::{
     Env, MessageInfo, Order, Querier, Reply, Response, StdResult, Storage, SubMsg, Uint64,
 };
 use cw2::set_contract_version;
-use cw721_base::{ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg, MintMsg};
+use cw721_base::{ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg, QueryMsg as Cw721QueryMsg, MintMsg};
+use cw721::{AllNftInfoResponse, TokensResponse};
 use cw_utils::parse_reply_instantiate_data;
 use desmos_bindings::{
     msg::DesmosMsg, query::DesmosQuery, reactions::querier::ReactionsQuerier, types::PageRequest,
@@ -16,7 +17,7 @@ use crate::error::ContractError;
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, QueryRaritiesResponse, Rarity,
 };
-use crate::state::{ConfigState, RarityState, CONFIG, CW721_ADDRESS, NEXT_TOKEN_ID, RARITY};
+use crate::state::{ConfigState, RarityState, CONFIG, CW721_ADDRESS, RARITY};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:remarkables";
@@ -135,10 +136,8 @@ fn execute_mint_to(
         rarity.engagement_threshold,
     )?;
     // Create the cw721 message to send to mint the remarkables
-    let token_id = NEXT_TOKEN_ID.may_load(deps.storage)?.unwrap_or(1);
-    NEXT_TOKEN_ID.save(deps.storage, &(token_id + 1))?;
     let mint_msg = Cw721ExecuteMsg::<Empty, Empty>::Mint(MintMsg::<Empty> {
-        token_id: token_id.to_string(),
+        token_id: post_id.to_string(),
         owner: info.sender.clone().into(),
         token_uri: Some(remarkables_uri.clone()),
         extension: Empty {},
@@ -147,7 +146,8 @@ fn execute_mint_to(
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_MINT_TO)
         .add_attribute(ATTRIBUTE_SENDER, &info.sender)
-        .add_attribute(ATTRIBUTE_TOKEN_ID, token_id.to_string())
+        .add_attribute(ATTRIBUTE_RARITY_LEVEL, rarity_level.to_string())
+        .add_attribute(ATTRIBUTE_TOKEN_ID, post_id.to_string())
         .add_attribute(ATTRIBUTE_RECIPIENT, &info.sender)
         .add_attribute(ATTRIBUTE_TOKEN_URI, remarkables_uri)
         .add_message(wasm_execute_mint_msg))
@@ -233,6 +233,15 @@ pub fn query(deps: Deps<DesmosQuery>, _env: Env, msg: QueryMsg) -> StdResult<Bin
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::Rarities {} => to_binary(&query_rarities(deps)?),
+        QueryMsg::AllNftInfo {
+            token_id,
+            include_expired,
+        } => to_binary(&query_all_nft_info(deps, token_id, include_expired)?),
+        QueryMsg::Tokens {
+            owner,
+            start_after,
+            limit,
+        } => to_binary(&query_tokens(deps, owner, start_after, limit)?),   
     }
 }
 
@@ -260,6 +269,38 @@ fn query_rarities(deps: Deps<DesmosQuery>) -> StdResult<QueryRaritiesResponse> {
         })
         .collect();
     Ok(QueryRaritiesResponse { rarities })
+}
+
+fn query_all_nft_info(
+    deps: Deps<DesmosQuery>,
+    token_id: String,
+    include_expired: Option<bool>,
+) -> StdResult<AllNftInfoResponse<Empty>> {
+    let cw721_address = CW721_ADDRESS.load(deps.storage)?;
+    deps.querier.query_wasm_smart(
+        cw721_address,
+        &Cw721QueryMsg::<Empty>::AllNftInfo {
+            token_id,
+            include_expired,
+        },
+    )
+}
+
+fn query_tokens(
+    deps: Deps<DesmosQuery>,
+    owner: String,
+    start_after: Option<String>,
+    limit: Option<u32>,
+) -> StdResult<TokensResponse> {
+    let cw721_address = CW721_ADDRESS.load(deps.storage)?;
+    deps.querier.query_wasm_smart(
+        cw721_address,
+        &Cw721QueryMsg::<Empty>::Tokens {
+            owner,
+            start_after,
+            limit,
+        },
+    )
 }
 
 // Reply callback triggered from cw721 contract instantiation
