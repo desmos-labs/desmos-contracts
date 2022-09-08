@@ -309,14 +309,14 @@ pub fn query_tips(
     let tips_tuple: StdResult<Vec<(TipsRecordKey, Vec<Coin>)>> = TIPS_RECORD
         .range(deps.storage, None, None, Order::Ascending)
         .filter(|tuple| {
-            if let Ok(((t_sender, t_receiver, t_post_id), _)) = tuple {
-                if sender.is_some() && !sender.as_ref().unwrap().eq(t_sender) {
+            if let Ok(((tip_sender, tip_receiver, tip_post_id), _)) = tuple {
+                if sender.is_some() && !sender.as_ref().unwrap().eq(tip_sender) {
                     return false;
                 }
-                if receiver.is_some() && !receiver.as_ref().unwrap().eq(t_receiver) {
+                if receiver.is_some() && !receiver.as_ref().unwrap().eq(tip_receiver) {
                     return false;
                 }
-                if post_id.is_some() && *t_post_id != post_id.as_ref().unwrap().u64() {
+                if post_id.is_some() && *tip_post_id != post_id.unwrap().u64() {
                     return false;
                 }
                 true
