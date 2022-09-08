@@ -5,11 +5,18 @@ use cosmwasm_std::{
     Env, MessageInfo, Order, Querier, Reply, Response, StdResult, Storage, SubMsg, Uint64,
 };
 use cw2::set_contract_version;
-use cw721_base::{ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg, QueryMsg as Cw721QueryMsg, MintMsg};
 use cw721::{AllNftInfoResponse, TokensResponse};
+use cw721_base::{
+    ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg, MintMsg,
+    QueryMsg as Cw721QueryMsg,
+};
 use cw_utils::parse_reply_instantiate_data;
 use desmos_bindings::{
-    msg::DesmosMsg, query::DesmosQuery, reactions::querier::ReactionsQuerier, types::PageRequest,
+    msg::DesmosMsg,
+    query::DesmosQuery,
+    reactions::querier::ReactionsQuerier,
+    posts::querier::PostsQuerier,
+    types::{PageRequest, PageResponse},
 };
 use std::ops::Deref;
 
@@ -122,10 +129,10 @@ fn execute_mint_to(
     let rarity = RARITY.load(deps.storage, rarity_level)?;
     // Check if rarity mint fees is enough
     let mut is_enough_fees = false;
-    for coin in rarity.mint_fees {
+    for coin in rarity.mint_fees.iter() {
         is_enough_fees = has_coins(&info.funds, &coin)
     }
-    if !is_enough_fees {
+    if !is_enough_fees && rarity.mint_fees.len() != 0 {
         return Err(ContractError::MintFeesNotEnough {});
     }
     // Check if post reaches the eligible threshold
@@ -160,22 +167,23 @@ fn check_eligibility<'a>(
     engagement_threshold: u32,
 ) -> Result<(), ContractError> {
     let subspace_id = CONFIG.load(storage)?.subspace_id;
-    let reactions_pagination = ReactionsQuerier::new(querier)
-        .query_reactions(
-            subspace_id,
-            post_id,
-            None,
-            Some(PageRequest {
-                key: None,
-                offset: None,
-                limit: Uint64::new(1),
-                count_total: true,
-                reverse: false,
-            }),
-        )?
-        .pagination
-        .unwrap();
-    let reactions_count = reactions_pagination.total.unwrap();
+    // Check if the post exists.
+    PostsQuerier::new(querier).query_post(subspace_id, post_id)?;
+    // Check if the reactions of the post is larger than the threshold.
+    let reactions = ReactionsQuerier::new(querier).query_reactions(
+        subspace_id,
+        post_id,
+        None,
+        Some(PageRequest {
+            key: None,
+            offset: None,
+            limit: Uint64::new(1),
+            count_total: true,
+            reverse: false,
+        }),
+    )?;
+    let reactions_pagination = reactions.pagination.unwrap_or(PageResponse::default());
+    let reactions_count = reactions_pagination.total.unwrap_or(0u64.into());
     if engagement_threshold as u64 > reactions_count.into() {
         return Err(ContractError::NoEligibilityError {});
     }
@@ -241,7 +249,7 @@ pub fn query(deps: Deps<DesmosQuery>, _env: Env, msg: QueryMsg) -> StdResult<Bin
             owner,
             start_after,
             limit,
-        } => to_binary(&query_tokens(deps, owner, start_after, limit)?),   
+        } => to_binary(&query_tokens(deps, owner, start_after, limit)?),
     }
 }
 
