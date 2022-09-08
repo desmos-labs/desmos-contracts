@@ -328,11 +328,11 @@ pub fn query_tips(
 
     Ok(TipsResponse {
         tips: tips_tuple?
-            .iter()
+            .drain(0..)
             .map(|tuple| Tip {
-                sender: tuple.0 .0.clone(),
-                receiver: tuple.0 .1.clone(),
-                amount: tuple.1.clone(),
+                sender: tuple.0 .0,
+                receiver: tuple.0 .1,
+                amount: tuple.1,
             })
             .collect(),
     })
