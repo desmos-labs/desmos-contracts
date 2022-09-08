@@ -2,8 +2,7 @@
 mod tests {
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, Rarity};
     use crate::test_utils::*;
-    use crate::ContractError;
-    use cosmwasm_std::{coins, wasm_execute, Addr};
+    use cosmwasm_std::{wasm_execute, Addr};
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
     use cw_multi_test::{Contract, ContractWrapper, Executor};
     use desmos_bindings::{
@@ -25,7 +24,6 @@ mod tests {
     }
 
     const ADMIN: &str = "admin";
-    const DENOM: &str = "denom";
     const UNACCEPTED_RARITY_LEVEL: u32 = 0;
     const ACCEPTED_RARITY_LEVEL: u32 = 1;
 
