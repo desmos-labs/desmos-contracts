@@ -34,7 +34,7 @@ pub enum ContractError {
         provided: Uint128,
     },
 
-    #[error("the provide founds is just enough to pay the contract fees")]
+    #[error("not enough funds to pay tips and contract's fees")]
     FoundAmountTooSmall {},
 
     #[error("fee coin {denom} not provided")]
