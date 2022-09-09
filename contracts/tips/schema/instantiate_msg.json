@@ -5,7 +5,6 @@
   "required": [
     "admin",
     "saved_tips_threshold",
-    "service_fee",
     "subspace_id"
   ],
   "properties": {
@@ -20,10 +19,13 @@
       "minimum": 0.0
     },
     "service_fee": {
-      "description": "Fee that the users need to pay to use the contract.",
-      "allOf": [
+      "description": "Fee that the users need to pay to use the contract. If `None` no fees will be collected from the tipped amount.",
+      "anyOf": [
         {
           "$ref": "#/definitions/ServiceFee"
+        },
+        {
+          "type": "null"
         }
       ]
     },
