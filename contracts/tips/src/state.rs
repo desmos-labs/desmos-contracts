@@ -19,7 +19,7 @@ pub enum StateServiceFee {
 pub struct Config {
     pub admin: Addr,
     pub subspace_id: u64,
-    pub service_fee: StateServiceFee,
+    pub service_fee: Option<StateServiceFee>,
     pub tips_record_threshold: u32,
 }
 
@@ -123,21 +123,16 @@ impl TryFrom<ServiceFee> for StateServiceFee {
     type Error = ContractError;
 
     fn try_from(service_fees: ServiceFee) -> Result<Self, ContractError> {
+        service_fees.validate()?;
+
         match service_fees {
             ServiceFee::Fixed { amount } => Ok(StateServiceFee::Fixed {
                 amount: utils::merge_coins(amount),
             }),
-            ServiceFee::Percentage { value, decimals } => {
-                let percent_value = value.u128() / 10_u128.pow(decimals);
-                if percent_value >= 100 {
-                    Err(ContractError::InvalidPercentageFee {})
-                } else {
-                    Ok(StateServiceFee::Percentage {
-                        value: value.u128(),
-                        decimals,
-                    })
-                }
-            }
+            ServiceFee::Percentage { value, decimals } => Ok(StateServiceFee::Percentage {
+                value: value.u128(),
+                decimals,
+            }),
         }
     }
 }
