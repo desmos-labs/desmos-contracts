@@ -30,6 +30,33 @@ pub enum ServiceFee {
     },
 }
 
+impl ServiceFee {
+    pub fn validate(&self) -> Result<(), ContractError> {
+        match self {
+            ServiceFee::Fixed { amount } => {
+                if amount.is_empty() {
+                    return Err(ContractError::EmptyFixedFee {});
+                }
+
+                let zero_coin = amount.iter().find(|coin| coin.amount.is_zero());
+                if let Some(coin) = zero_coin {
+                    return Err(ContractError::ZeroFeeCoin {
+                        denom: coin.denom.to_owned(),
+                    });
+                }
+            }
+            ServiceFee::Percentage { value, decimals } => {
+                let percent_value = value.u128() / 10_u128.pow(*decimals);
+                if percent_value >= 100 || percent_value == 0 {
+                    return Err(ContractError::InvalidPercentageFee {});
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
 impl From<StateServiceFee> for ServiceFee {
     fn from(state_service_fees: StateServiceFee) -> Self {
         match state_service_fees {
@@ -49,7 +76,8 @@ pub struct InstantiateMsg {
     /// Application which is deploying the contract.
     pub subspace_id: Uint64,
     /// Fee that the users need to pay to use the contract.
-    pub service_fee: ServiceFee,
+    /// If `None` no fees will be collected from the tipped amount.
+    pub service_fee: Option<ServiceFee>,
     /// The number of records saved of a user tips history.
     pub saved_tips_threshold: u32,
 }
@@ -58,6 +86,10 @@ impl InstantiateMsg {
     pub fn validate(&self) -> Result<(), ContractError> {
         if self.subspace_id == Uint64::zero() {
             return Err(ContractError::InvalidSubspaceId {});
+        }
+
+        if let Some(service_fee) = &self.service_fee {
+            service_fee.validate()?;
         }
 
         Ok(())
@@ -91,7 +123,8 @@ pub enum ExecuteMsg {
     /// Updates the fee required to execute [`ExecuteMsg::SendTip`].
     UpdateServiceFee {
         /// New service fee required to execute [`ExecuteMsg::SendTip`].
-        new_fee: ServiceFee,
+        /// If `None` no fees will be collected from the tipped amount.
+        new_fee: Option<ServiceFee>,
     },
     /// Updates the contract admin.
     UpdateAdmin {
@@ -123,6 +156,13 @@ impl ExecuteMsg {
                 }
                 Target::UserTarget { .. } => Ok(()),
             },
+            ExecuteMsg::UpdateServiceFee { new_fee } => {
+                if let Some(service_fee) = new_fee {
+                    service_fee.validate()
+                } else {
+                    Ok(())
+                }
+            }
             _ => Ok(()),
         }
     }
@@ -148,7 +188,7 @@ pub struct QueryConfigResponse {
     /// Application that distributed the contract.
     pub subspace_id: Uint64,
     /// Fee required to execute [`ExecuteMsg::SendTip`].
-    pub service_fee: ServiceFee,
+    pub service_fee: Option<ServiceFee>,
     /// The number of records saved of a user tips history.
     pub saved_tips_record_threshold: u32,
 }
@@ -166,4 +206,77 @@ pub struct Tip {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use crate::error::ContractError;
+    use crate::msg::ServiceFee;
+    use cosmwasm_std::{Coin, Uint128};
+
+    #[test]
+    fn fixed_service_fee_zero_fee_coin() {
+        let service_fee = ServiceFee::Fixed {
+            amount: vec![Coin::new(0, "udsm")],
+        };
+
+        assert_eq!(
+            ContractError::ZeroFeeCoin {
+                denom: "udsm".to_string(),
+            },
+            service_fee.validate().unwrap_err()
+        );
+    }
+
+    #[test]
+    fn fixed_service_fee_empty_amount() {
+        let service_fee = ServiceFee::Fixed { amount: vec![] };
+
+        assert_eq!(
+            ContractError::EmptyFixedFee {},
+            service_fee.validate().unwrap_err()
+        );
+    }
+
+    #[test]
+    fn fixed_service_fee_validate_properly() {
+        let service_fee = ServiceFee::Fixed {
+            amount: vec![Coin::new(42, "udsm")],
+        };
+
+        service_fee.validate().unwrap();
+    }
+
+    #[test]
+    fn percentage_service_fee_zero_percentage() {
+        let service_fee = ServiceFee::Percentage {
+            value: Uint128::new(0),
+            decimals: 6,
+        };
+
+        assert_eq!(
+            ContractError::InvalidPercentageFee {},
+            service_fee.validate().unwrap_err()
+        );
+    }
+
+    #[test]
+    fn percentage_service_fee_100_percentage() {
+        let service_fee = ServiceFee::Percentage {
+            value: Uint128::new(100),
+            decimals: 0,
+        };
+
+        assert_eq!(
+            ContractError::InvalidPercentageFee {},
+            service_fee.validate().unwrap_err()
+        );
+    }
+
+    #[test]
+    fn percentage_service_fee_validate_properly() {
+        let service_fee = ServiceFee::Percentage {
+            value: Uint128::new(100),
+            decimals: 2,
+        };
+
+        service_fee.validate().unwrap();
+    }
+}

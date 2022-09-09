@@ -15,6 +15,12 @@ pub enum ContractError {
     #[error("subspace with id {id} don't exists, {error}")]
     SubspaceNotExist { id: u64, error: StdError },
 
+    #[error("empty fixed fee")]
+    EmptyFixedFee {},
+
+    #[error("zero fee coin provided: {denom}")]
+    ZeroFeeCoin { denom: String },
+
     #[error("invalid percentage fee")]
     InvalidPercentageFee {},
 

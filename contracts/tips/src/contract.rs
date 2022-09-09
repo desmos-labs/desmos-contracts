@@ -3,7 +3,7 @@ use crate::msg::{
     ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, ServiceFee, Target, Tip,
     TipsResponse,
 };
-use crate::state::{Config, TipsRecordKey, CONFIG, TIPS_KEY_LIST, TIPS_RECORD};
+use crate::state::{Config, StateServiceFee, TipsRecordKey, CONFIG, TIPS_KEY_LIST, TIPS_RECORD};
 use crate::utils;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -16,7 +16,7 @@ use desmos_bindings::posts::querier::PostsQuerier;
 use desmos_bindings::subspaces::querier::SubspacesQuerier;
 use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
 use std::collections::vec_deque::VecDeque;
-use std::convert::TryInto;
+use std::convert::TryFrom;
 use std::ops::Deref;
 
 // version info for migration info
@@ -60,12 +60,18 @@ pub fn instantiate(
             error,
         })?;
 
+    let service_fee = if let Some(service_fee) = msg.service_fee {
+        Some(StateServiceFee::try_from(service_fee)?)
+    } else {
+        None
+    };
+
     CONFIG.save(
         deps.storage,
         &Config {
             admin,
             subspace_id: msg.subspace_id.u64(),
-            service_fee: msg.service_fee.try_into()?,
+            service_fee,
             tips_record_threshold: msg.saved_tips_threshold,
         },
     )?;
@@ -110,7 +116,10 @@ fn execute_send_tip(
     let config = CONFIG.load(deps.storage)?;
 
     // Computes the fee and the coins to be sent to the user
-    let (_, coin_to_send) = config.service_fee.compute_fees(info.funds)?;
+    let (_, coin_to_send) = match config.service_fee {
+        None => (Vec::<Coin>::new(), info.funds),
+        Some(service_fee) => service_fee.compute_fees(info.funds)?,
+    };
 
     // Resolve the receiver and the optional post id
     let (post_id, receiver) = match target {
@@ -165,7 +174,7 @@ fn execute_send_tip(
 fn execute_update_service_fee(
     deps: DepsMut<DesmosQuery>,
     info: MessageInfo,
-    service_fee: ServiceFee,
+    service_fee: Option<ServiceFee>,
 ) -> Result<Response<DesmosMsg>, ContractError> {
     let mut config = CONFIG.load(deps.storage)?;
 
@@ -173,7 +182,12 @@ fn execute_update_service_fee(
         return Err(ContractError::Unauthorized {});
     }
 
-    config.service_fee = service_fee.try_into()?;
+    let new_service_fee = if let Some(service_fee) = service_fee {
+        Some(StateServiceFee::try_from(service_fee)?)
+    } else {
+        None
+    };
+    config.service_fee = new_service_fee;
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new()
@@ -291,7 +305,7 @@ pub fn query_config(deps: Deps<DesmosQuery>) -> StdResult<QueryConfigResponse> {
     Ok(QueryConfigResponse {
         admin: config.admin,
         subspace_id: config.subspace_id.into(),
-        service_fee: config.service_fee.into(),
+        service_fee: config.service_fee.map(StateServiceFee::into),
         saved_tips_record_threshold: config.tips_record_threshold,
     })
 }
@@ -372,7 +386,7 @@ mod tests {
     fn init_contract(
         deps: DepsMut<DesmosQuery>,
         subspace_id: u64,
-        service_fee: ServiceFee,
+        service_fee: Option<ServiceFee>,
         saved_tips_threshold: u32,
     ) -> Result<Response<DesmosMsg>, ContractError> {
         instantiate(
@@ -434,18 +448,16 @@ mod tests {
     }
 
     #[test]
-    fn init_contract_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
-
-        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 1).unwrap();
-    }
-
-    #[test]
     fn init_contract_with_invalid_subspace_id() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
-        let init_err =
-            init_contract(deps.as_mut(), 0, ServiceFee::Fixed { amount: vec![] }, 1).unwrap_err();
+        let init_err = init_contract(
+            deps.as_mut(),
+            0,
+            Some(ServiceFee::Fixed { amount: vec![] }),
+            1,
+        )
+        .unwrap_err();
         assert_eq!(ContractError::InvalidSubspaceId {}, init_err);
     }
 
@@ -471,8 +483,15 @@ mod tests {
             custom_query_type: PhantomData,
         };
 
-        let init_err =
-            init_contract(deps.as_mut(), 2, ServiceFee::Fixed { amount: vec![] }, 1).unwrap_err();
+        let init_err = init_contract(
+            deps.as_mut(),
+            2,
+            Some(ServiceFee::Fixed {
+                amount: vec![Coin::new(42, "dsm")],
+            }),
+            1,
+        )
+        .unwrap_err();
 
         assert_eq!(
             ContractError::SubspaceNotExist {
@@ -486,6 +505,45 @@ mod tests {
     }
 
     #[test]
+    fn init_contract_with_empty_fixed_service_fees() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        // Simulate init with 100% of service fees
+        let init_err = init_contract(
+            deps.as_mut(),
+            2,
+            Some(ServiceFee::Fixed { amount: vec![] }),
+            1,
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::EmptyFixedFee {}, init_err);
+    }
+
+    #[test]
+    fn init_contract_with_invalid_zero_fee_coin() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        // Simulate init with 100% of service fees
+        let init_err = init_contract(
+            deps.as_mut(),
+            2,
+            Some(ServiceFee::Fixed {
+                amount: vec![Coin::new(0, "udsm")],
+            }),
+            1,
+        )
+        .unwrap_err();
+
+        assert_eq!(
+            ContractError::ZeroFeeCoin {
+                denom: "udsm".to_string()
+            },
+            init_err
+        );
+    }
+
+    #[test]
     fn init_contract_with_invalid_percentage_service_fees() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
@@ -493,15 +551,37 @@ mod tests {
         let init_err = init_contract(
             deps.as_mut(),
             2,
-            ServiceFee::Percentage {
+            Some(ServiceFee::Percentage {
                 value: Uint128::new(100),
                 decimals: 0,
-            },
+            }),
             1,
         )
         .unwrap_err();
 
         assert_eq!(ContractError::InvalidPercentageFee {}, init_err);
+    }
+
+    #[test]
+    fn init_contract_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            Some(ServiceFee::Fixed {
+                amount: vec![Coin::new(42, "udsm")],
+            }),
+            1,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn init_contract_without_service_fee_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(deps.as_mut(), 1, None, 1).unwrap();
     }
 
     #[test]
@@ -511,9 +591,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(100, "udsm"), Coin::new(100, "udsm")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -536,9 +616,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(100, "udsm"), Coin::new(100, "uatom")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -561,9 +641,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(5000, "udsm")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -588,9 +668,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(5000, "udsm")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -602,10 +682,10 @@ mod tests {
     }
 
     #[test]
-    fn tip_user_with_empty_fixed_fees_properly() {
+    fn tip_user_with_zero_fees_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
-        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 5).unwrap();
+        init_contract(deps.as_mut(), 1, None, 5).unwrap();
 
         tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
         let tips = get_tips_record_items(deps.as_mut());
@@ -626,9 +706,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -646,43 +726,16 @@ mod tests {
     }
 
     #[test]
-    fn tip_user_with_zero_percentage_fees_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
-
-        init_contract(
-            deps.as_mut(),
-            1,
-            ServiceFee::Percentage {
-                value: Uint128::new(0),
-                decimals: 2,
-            },
-            5,
-        )
-        .unwrap();
-
-        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
-        let tips = get_tips_record_items(deps.as_mut());
-
-        assert_eq!(
-            vec![(
-                (Addr::unchecked(USER_1), Addr::unchecked(USER_2), 0),
-                vec![Coin::new(5000, "udsm")]
-            )],
-            tips
-        );
-    }
-
-    #[test]
     fn tip_user_with_percentage_fees_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Percentage {
+            Some(ServiceFee::Percentage {
                 value: Uint128::new(100),
                 decimals: 2,
-            },
+            }),
             5,
         )
         .unwrap();
@@ -706,9 +759,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(100, "udsm")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -744,9 +797,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(100, "udsm")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -768,9 +821,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(100, "udsm"), Coin::new(100, "uatom")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -792,9 +845,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(5000, "udsm")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -818,9 +871,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(5000, "udsm")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -831,10 +884,10 @@ mod tests {
     }
 
     #[test]
-    fn tip_post_with_empty_fixed_fees_properly() {
+    fn tip_post_with_zero_fees_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
-        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 5).unwrap();
+        init_contract(deps.as_mut(), 1, None, 5).unwrap();
 
         tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap();
         let tips = get_tips_record_items(deps.as_mut());
@@ -857,9 +910,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -879,45 +932,16 @@ mod tests {
     }
 
     #[test]
-    fn tip_post_with_zero_percentage_fees_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
-
-        init_contract(
-            deps.as_mut(),
-            1,
-            ServiceFee::Percentage {
-                value: Uint128::new(0),
-                decimals: 2,
-            },
-            5,
-        )
-        .unwrap();
-
-        tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap();
-        let tips = get_tips_record_items(deps.as_mut());
-
-        let post_author = MockPostsQueries::get_mocked_post(Uint64::new(1), Uint64::new(1));
-
-        assert_eq!(
-            vec![(
-                (Addr::unchecked(USER_1), post_author.author, 1),
-                vec![Coin::new(5000, "udsm")]
-            )],
-            tips
-        );
-    }
-
-    #[test]
     fn tip_post_with_percentage_fees_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Percentage {
+            Some(ServiceFee::Percentage {
                 value: Uint128::new(100),
                 decimals: 2,
-            },
+            }),
             5,
         )
         .unwrap();
@@ -943,9 +967,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(100, "udsm")],
-            },
+            }),
             2,
         )
         .unwrap();
@@ -977,9 +1001,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")],
-            },
+            }),
             0,
         )
         .unwrap();
@@ -993,14 +1017,24 @@ mod tests {
     fn update_service_fees_with_invalid_admin_address() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
-        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 5).unwrap();
+        init_contract(
+            deps.as_mut(),
+            1,
+            Some(ServiceFee::Fixed {
+                amount: vec![Coin::new(42, "udsm")],
+            }),
+            5,
+        )
+        .unwrap();
 
         let update_error = execute(
             deps.as_mut(),
             mock_env(),
             mock_info(USER_1, &[]),
             ExecuteMsg::UpdateServiceFee {
-                new_fee: ServiceFee::Fixed { amount: vec![] },
+                new_fee: Some(ServiceFee::Fixed {
+                    amount: vec![Coin::new(42, "udsm")],
+                }),
             },
         )
         .unwrap_err();
@@ -1009,20 +1043,89 @@ mod tests {
     }
 
     #[test]
-    fn update_service_fee_with_invalid_percentage() {
+    fn update_service_fee_with_empty_fixed_fee() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
-        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 5).unwrap();
+        init_contract(
+            deps.as_mut(),
+            1,
+            Some(ServiceFee::Fixed {
+                amount: vec![Coin::new(42, "udsm")],
+            }),
+            5,
+        )
+        .unwrap();
 
         let update_error = execute(
             deps.as_mut(),
             mock_env(),
             mock_info(ADMIN, &[]),
             ExecuteMsg::UpdateServiceFee {
-                new_fee: ServiceFee::Percentage {
+                new_fee: Some(ServiceFee::Fixed { amount: vec![] }),
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::EmptyFixedFee {}, update_error);
+    }
+
+    #[test]
+    fn update_service_fee_with_zero_fee_coin() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            Some(ServiceFee::Fixed {
+                amount: vec![Coin::new(42, "udsm")],
+            }),
+            5,
+        )
+        .unwrap();
+
+        let update_error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateServiceFee {
+                new_fee: Some(ServiceFee::Fixed {
+                    amount: vec![Coin::new(42, "uatom"), Coin::new(0, "udsm")],
+                }),
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(
+            ContractError::ZeroFeeCoin {
+                denom: "udsm".to_string()
+            },
+            update_error
+        );
+    }
+
+    #[test]
+    fn update_service_fee_with_invalid_percentage() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            Some(ServiceFee::Fixed {
+                amount: vec![Coin::new(42, "udsm")],
+            }),
+            5,
+        )
+        .unwrap();
+
+        let update_error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateServiceFee {
+                new_fee: Some(ServiceFee::Percentage {
                     value: Uint128::new(100),
                     decimals: 0,
-                },
+                }),
             },
         )
         .unwrap_err();
@@ -1037,10 +1140,48 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Percentage {
+            Some(ServiceFee::Percentage {
                 value: Uint128::new(100),
                 decimals: 2,
+            }),
+            5,
+        )
+        .unwrap();
+
+        let fee_coins = vec![Coin::new(42, "udsm")];
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateServiceFee {
+                new_fee: Some(ServiceFee::Fixed {
+                    amount: fee_coins.clone(),
+                }),
             },
+        )
+        .unwrap();
+
+        let config = CONFIG.load(deps.as_mut().storage).unwrap();
+        assert_eq!(
+            Some(StateServiceFee::Fixed {
+                amount: fee_coins.clone()
+            }),
+            config.service_fee
+        );
+    }
+
+    #[test]
+    fn clear_service_fee_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            Some(ServiceFee::Percentage {
+                value: Uint128::new(100),
+                decimals: 2,
+            }),
             5,
         )
         .unwrap();
@@ -1049,24 +1190,27 @@ mod tests {
             deps.as_mut(),
             mock_env(),
             mock_info(ADMIN, &[]),
-            ExecuteMsg::UpdateServiceFee {
-                new_fee: ServiceFee::Fixed { amount: vec![] },
-            },
+            ExecuteMsg::UpdateServiceFee { new_fee: None },
         )
         .unwrap();
 
         let config = CONFIG.load(deps.as_mut().storage).unwrap();
-        assert_eq!(
-            StateServiceFee::Fixed { amount: vec![] },
-            config.service_fee
-        );
+        assert_eq!(None, config.service_fee);
     }
 
     #[test]
     fn update_admin_from_non_admin_user() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
-        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 0).unwrap();
+        init_contract(
+            deps.as_mut(),
+            1,
+            Some(ServiceFee::Fixed {
+                amount: vec![Coin::new(42, "udsm")],
+            }),
+            0,
+        )
+        .unwrap();
 
         let error = execute(
             deps.as_mut(),
@@ -1085,7 +1229,15 @@ mod tests {
     fn update_admin_with_invalid_admin_address() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
-        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 0).unwrap();
+        init_contract(
+            deps.as_mut(),
+            1,
+            Some(ServiceFee::Fixed {
+                amount: vec![Coin::new(42, "udsm")],
+            }),
+            0,
+        )
+        .unwrap();
 
         let error = execute(
             deps.as_mut(),
@@ -1109,7 +1261,15 @@ mod tests {
     fn update_admin_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
-        init_contract(deps.as_mut(), 1, ServiceFee::Fixed { amount: vec![] }, 0).unwrap();
+        init_contract(
+            deps.as_mut(),
+            1,
+            Some(ServiceFee::Fixed {
+                amount: vec![Coin::new(42, "udsm")],
+            }),
+            0,
+        )
+        .unwrap();
 
         execute(
             deps.as_mut(),
@@ -1132,9 +1292,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")],
-            },
+            }),
             10,
         )
         .unwrap();
@@ -1156,9 +1316,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")],
-            },
+            }),
             3,
         )
         .unwrap();
@@ -1179,9 +1339,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")],
-            },
+            }),
             10,
         )
         .unwrap();
@@ -1238,9 +1398,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")],
-            },
+            }),
             10,
         )
         .unwrap();
@@ -1285,9 +1445,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")],
-            },
+            }),
             10,
         )
         .unwrap();
@@ -1312,9 +1472,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")],
-            },
+            }),
             10,
         )
         .unwrap();
@@ -1345,9 +1505,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -1358,9 +1518,9 @@ mod tests {
         assert_eq!(ADMIN, config_response.admin.as_str());
         assert_eq!(Uint64::new(1), config_response.subspace_id);
         assert_eq!(
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")]
-            },
+            }),
             config_response.service_fee
         );
         assert_eq!(5, config_response.saved_tips_record_threshold)
@@ -1373,9 +1533,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -1424,9 +1584,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -1473,9 +1633,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -1499,9 +1659,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")],
-            },
+            }),
             5,
         )
         .unwrap();
@@ -1526,9 +1686,9 @@ mod tests {
         init_contract(
             deps.as_mut(),
             1,
-            ServiceFee::Fixed {
+            Some(ServiceFee::Fixed {
                 amount: vec![Coin::new(1000, "udsm")],
-            },
+            }),
             5,
         )
         .unwrap();
