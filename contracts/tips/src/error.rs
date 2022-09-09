@@ -12,7 +12,7 @@ pub enum ContractError {
     #[error("invalid subspace id")]
     InvalidSubspaceId {},
 
-    #[error("subspace with id {id} don't exists, {error}")]
+    #[error("subspace with id {id} does not exist, {error}")]
     SubspaceNotExist { id: u64, error: StdError },
 
     #[error("empty fixed fee")]
