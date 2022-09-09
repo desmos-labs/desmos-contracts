@@ -1,7 +1,7 @@
 use cosmwasm_std::Coin;
 use std::collections::btree_map::BTreeMap;
 
-/// Iterates over the coins vector and merge the coins having the same `denom.
+/// Iterates over the coins vector and merges the coins having the same `denom`.
 /// * `coins` - Vector of coins to merge.
 pub fn merge_coins(coins: Vec<Coin>) -> Vec<Coin> {
     if coins.len() <= 1 {
