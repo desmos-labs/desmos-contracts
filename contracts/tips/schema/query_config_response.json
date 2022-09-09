@@ -5,7 +5,6 @@
   "required": [
     "admin",
     "saved_tips_record_threshold",
-    "service_fee",
     "subspace_id"
   ],
   "properties": {
@@ -25,9 +24,12 @@
     },
     "service_fee": {
       "description": "Fee required to execute [`ExecuteMsg::SendTip`].",
-      "allOf": [
+      "anyOf": [
         {
           "$ref": "#/definitions/ServiceFee"
+        },
+        {
+          "type": "null"
         }
       ]
     },
