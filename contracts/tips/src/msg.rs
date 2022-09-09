@@ -71,7 +71,7 @@ impl From<StateServiceFee> for ServiceFee {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
-    /// Address of who will have the right to administer the contract.
+    /// Address of who will have the right to manage the contract.
     pub admin: String,
     /// Application which is deploying the contract.
     pub subspace_id: Uint64,
