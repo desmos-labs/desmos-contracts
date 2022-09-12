@@ -139,6 +139,7 @@ fn execute_mint_to(
     check_eligibility(
         deps.storage,
         deps.querier.deref(),
+        info.sender.clone(),
         post_id,
         rarity.engagement_threshold,
     )?;
@@ -163,12 +164,16 @@ fn execute_mint_to(
 fn check_eligibility<'a>(
     storage: &dyn Storage,
     querier: &'a dyn Querier,
+    sender: Addr,
     post_id: u64,
     engagement_threshold: u32,
 ) -> Result<(), ContractError> {
     let subspace_id = CONFIG.load(storage)?.subspace_id;
-    // Check if the post exists.
-    PostsQuerier::new(querier).query_post(subspace_id, post_id)?;
+    // Check if the post exists and it is owned by sender.
+    let post = PostsQuerier::new(querier).query_post(subspace_id, post_id)?.post;
+    if post.author != sender {
+        return Err(ContractError::NoEligibilityError {});
+    }
     // Check if the reactions of the post is larger than the threshold.
     let reactions = ReactionsQuerier::new(querier).query_reactions(
         subspace_id,

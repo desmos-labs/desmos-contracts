@@ -1,7 +1,7 @@
+use cosmwasm_std::{Addr, Coin, Uint64};
+use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::{Addr, Uint64, Coin};
-use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -41,9 +41,9 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     /// Return a QueryConfigResponse containing the configuration info of the contract
     Config {},
-    Rarities{},
-     /// Returns the nft info with approvals from cw721 contract as a [`AllNftInfoResponse`]
-     AllNftInfo {
+    Rarities {},
+    /// Returns the nft info with approvals from cw721 contract as a [`AllNftInfoResponse`]
+    AllNftInfo {
         token_id: String,
         include_expired: Option<bool>,
     },
