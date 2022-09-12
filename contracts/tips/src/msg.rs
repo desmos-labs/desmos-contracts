@@ -8,12 +8,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ServiceFee {
-    /// Represents a fixed fee that is deducted from the tip.
+    /// Represents a fixed fee that the sender needs to pay in order to send the tip.
     Fixed {
-        /// Coins that are deducted from the tip.
+        /// Coins that the sender needs to pay.
         amount: Vec<Coin>,
     },
-    /// Represents a percentage that is deducted from the tip.
+    /// Represents a percentage that the sender needs to pay in order to send the tip.
     Percentage {
         /// Percentage value.
         value: Decimal,
