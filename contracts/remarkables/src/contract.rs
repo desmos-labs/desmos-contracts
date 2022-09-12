@@ -159,7 +159,7 @@ fn execute_mint_to(
 }
 
 fn is_enough_fees(funds: Vec<Coin>, requireds: Vec<Coin>) -> bool {
-    if requireds.len() != 0 {
+    if requireds.len() == 0 {
         return true;
     }
     // It takes O(n^2) time complexity but both list are extremely small

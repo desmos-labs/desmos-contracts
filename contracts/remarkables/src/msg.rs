@@ -92,6 +92,7 @@ pub struct QueryRaritiesResponse {
     pub rarities: Vec<Rarity>,
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
     #[test]
