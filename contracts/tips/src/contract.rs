@@ -365,8 +365,8 @@ mod tests {
         mock_env, mock_info, MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
     };
     use cosmwasm_std::{
-        from_binary, Addr, BankMsg, Coin, DepsMut, Order, OwnedDeps, Response, StdError, StdResult,
-        SubMsg, SystemError, SystemResult, Uint128, Uint64,
+        from_binary, Addr, BankMsg, Coin, Decimal, DepsMut, Order, OwnedDeps, Response, StdError,
+        StdResult, SubMsg, SystemError, SystemResult, Uint128, Uint64,
     };
     use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
     use desmos_bindings::msg::DesmosMsg;
@@ -552,8 +552,7 @@ mod tests {
             deps.as_mut(),
             2,
             Some(ServiceFee::Percentage {
-                value: Uint128::new(100),
-                decimals: 0,
+                value: Decimal::from_atomics(100u32, 0).unwrap(),
             }),
             1,
         )
@@ -733,8 +732,7 @@ mod tests {
             deps.as_mut(),
             1,
             Some(ServiceFee::Percentage {
-                value: Uint128::new(100),
-                decimals: 2,
+                value: Decimal::one(),
             }),
             5,
         )
@@ -939,8 +937,7 @@ mod tests {
             deps.as_mut(),
             1,
             Some(ServiceFee::Percentage {
-                value: Uint128::new(100),
-                decimals: 2,
+                value: Decimal::one(),
             }),
             5,
         )
@@ -1123,8 +1120,7 @@ mod tests {
             mock_info(ADMIN, &[]),
             ExecuteMsg::UpdateServiceFee {
                 new_fee: Some(ServiceFee::Percentage {
-                    value: Uint128::new(100),
-                    decimals: 0,
+                    value: Decimal::from_atomics(100u32, 0).unwrap(),
                 }),
             },
         )
@@ -1141,8 +1137,7 @@ mod tests {
             deps.as_mut(),
             1,
             Some(ServiceFee::Percentage {
-                value: Uint128::new(100),
-                decimals: 2,
+                value: Decimal::one(),
             }),
             5,
         )
@@ -1179,8 +1174,7 @@ mod tests {
             deps.as_mut(),
             1,
             Some(ServiceFee::Percentage {
-                value: Uint128::new(100),
-                decimals: 2,
+                value: Decimal::one(),
             }),
             5,
         )

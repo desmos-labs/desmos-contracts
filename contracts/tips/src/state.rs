@@ -1,18 +1,19 @@
 use crate::error::ContractError;
 use crate::msg::ServiceFee;
 use crate::utils;
-use cosmwasm_std::{Addr, Coin};
+use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
 use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::vec_deque::VecDeque;
 use std::convert::TryFrom;
+use std::ops::{Div, Mul};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum StateServiceFee {
     Fixed { amount: Vec<Coin> },
-    Percentage { value: u128, decimals: u32 },
+    Percentage { value: Decimal },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -43,8 +44,8 @@ impl StateServiceFee {
             StateServiceFee::Fixed { amount } => {
                 StateServiceFee::compute_fixed_service_fees(amount, received_coins)
             }
-            StateServiceFee::Percentage { value, decimals } => {
-                StateServiceFee::compute_percentage_service_fees(*value, *decimals, received_coins)
+            StateServiceFee::Percentage { value } => {
+                StateServiceFee::compute_percentage_service_fees(value, received_coins)
             }
         }
     }
@@ -98,20 +99,25 @@ impl StateServiceFee {
     }
 
     fn compute_percentage_service_fees(
-        value: u128,
-        decimals: u32,
+        value: &Decimal,
         received_coins: Vec<Coin>,
     ) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
         let mut fees: Vec<Coin> = vec![];
         let mut to_user: Vec<Coin> = vec![];
+        let percentage_value = value.div(Decimal::from_atomics(100u32, 0).unwrap());
 
-        let decimal_factor = 10_u128.pow(decimals);
         for coin in received_coins {
-            let coin_fee: u128 = (coin.amount.u128() * value) / (100_u128 * decimal_factor);
+            // Safe to mul since we are percentage value is (0, 1) and coin amount can't overflow
+            let coin_fee: Uint128 = coin.amount.mul(percentage_value);
 
-            to_user.push(Coin::new(coin.amount.u128() - coin_fee, coin.denom.clone()));
-            if coin_fee > 0 {
-                fees.push(Coin::new(coin_fee, coin.denom));
+            if coin_fee.u128() > 0 {
+                to_user.push(Coin::new(
+                    coin.amount.u128() - coin_fee.u128(),
+                    coin.denom.clone(),
+                ));
+                fees.push(Coin::new(coin_fee.u128(), coin.denom));
+            } else {
+                to_user.push(Coin::new(coin.amount.u128() - coin_fee.u128(), coin.denom));
             }
         }
 
@@ -129,10 +135,7 @@ impl TryFrom<ServiceFee> for StateServiceFee {
             ServiceFee::Fixed { amount } => Ok(StateServiceFee::Fixed {
                 amount: utils::merge_coins(amount),
             }),
-            ServiceFee::Percentage { value, decimals } => Ok(StateServiceFee::Percentage {
-                value: value.u128(),
-                decimals,
-            }),
+            ServiceFee::Percentage { value } => Ok(StateServiceFee::Percentage { value }),
         }
     }
 }
@@ -142,7 +145,7 @@ mod tests {
     use crate::error::ContractError;
     use crate::msg::ServiceFee;
     use crate::state::StateServiceFee;
-    use cosmwasm_std::{Coin, Uint128};
+    use cosmwasm_std::{Coin, Decimal, Uint128};
     use std::convert::TryFrom;
 
     #[test]
@@ -256,8 +259,7 @@ mod tests {
     fn percentage_state_service_fee_from_service_fee_invalid_percentage() {
         // Service fees at 200%
         let service_fee = ServiceFee::Percentage {
-            value: Uint128::new(200),
-            decimals: 0,
+            value: Decimal::from_atomics(200u32, 0).unwrap(),
         };
 
         let error = StateServiceFee::try_from(service_fee).unwrap_err();
@@ -267,8 +269,7 @@ mod tests {
     #[test]
     fn percentage_state_service_fee_from_service_fee_properly() {
         let service_fee = ServiceFee::Percentage {
-            value: Uint128::new(1000),
-            decimals: 3,
+            value: Decimal::one(),
         };
 
         let state_service_fee = StateServiceFee::try_from(service_fee).unwrap();
@@ -276,9 +277,8 @@ mod tests {
             StateServiceFee::Fixed { .. } => {
                 panic!("ServiceFee::Percentage should be converted to StateServiceFee::Percentage")
             }
-            StateServiceFee::Percentage { value, decimals } => {
-                assert_eq!(1000, value);
-                assert_eq!(3, decimals);
+            StateServiceFee::Percentage { value } => {
+                assert_eq!("1", value.to_string());
             }
         }
     }
@@ -286,8 +286,7 @@ mod tests {
     #[test]
     fn percentage_fees_zero() {
         let zero_percent = StateServiceFee::Percentage {
-            value: 0,
-            decimals: 6,
+            value: Decimal::zero(),
         };
         let tips = vec![
             Coin::new(600000000, "uatom"),
@@ -304,8 +303,7 @@ mod tests {
     #[test]
     fn percentage_fees_compute_properly() {
         let three_percent = StateServiceFee::Percentage {
-            value: 3300000,
-            decimals: 6,
+            value: Decimal::from_atomics(3300000u32, 6).unwrap(),
         };
 
         let (computed_fees, to_user) = three_percent
