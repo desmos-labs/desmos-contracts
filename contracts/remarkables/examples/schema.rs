@@ -8,7 +8,6 @@ use cw721::{AllNftInfoResponse, TokensResponse};
 use remarkables::msg::{
     ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, QueryRaritiesResponse,
 };
-use remarkables::state::{ConfigState, RarityState};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();
@@ -19,8 +18,6 @@ fn main() {
     export_schema(&schema_for!(InstantiateMsg), &out_dir);
     export_schema(&schema_for!(ExecuteMsg), &out_dir);
     export_schema(&schema_for!(QueryMsg), &out_dir);
-    export_schema(&schema_for!(ConfigState), &out_dir);
-    export_schema(&schema_for!(RarityState), &out_dir);
     export_schema(&schema_for!(QueryConfigResponse), &out_dir);
     export_schema(&schema_for!(QueryRaritiesResponse), &out_dir);
     export_schema(&schema_for!(AllNftInfoResponse<Empty>), &out_dir);
