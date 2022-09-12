@@ -7,32 +7,43 @@ use url::Url;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
+    /// Address of who will have the right to administer the contract.
     pub admin: String,
+    /// Id of the CW721 contract to initialize together with this contract.
     pub cw721_code_id: Uint64,
+    /// Initialization message that will be sent to the CW721 contract.
     pub cw721_instantiate_msg: Cw721InstantiateMsg,
+    /// Id of the subspace to operate.
     pub subspace_id: Uint64,
+    /// List of rarities to initialize with this contract.
     pub rarities: Vec<Rarity>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Rarity {
+    /// Level of the rarity.
     pub level: u32,
+    /// Threshold of the reactions amount to mint.
     pub engagement_threshold: u32,
+    /// Minimum fees of minting.
     pub mint_fees: Vec<Coin>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    /// Message allowing the user to mint a Remarkables for a specific post owned by the user.
     MintTo {
         post_id: Uint64,
         remarkables_uri: String,
         rarity_level: u32,
     },
+    /// Message allowing the contract administrator to update the mint fees of the given rarity level.
     UpdateRarityMintFee {
         rarity_level: u32,
         new_fees: Vec<Coin>,
     },
+    /// Message allowing the contract's admin to transfer the admin rights to another user.
     UpdateAdmin {
         new_admin: String,
     },
@@ -63,15 +74,16 @@ impl ExecuteMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    /// Return a QueryConfigResponse containing the configuration info of the contract
+    /// Returns the configuration info as a [`QueryConfigResponse`].
     Config {},
+    // Returns all the rarities info as a [`QueryRaritiesResponse`].
     Rarities {},
-    /// Returns the nft info with approvals from cw721 contract as a [`AllNftInfoResponse`]
+    /// Returns the nft info with approvals from cw721 contract as a [`AllNftInfoResponse`].
     AllNftInfo {
         token_id: String,
         include_expired: Option<bool>,
     },
-    /// Returns all the tokens ids owned by the given owner from cw721 contract as a [`TokensResponse`]
+    /// Returns all the tokens ids owned by the given owner from cw721 contract as a [`TokensResponse`].
     Tokens {
         owner: String,
         start_after: Option<String>,
@@ -81,14 +93,19 @@ pub enum QueryMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct QueryConfigResponse {
+    /// Address of the contract administrator.
     pub admin: Addr,
+    /// Id of the cw721 contract that this contract has initialized.
     pub cw721_code_id: Uint64,
+    /// Address of the cw721 contract that this contract is using to mint.
     pub cw721_address: Addr,
+    /// Id of the subspace to operate.
     pub subspace_id: Uint64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct QueryRaritiesResponse {
+    /// List of rarities state in this contract.
     pub rarities: Vec<Rarity>,
 }
 

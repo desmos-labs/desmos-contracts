@@ -28,7 +28,7 @@ mod tests {
     const ADMIN: &str = "admin";
     const UNACCEPTED_RARITY_LEVEL: u32 = 0;
     const ACCEPTED_RARITY_LEVEL: u32 = 1;
-    const VALID_POST_ID: Uint64 = Uint64::new(1);
+    const POST_ID: Uint64 = Uint64::new(1);
     const REMARKABLES_URI: &str = "ipfs://remarkables.com";
     const AUTHOR: &str = "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc";
 
@@ -62,7 +62,7 @@ mod tests {
                 name: "test".into(),
                 symbol: "test".into(),
             },
-            subspace_id: VALID_POST_ID.into(),
+            subspace_id: POST_ID.into(),
             rarities: vec![
                 Rarity {
                     level: 0,
@@ -174,7 +174,7 @@ mod tests {
                 wasm_execute(
                     &addr,
                     &ExecuteMsg::MintTo {
-                        post_id: VALID_POST_ID.into(),
+                        post_id: POST_ID.into(),
                         remarkables_uri: REMARKABLES_URI.into(),
                         rarity_level: ACCEPTED_RARITY_LEVEL,
                     },
@@ -193,7 +193,7 @@ mod tests {
                 wasm_execute(
                     &addr,
                     &ExecuteMsg::MintTo {
-                        post_id: VALID_POST_ID.into(),
+                        post_id: POST_ID.into(),
                         remarkables_uri: REMARKABLES_URI.into(),
                         rarity_level: UNACCEPTED_RARITY_LEVEL,
                     },
@@ -212,7 +212,7 @@ mod tests {
                 wasm_execute(
                     &addr,
                     &ExecuteMsg::MintTo {
-                        post_id: VALID_POST_ID.into(),
+                        post_id: POST_ID.into(),
                         remarkables_uri: REMARKABLES_URI.into(),
                         rarity_level: UNACCEPTED_RARITY_LEVEL,
                     },
@@ -231,7 +231,7 @@ mod tests {
                 wasm_execute(
                     &addr,
                     &ExecuteMsg::MintTo {
-                        post_id: VALID_POST_ID,
+                        post_id: POST_ID,
                         remarkables_uri: REMARKABLES_URI.into(),
                         rarity_level: ACCEPTED_RARITY_LEVEL,
                     },
@@ -255,12 +255,12 @@ mod tests {
                     },
                 )
                 .unwrap();
-            assert_eq!(1, response.tokens.len());
+            assert_eq!(vec![POST_ID.to_string()], response.tokens);
             let minted_nft_info: NftInfoResponse<Empty> = querier
                 .query_wasm_smart(
                     config.cw721_address.as_str(),
                     &Cw721QueryMsg::<Empty>::NftInfo {
-                        token_id: VALID_POST_ID.into(),
+                        token_id: POST_ID.into(),
                     },
                 )
                 .unwrap();
@@ -284,7 +284,7 @@ mod tests {
                 wasm_execute(
                     &addr,
                     &ExecuteMsg::MintTo {
-                        post_id: VALID_POST_ID,
+                        post_id: POST_ID,
                         remarkables_uri: REMARKABLES_URI.into(),
                         rarity_level: ACCEPTED_RARITY_LEVEL,
                     },
@@ -331,7 +331,7 @@ mod tests {
                 wasm_execute(
                     &addr,
                     &ExecuteMsg::MintTo {
-                        post_id: VALID_POST_ID,
+                        post_id: POST_ID,
                         remarkables_uri: REMARKABLES_URI.into(),
                         rarity_level: ACCEPTED_RARITY_LEVEL,
                     },
@@ -362,7 +362,7 @@ mod tests {
                 .query_wasm_smart(
                     config.cw721_address.as_str(),
                     &Cw721QueryMsg::<Empty>::AllNftInfo {
-                        token_id: VALID_POST_ID.into(),
+                        token_id: POST_ID.into(),
                         include_expired: None,
                     },
                 )
@@ -371,7 +371,7 @@ mod tests {
                 .query_wasm_smart(
                     &addr,
                     &QueryMsg::AllNftInfo {
-                        token_id: VALID_POST_ID.to_string(),
+                        token_id: POST_ID.to_string(),
                         include_expired: None,
                     },
                 )
