@@ -14,9 +14,9 @@ use cw_utils::parse_reply_instantiate_data;
 use desmos_bindings::{
     msg::DesmosMsg,
     posts::querier::PostsQuerier,
-    subspaces::querier::SubspacesQuerier,
     query::DesmosQuery,
     reactions::querier::ReactionsQuerier,
+    subspaces::querier::SubspacesQuerier,
     types::{PageRequest, PageResponse},
 };
 use std::ops::Deref;
@@ -77,9 +77,13 @@ pub fn instantiate(
         RARITY.save(deps.storage, rarity.level, &state)?;
     }
     // Check subspace exists and it is owned by the sender.
-    let subspace = SubspacesQuerier::new(deps.querier.deref()).query_subspace(msg.subspace_id.into())?.subspace;
+    let subspace = SubspacesQuerier::new(deps.querier.deref())
+        .query_subspace(msg.subspace_id.into())?
+        .subspace;
     if info.sender != subspace.owner {
-        return Err(ContractError::NotSubspaceOwner{ caller: info.sender });
+        return Err(ContractError::NotSubspaceOwner {
+            caller: info.sender,
+        });
     }
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     // Submessage to instantiate cw721 contract
@@ -420,7 +424,9 @@ mod tests {
             invalid_msg.admin = NEW_ADMIN.into();
             assert_eq!(
                 instantiate(deps.as_mut(), env, info, invalid_msg).unwrap_err(),
-                ContractError::NotSubspaceOwner{ caller: Addr::unchecked(NEW_ADMIN) }
+                ContractError::NotSubspaceOwner {
+                    caller: Addr::unchecked(NEW_ADMIN)
+                }
             )
         }
         #[test]

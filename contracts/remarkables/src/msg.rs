@@ -44,9 +44,7 @@ pub enum ExecuteMsg {
         new_fees: Vec<Coin>,
     },
     /// Message allowing the contract's admin to transfer the admin rights to another user.
-    UpdateAdmin {
-        new_admin: String,
-    },
+    UpdateAdmin { new_admin: String },
 }
 
 impl ExecuteMsg {
