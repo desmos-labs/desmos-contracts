@@ -13,9 +13,9 @@ use cw721_base::{
 use cw_utils::parse_reply_instantiate_data;
 use desmos_bindings::{
     msg::DesmosMsg,
+    posts::querier::PostsQuerier,
     query::DesmosQuery,
     reactions::querier::ReactionsQuerier,
-    posts::querier::PostsQuerier,
     types::{PageRequest, PageResponse},
 };
 use std::ops::Deref;
@@ -129,11 +129,7 @@ fn execute_mint_to(
 ) -> Result<Response<DesmosMsg>, ContractError> {
     let rarity = RARITY.load(deps.storage, rarity_level)?;
     // Check if rarity mint fees is enough
-    let mut is_enough_fees = false;
-    for coin in rarity.mint_fees.iter() {
-        is_enough_fees = has_coins(&info.funds, &coin)
-    }
-    if !is_enough_fees && rarity.mint_fees.len() != 0 {
+    if !is_enough_fees(info.funds, rarity.mint_fees) {
         return Err(ContractError::MintFeesNotEnough {});
     }
     // Check if post reaches the eligible threshold
@@ -162,6 +158,19 @@ fn execute_mint_to(
         .add_message(wasm_execute_mint_msg))
 }
 
+fn is_enough_fees(funds: Vec<Coin>, requireds: Vec<Coin>) -> bool {
+    if requireds.len() != 0 {
+        return true;
+    }
+    // It takes O(n^2) time complexity but both list are extremely small
+    for required in requireds.iter() {
+        if has_coins(&funds, &required) {
+            return true;
+        }
+    }
+    false
+}
+
 fn check_eligibility<'a>(
     storage: &dyn Storage,
     querier: &'a dyn Querier,
@@ -171,7 +180,9 @@ fn check_eligibility<'a>(
 ) -> Result<(), ContractError> {
     let subspace_id = CONFIG.load(storage)?.subspace_id;
     // Check if the post exists and it is owned by sender.
-    let post = PostsQuerier::new(querier).query_post(subspace_id, post_id)?.post;
+    let post = PostsQuerier::new(querier)
+        .query_post(subspace_id, post_id)?
+        .post;
     if post.author != sender {
         return Err(ContractError::NoEligibilityError {});
     }
