@@ -1,11 +1,9 @@
-use cosmwasm_std::{
-    Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdError, StdResult,
-};
-use cw_multi_test::{Contract, ContractWrapper};
+use cosmwasm_std::{Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdError, StdResult};
 use cw721_base::{
     ContractError as Cw721ContractError, Cw721Contract, ExecuteMsg as Cw721ExecuteMsg,
     InstantiateMsg as Cw721InstantiateMsg, QueryMsg as Cw721QueryMsg,
 };
+use cw_multi_test::{Contract, ContractWrapper};
 pub struct CW721TestContract;
 use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
 impl CW721TestContract {

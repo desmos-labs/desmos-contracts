@@ -26,5 +26,4 @@ pub enum ContractError {
 
     #[error("No eligibility error")]
     NoEligibilityError {},
-    
 }

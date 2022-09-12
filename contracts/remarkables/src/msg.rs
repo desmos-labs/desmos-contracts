@@ -96,25 +96,31 @@ mod tests {
     use super::*;
     #[test]
     fn mint_to_msg_without_valid_uri_error() {
-        let msg = ExecuteMsg::MintTo{
+        let msg = ExecuteMsg::MintTo {
             post_id: 1u64.into(),
             rarity_level: 1,
             remarkables_uri: "".into(),
         };
-        assert_eq!(msg.validate().unwrap_err(), ContractError::InvalidRemarkablesUri {})
+        assert_eq!(
+            msg.validate().unwrap_err(),
+            ContractError::InvalidRemarkablesUri {}
+        )
     }
     #[test]
     fn mint_to_msg_without_valid_uri_schema_error() {
-        let msg = ExecuteMsg::MintTo{
+        let msg = ExecuteMsg::MintTo {
             post_id: 1u64.into(),
             rarity_level: 1,
             remarkables_uri: "https://remarkables.com".into(),
         };
-        assert_eq!(msg.validate().unwrap_err(), ContractError::InvalidRemarkablesUri {})
+        assert_eq!(
+            msg.validate().unwrap_err(),
+            ContractError::InvalidRemarkablesUri {}
+        )
     }
     #[test]
     fn mint_to_msg_with_valid_uri_schema_no_error() {
-        let msg = ExecuteMsg::MintTo{
+        let msg = ExecuteMsg::MintTo {
             post_id: 1u64.into(),
             rarity_level: 1,
             remarkables_uri: "ipfs://remarkables.com".into(),
@@ -123,7 +129,7 @@ mod tests {
     }
     #[test]
     fn other_msgs_no_error() {
-        let msg = ExecuteMsg::UpdateAdmin{
+        let msg = ExecuteMsg::UpdateAdmin {
             new_admin: "new_admin".into(),
         };
         msg.validate().unwrap()

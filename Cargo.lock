@@ -744,6 +744,7 @@ dependencies = [
  "schemars",
  "serde",
  "thiserror",
+ "url",
 ]
 
 [[package]]

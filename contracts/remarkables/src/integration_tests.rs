@@ -5,7 +5,7 @@ mod tests {
     use cosmwasm_std::{wasm_execute, Addr, Empty, Uint64};
     use cw721::{AllNftInfoResponse, NftInfoResponse, OwnerOfResponse, TokensResponse};
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
-    use cw721_base::{QueryMsg as Cw721QueryMsg};
+    use cw721_base::QueryMsg as Cw721QueryMsg;
     use cw_multi_test::{Contract, ContractWrapper, Executor};
     use desmos_bindings::{
         mocks::mock_apps::{
@@ -385,7 +385,7 @@ mod tests {
                     },
                     info: NftInfoResponse {
                         token_uri: Some(REMARKABLES_URI.to_string()),
-                        extension: Empty{},
+                        extension: Empty {},
                     }
                 },
                 response
