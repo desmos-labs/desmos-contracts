@@ -1,11 +1,12 @@
-use cosmwasm_std::Coin;
+use crate::error::ContractError;
+use cosmwasm_std::{Coin, OverflowError, OverflowOperation, StdError};
 use std::collections::btree_map::BTreeMap;
 
 /// Iterates over the coins vector and merges the coins having the same `denom`.
 /// * `coins` - Vector of coins to merge.
-pub fn merge_coins(coins: Vec<Coin>) -> Vec<Coin> {
+pub fn merge_coins(coins: Vec<Coin>) -> Result<Vec<Coin>, ContractError> {
     if coins.len() <= 1 {
-        return coins;
+        return Ok(coins);
     }
 
     let mut map: BTreeMap<String, u128> = BTreeMap::new();
@@ -13,7 +14,13 @@ pub fn merge_coins(coins: Vec<Coin>) -> Vec<Coin> {
         let value = map.get_mut(&coin.denom);
 
         if let Some(amount) = value {
-            *amount += coin.amount.u128();
+            *amount = amount.checked_add(coin.amount.u128()).ok_or_else(|| {
+                StdError::overflow(OverflowError {
+                    operation: OverflowOperation::Add,
+                    operand1: amount.to_string(),
+                    operand2: coin.amount.to_string(),
+                })
+            })?;
         } else {
             map.insert(coin.denom, coin.amount.u128());
         }
@@ -27,7 +34,7 @@ pub fn merge_coins(coins: Vec<Coin>) -> Vec<Coin> {
         })
     }
 
-    coins
+    Ok(coins)
 }
 
 #[cfg(test)]
@@ -43,7 +50,8 @@ mod tests {
             Coin::new(1000, "uosmo"),
             Coin::new(200, "udsm"),
             Coin::new(2000, "uatom"),
-        ]);
+        ])
+        .unwrap();
 
         assert_eq!(
             vec![
@@ -61,7 +69,8 @@ mod tests {
             Coin::new(100, "uatom"),
             Coin::new(3000, "udsm"),
             Coin::new(1000, "uosmo"),
-        ]);
+        ])
+        .unwrap();
 
         assert_eq!(
             vec![
