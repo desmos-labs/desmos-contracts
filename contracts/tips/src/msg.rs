@@ -1,6 +1,6 @@
 use crate::error::ContractError;
 use crate::state::StateServiceFee;
-use cosmwasm_std::{Addr, Coin, Uint128, Uint64};
+use cosmwasm_std::{Addr, Coin, Decimal, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -16,11 +16,7 @@ pub enum ServiceFee {
     /// Represents a percentage that is deducted from the tip.
     Percentage {
         /// Percentage value.
-        value: Uint128,
-        /// Number of decimals that the `value` field has.  
-        /// This can be used to represents percentage values with decimals like 2,5%,
-        /// in this case the `value` will be 25 and `decimals` 1.
-        decimals: u32,
+        value: Decimal,
     },
 }
 
@@ -39,9 +35,9 @@ impl ServiceFee {
                     });
                 }
             }
-            ServiceFee::Percentage { value, decimals } => {
-                let percent_value = value.u128() / 10_u128.pow(*decimals);
-                if percent_value >= 100 || percent_value == 0 {
+            ServiceFee::Percentage { value } => {
+                let one_hundred = Decimal::from_atomics(100u32, 0).unwrap();
+                if value.ge(&one_hundred) || value.is_zero() {
                     return Err(ContractError::InvalidPercentageFee {});
                 }
             }
@@ -55,10 +51,7 @@ impl From<StateServiceFee> for ServiceFee {
     fn from(state_service_fees: StateServiceFee) -> Self {
         match state_service_fees {
             StateServiceFee::Fixed { amount } => ServiceFee::Fixed { amount },
-            StateServiceFee::Percentage { value, decimals } => ServiceFee::Percentage {
-                value: value.into(),
-                decimals,
-            },
+            StateServiceFee::Percentage { value } => ServiceFee::Percentage { value },
         }
     }
 }
@@ -203,7 +196,7 @@ pub struct Tip {
 mod tests {
     use crate::error::ContractError;
     use crate::msg::ServiceFee;
-    use cosmwasm_std::{Coin, Uint128};
+    use cosmwasm_std::{Coin, Decimal};
 
     #[test]
     fn fixed_service_fee_zero_fee_coin() {
@@ -241,8 +234,7 @@ mod tests {
     #[test]
     fn percentage_service_fee_zero_percentage() {
         let service_fee = ServiceFee::Percentage {
-            value: Uint128::new(0),
-            decimals: 6,
+            value: Decimal::from_atomics(0u32, 0).unwrap(),
         };
 
         assert_eq!(
@@ -254,8 +246,7 @@ mod tests {
     #[test]
     fn percentage_service_fee_100_percentage() {
         let service_fee = ServiceFee::Percentage {
-            value: Uint128::new(100),
-            decimals: 0,
+            value: Decimal::from_atomics(100u32, 0).unwrap(),
         };
 
         assert_eq!(
@@ -267,8 +258,7 @@ mod tests {
     #[test]
     fn percentage_service_fee_validate_properly() {
         let service_fee = ServiceFee::Percentage {
-            value: Uint128::new(100),
-            decimals: 2,
+            value: Decimal::from_atomics(25u32, 1).unwrap(),
         };
 
         service_fee.validate().unwrap();
