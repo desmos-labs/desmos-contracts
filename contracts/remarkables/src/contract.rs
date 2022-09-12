@@ -14,6 +14,7 @@ use cw_utils::parse_reply_instantiate_data;
 use desmos_bindings::{
     msg::DesmosMsg,
     posts::querier::PostsQuerier,
+    subspaces::querier::SubspacesQuerier,
     query::DesmosQuery,
     reactions::querier::ReactionsQuerier,
     types::{PageRequest, PageResponse},
@@ -74,6 +75,11 @@ pub fn instantiate(
             engagement_threshold: rarity.engagement_threshold,
         };
         RARITY.save(deps.storage, rarity.level, &state)?;
+    }
+    // Check subspace exists and it is owned by the sender.
+    let subspace = SubspacesQuerier::new(deps.querier.deref()).query_subspace(msg.subspace_id.into())?.subspace;
+    if info.sender != subspace.owner {
+        return Err(ContractError::NotSubspaceOwner{ caller: info.sender });
     }
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     // Submessage to instantiate cw721 contract
@@ -357,7 +363,7 @@ mod tests {
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
     use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
 
-    const ADMIN: &str = "admin";
+    const ADMIN: &str = "cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t";
     const NEW_ADMIN: &str = "new_admin";
     const SUBSPACE_ID: u64 = 1;
     const DENOM: &str = "test";
@@ -370,7 +376,6 @@ mod tests {
             mint_fees: coins(100, DENOM),
         }]
     }
-
     fn get_valid_instantiate_msg() -> InstantiateMsg {
         InstantiateMsg {
             admin: ADMIN.into(),
@@ -384,14 +389,12 @@ mod tests {
             rarities: get_instantiate_rarities(),
         }
     }
-
     fn do_instantiate(deps: DepsMut<DesmosQuery>) {
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
         let valid_msg = get_valid_instantiate_msg();
         instantiate(deps, env, info, valid_msg).unwrap();
     }
-
     mod instantiate {
         use super::*;
         #[test]
@@ -408,7 +411,18 @@ mod tests {
                 ))
             )
         }
-
+        #[test]
+        fn instatiate_without_permission_error() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let env = mock_env();
+            let info = mock_info(NEW_ADMIN, &vec![]);
+            let mut invalid_msg = get_valid_instantiate_msg();
+            invalid_msg.admin = NEW_ADMIN.into();
+            assert_eq!(
+                instantiate(deps.as_mut(), env, info, invalid_msg).unwrap_err(),
+                ContractError::NotSubspaceOwner{ caller: Addr::unchecked(NEW_ADMIN) }
+            )
+        }
         #[test]
         fn instatiate_properly() {
             let mut deps = mock_dependencies_with_custom_querier(&[]);
@@ -437,7 +451,6 @@ mod tests {
             assert_eq!(expected_rarities, rarities)
         }
     }
-
     mod reply {
         use super::*;
         #[test]
@@ -458,7 +471,6 @@ mod tests {
             );
             assert_eq!(result.unwrap_err(), ContractError::InvalidReplyID {},)
         }
-
         #[test]
         fn cw721_instantiate_with_invalid_instantiate_msg_error() {
             let mut deps = mock_dependencies_with_custom_querier(&[]);
@@ -478,7 +490,6 @@ mod tests {
             assert_eq!(result.unwrap_err(), ContractError::InstantiateCw721Error {})
         }
     }
-
     mod mint_to {
         use super::*;
         #[test]
@@ -511,7 +522,6 @@ mod tests {
             )
         }
     }
-
     mod update_admin {
         use super::*;
         #[test]

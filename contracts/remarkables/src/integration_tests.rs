@@ -25,7 +25,7 @@ mod tests {
         Box::new(contract)
     }
 
-    const ADMIN: &str = "admin";
+    const ADMIN: &str = "cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t";
     const UNACCEPTED_RARITY_LEVEL: u32 = 0;
     const ACCEPTED_RARITY_LEVEL: u32 = 1;
     const POST_ID: Uint64 = Uint64::new(1);
@@ -94,30 +94,10 @@ mod tests {
         (app, addr, (cw721_code_id, remarkables_code_id))
     }
 
-    fn proper_instantiate_failing_app() -> (FailingDesmosApp, Addr, (u64, u64)) {
-        let mut app = mock_failing_desmos_app();
-        let (cw721_code_id, remarkables_code_id) = store_contracts_to_failing_app(&mut app);
-        let poap_manager_contract_addr = app
-            .instantiate_contract(
-                remarkables_code_id,
-                Addr::unchecked(ADMIN),
-                &get_valid_init_msg(cw721_code_id),
-                &[],
-                "remarkables_contract",
-                None,
-            )
-            .unwrap();
-        (
-            app,
-            poap_manager_contract_addr,
-            (cw721_code_id, remarkables_code_id),
-        )
-    }
-
     mod instantiate {
         use super::*;
         #[test]
-        fn instantiate_with_invalid_poap_code_id_error() {
+        fn instantiate_with_invalid_cw721_code_id_error() {
             let mut app = mock_app();
             let (cw721_code_id, remarkables_code_id) = store_contracts(&mut app);
             let mut init_msg = get_valid_init_msg(cw721_code_id);
@@ -151,7 +131,20 @@ mod tests {
             );
             assert!(init_result.is_err());
         }
-
+        #[test]
+        fn proper_instantiate_failing_app_error() {
+            let mut app = mock_failing_desmos_app();
+            let (cw721_code_id, remarkables_code_id) = store_contracts_to_failing_app(&mut app);
+            let result = app.instantiate_contract(
+                remarkables_code_id,
+                Addr::unchecked(ADMIN),
+                &get_valid_init_msg(cw721_code_id),
+                &[],
+                "remarkables_contract",
+                None,
+            );
+            assert!(result.is_err());
+        }
         #[test]
         fn instantiate_propery() {
             let (app, addr, (cw721_code_id, _)) = proper_instantiate();
@@ -166,25 +159,6 @@ mod tests {
     }
     mod mint_to {
         use super::*;
-        #[test]
-        fn mint_to_with_failing_app_error() {
-            let (mut app, addr, _) = proper_instantiate_failing_app();
-            let result = app.execute(
-                Addr::unchecked(ADMIN),
-                wasm_execute(
-                    &addr,
-                    &ExecuteMsg::MintTo {
-                        post_id: POST_ID.into(),
-                        remarkables_uri: REMARKABLES_URI.into(),
-                        rarity_level: ACCEPTED_RARITY_LEVEL,
-                    },
-                    vec![],
-                )
-                .unwrap()
-                .into(),
-            );
-            assert!(result.is_err())
-        }
         #[test]
         fn mint_to_without_owned_post_error() {
             let (mut app, addr, _) = proper_instantiate();

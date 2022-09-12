@@ -9,6 +9,9 @@ pub enum ContractError {
     #[error("Invalid remarkables uri")]
     InvalidRemarkablesUri {},
 
+    #[error("Caller is not subspace owner: {caller}")]
+    NotSubspaceOwner{ caller: Addr },
+
     #[error("Invalid reply ID")]
     InvalidReplyID {},
 
