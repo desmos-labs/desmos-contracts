@@ -17,15 +17,9 @@ pub enum ServiceFee {
     Percentage {
         /// Percentage value.
         value: Uint128,
-        /// Percentage decimals.
-        /// Example if this value is 3 means that the value should have 3 decimals numbers so
-        /// if value is
-        /// - 1 means 0,001%
-        /// - 10 means 0,01%
-        /// - 100 means 0,1%
-        /// - 1000 means 1%
-        /// - 10000 means 10%
-        /// - 100000 means 100%
+        /// Number of decimals that the `value` field has.  
+        /// This can be used to represents percentage values with decimals like 2,5%,
+        /// in this case the `value` will be 25 and `decimals` 1.
         decimals: u32,
     },
 }
