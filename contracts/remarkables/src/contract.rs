@@ -363,7 +363,7 @@ mod tests {
     use super::*;
     use crate::state::ConfigState;
     use cosmwasm_std::testing::{mock_env, mock_info};
-    use cosmwasm_std::{coins, StdError, SubMsgResponse, SubMsgResult};
+    use cosmwasm_std::{coins, from_binary, StdError, SubMsgResponse, SubMsgResult};
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
     use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
 
@@ -634,6 +634,66 @@ mod tests {
                 mint_fees: coins(50, DENOM),
             };
             assert_eq!(expected, new_rarity);
+        }
+    }
+    mod query {
+        use super::*;
+        #[test]
+        fn query_config() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let env = mock_env();
+            CONFIG
+                .save(
+                    deps.as_mut().storage,
+                    &ConfigState {
+                        admin: Addr::unchecked(ADMIN),
+                        cw721_code_id: 1u64,
+                        subspace_id: SUBSPACE_ID,
+                    },
+                )
+                .unwrap();
+            CW721_ADDRESS
+                .save(deps.as_mut().storage, &Addr::unchecked("cw721_address"))
+                .unwrap();
+            let bz = query(deps.as_ref(), env, QueryMsg::Config {}).unwrap();
+            let config: QueryConfigResponse = from_binary(&bz).unwrap();
+            assert_eq!(
+                QueryConfigResponse {
+                    admin: Addr::unchecked(ADMIN),
+                    cw721_code_id: 1u64.into(),
+                    subspace_id: SUBSPACE_ID.into(),
+                    cw721_address: Addr::unchecked("cw721_address"),
+                },
+                config
+            )
+        }
+        #[test]
+        fn query_rarities() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let env = mock_env();
+            RARITY
+                .save(
+                    deps.as_mut().storage,
+                    1,
+                    &RarityState {
+                        level: 1,
+                        engagement_threshold: 100,
+                        mint_fees: coins(1, DENOM),
+                    },
+                )
+                .unwrap();
+            let bz = query(deps.as_ref(), env, QueryMsg::Rarities {}).unwrap();
+            let rarities_response: QueryRaritiesResponse = from_binary(&bz).unwrap();
+            assert_eq!(
+                QueryRaritiesResponse {
+                    rarities: vec![Rarity {
+                        level: 1,
+                        engagement_threshold: 100,
+                        mint_fees: coins(1, DENOM)
+                    }]
+                },
+                rarities_response
+            )
         }
     }
 }
