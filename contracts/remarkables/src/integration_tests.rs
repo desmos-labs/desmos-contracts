@@ -2,8 +2,10 @@
 mod tests {
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, Rarity};
     use crate::test_utils::*;
-    use cosmwasm_std::{wasm_execute, Addr};
+    use cosmwasm_std::{wasm_execute, Addr, Empty, Uint64};
+    use cw721::{AllNftInfoResponse, NftInfoResponse, OwnerOfResponse, TokensResponse};
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
+    use cw721_base::{QueryMsg as Cw721QueryMsg};
     use cw_multi_test::{Contract, ContractWrapper, Executor};
     use desmos_bindings::{
         mocks::mock_apps::{
@@ -26,6 +28,9 @@ mod tests {
     const ADMIN: &str = "admin";
     const UNACCEPTED_RARITY_LEVEL: u32 = 0;
     const ACCEPTED_RARITY_LEVEL: u32 = 1;
+    const VALID_POST_ID: Uint64 = Uint64::new(1);
+    const REMARKABLES_URI: &str = "ipfs://remarkables.com";
+    const AUTHOR: &str = "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc";
 
     fn store_contracts(app: &mut DesmosApp) -> (u64, u64) {
         let cw721_code_id = app.store_code(CW721TestContract::success_contract());
@@ -57,7 +62,7 @@ mod tests {
                 name: "test".into(),
                 symbol: "test".into(),
             },
-            subspace_id: 1u64.into(),
+            subspace_id: VALID_POST_ID.into(),
             rarities: vec![
                 Rarity {
                     level: 0,
@@ -162,15 +167,15 @@ mod tests {
     mod mint_to {
         use super::*;
         #[test]
-        fn mint_to_with_non_existing_post_error() {
+        fn mint_to_with_failing_app_error() {
             let (mut app, addr, _) = proper_instantiate_failing_app();
             let result = app.execute(
                 Addr::unchecked(ADMIN),
                 wasm_execute(
                     &addr,
                     &ExecuteMsg::MintTo {
-                        post_id: 1u64.into(),
-                        remarkables_uri: "ipfs://test.com".into(),
+                        post_id: VALID_POST_ID.into(),
+                        remarkables_uri: REMARKABLES_URI.into(),
                         rarity_level: ACCEPTED_RARITY_LEVEL,
                     },
                     vec![],
@@ -181,15 +186,34 @@ mod tests {
             assert!(result.is_err())
         }
         #[test]
-        fn mint_to_without_eligibility_error() {
+        fn mint_to_without_owned_post_error() {
             let (mut app, addr, _) = proper_instantiate();
             let result = app.execute(
-                Addr::unchecked(ADMIN),
+                Addr::unchecked(AUTHOR),
                 wasm_execute(
                     &addr,
                     &ExecuteMsg::MintTo {
-                        post_id: 1u64.into(),
-                        remarkables_uri: "ipfs://test.com".into(),
+                        post_id: VALID_POST_ID.into(),
+                        remarkables_uri: REMARKABLES_URI.into(),
+                        rarity_level: UNACCEPTED_RARITY_LEVEL,
+                    },
+                    vec![],
+                )
+                .unwrap()
+                .into(),
+            );
+            assert!(result.is_err())
+        }
+        #[test]
+        fn mint_to_without_eligible_amount_reactions_error() {
+            let (mut app, addr, _) = proper_instantiate();
+            let result = app.execute(
+                Addr::unchecked(AUTHOR),
+                wasm_execute(
+                    &addr,
+                    &ExecuteMsg::MintTo {
+                        post_id: VALID_POST_ID.into(),
+                        remarkables_uri: REMARKABLES_URI.into(),
                         rarity_level: UNACCEPTED_RARITY_LEVEL,
                     },
                     vec![],
@@ -203,19 +227,169 @@ mod tests {
         fn mint_to_properly() {
             let (mut app, addr, _) = proper_instantiate();
             app.execute(
-                Addr::unchecked(ADMIN),
+                Addr::unchecked(AUTHOR),
                 wasm_execute(
                     &addr,
                     &ExecuteMsg::MintTo {
-                        post_id: 1u64.into(),
-                        remarkables_uri: "ipfs://test.com".into(),
+                        post_id: VALID_POST_ID,
+                        remarkables_uri: REMARKABLES_URI.into(),
                         rarity_level: ACCEPTED_RARITY_LEVEL,
                     },
                     vec![],
                 )
                 .unwrap()
                 .into(),
-            ).unwrap();
+            )
+            .unwrap();
+            let querier = app.wrap();
+            let config: QueryConfigResponse = querier
+                .query_wasm_smart(addr, &QueryMsg::Config {})
+                .unwrap();
+            let response: TokensResponse = querier
+                .query_wasm_smart(
+                    config.cw721_address.as_str(),
+                    &Cw721QueryMsg::<Empty>::Tokens {
+                        owner: AUTHOR.to_string(),
+                        start_after: None,
+                        limit: None,
+                    },
+                )
+                .unwrap();
+            assert_eq!(1, response.tokens.len());
+            let minted_nft_info: NftInfoResponse<Empty> = querier
+                .query_wasm_smart(
+                    config.cw721_address.as_str(),
+                    &Cw721QueryMsg::<Empty>::NftInfo {
+                        token_id: VALID_POST_ID.into(),
+                    },
+                )
+                .unwrap();
+            assert_eq!(
+                NftInfoResponse {
+                    token_uri: Some(REMARKABLES_URI.into()),
+                    extension: Empty {},
+                },
+                minted_nft_info
+            )
+        }
+    }
+
+    mod query {
+        use super::*;
+        #[test]
+        fn query_tokens() {
+            let (mut app, addr, _) = proper_instantiate();
+            app.execute(
+                Addr::unchecked(AUTHOR),
+                wasm_execute(
+                    &addr,
+                    &ExecuteMsg::MintTo {
+                        post_id: VALID_POST_ID,
+                        remarkables_uri: REMARKABLES_URI.into(),
+                        rarity_level: ACCEPTED_RARITY_LEVEL,
+                    },
+                    vec![],
+                )
+                .unwrap()
+                .into(),
+            )
+            .unwrap();
+            let querier = app.wrap();
+            let config: QueryConfigResponse = querier
+                .query_wasm_smart(&addr, &QueryMsg::Config {})
+                .unwrap();
+            let querier = app.wrap();
+            let response: TokensResponse = querier
+                .query_wasm_smart(
+                    &addr,
+                    &QueryMsg::Tokens {
+                        owner: AUTHOR.into(),
+                        start_after: None,
+                        limit: None,
+                    },
+                )
+                .unwrap();
+            let cw721_response: TokensResponse = querier
+                .query_wasm_smart(
+                    config.cw721_address.as_str(),
+                    &Cw721QueryMsg::<Empty>::Tokens {
+                        owner: AUTHOR.to_string(),
+                        start_after: None,
+                        limit: None,
+                    },
+                )
+                .unwrap();
+            assert_eq!(cw721_response, response);
+            assert_eq!(1, response.tokens.len());
+        }
+
+        #[test]
+        fn query_nft_info() {
+            let (mut app, addr, _) = proper_instantiate();
+            app.execute(
+                Addr::unchecked(AUTHOR),
+                wasm_execute(
+                    &addr,
+                    &ExecuteMsg::MintTo {
+                        post_id: VALID_POST_ID,
+                        remarkables_uri: REMARKABLES_URI.into(),
+                        rarity_level: ACCEPTED_RARITY_LEVEL,
+                    },
+                    vec![],
+                )
+                .unwrap()
+                .into(),
+            )
+            .unwrap();
+            let querier = app.wrap();
+            let config: QueryConfigResponse = querier
+                .query_wasm_smart(&addr, &QueryMsg::Config {})
+                .unwrap();
+
+            let querier = app.wrap();
+            let response: TokensResponse = querier
+                .query_wasm_smart(
+                    &addr,
+                    &QueryMsg::Tokens {
+                        owner: AUTHOR.to_string(),
+                        start_after: None,
+                        limit: None,
+                    },
+                )
+                .unwrap();
+            assert_eq!(1, response.tokens.len());
+            let cw721_response: AllNftInfoResponse<Empty> = querier
+                .query_wasm_smart(
+                    config.cw721_address.as_str(),
+                    &Cw721QueryMsg::<Empty>::AllNftInfo {
+                        token_id: VALID_POST_ID.into(),
+                        include_expired: None,
+                    },
+                )
+                .unwrap();
+            let response: AllNftInfoResponse<Empty> = querier
+                .query_wasm_smart(
+                    &addr,
+                    &QueryMsg::AllNftInfo {
+                        token_id: VALID_POST_ID.to_string(),
+                        include_expired: None,
+                    },
+                )
+                .unwrap();
+            assert_eq!(cw721_response, response);
+            assert_eq!(
+                AllNftInfoResponse {
+                    access: OwnerOfResponse {
+                        owner: AUTHOR.to_string(),
+                        approvals: vec![]
+                    },
+                    info: NftInfoResponse {
+                        token_uri: Some(REMARKABLES_URI.to_string()),
+                        extension: Empty{},
+                    }
+                },
+                response
+            );
         }
     }
 }
