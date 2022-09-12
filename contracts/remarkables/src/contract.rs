@@ -105,6 +105,7 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response<DesmosMsg>, ContractError> {
+    msg.validate()?;
     match msg {
         ExecuteMsg::MintTo {
             post_id,
