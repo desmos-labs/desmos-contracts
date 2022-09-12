@@ -91,6 +91,7 @@ pub enum QueryMsg {
     },
 }
 
+/// Response to [`QueryMsg::Config`].
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct QueryConfigResponse {
     /// Address of the contract administrator.
@@ -103,6 +104,7 @@ pub struct QueryConfigResponse {
     pub subspace_id: Uint64,
 }
 
+/// Response to [`QueryMsg::Rarities`].
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct QueryRaritiesResponse {
     /// List of rarities state in this contract.
