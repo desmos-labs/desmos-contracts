@@ -39,7 +39,7 @@ impl StateServiceFee {
     /// can be sent to the user.
     /// * `coins` - Coins from which to calculate the fees.
     pub fn compute_fees(&self, coins: Vec<Coin>) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
-        let received_coins = utils::merge_coins(coins);
+        let received_coins = utils::merge_coins(coins)?;
         match self {
             StateServiceFee::Fixed { amount } => {
                 StateServiceFee::compute_fixed_service_fees(amount, received_coins)
@@ -51,7 +51,7 @@ impl StateServiceFee {
     }
 
     fn compute_fixed_service_fees(
-        fee_coins: &Vec<Coin>,
+        fee_coins: &[Coin],
         received_coins: Vec<Coin>,
     ) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
         let mut fees: Vec<Coin> = vec![];
@@ -133,7 +133,7 @@ impl TryFrom<ServiceFee> for StateServiceFee {
 
         match service_fees {
             ServiceFee::Fixed { amount } => Ok(StateServiceFee::Fixed {
-                amount: utils::merge_coins(amount),
+                amount: utils::merge_coins(amount)?,
             }),
             ServiceFee::Percentage { value } => Ok(StateServiceFee::Percentage { value }),
         }

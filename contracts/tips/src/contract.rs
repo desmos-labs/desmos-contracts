@@ -141,7 +141,7 @@ fn execute_send_tip(
         let tip_record_coins = if let Some(mut coins) = tip_record_key.may_load(deps.storage)? {
             // Append the new coins
             coins.extend(coin_to_send.clone());
-            utils::merge_coins(coins)
+            utils::merge_coins(coins)?
         } else {
             // Load the key list
             let mut tips_key_list = TIPS_KEY_LIST.load(deps.storage)?;
