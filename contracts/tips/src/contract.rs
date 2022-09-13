@@ -3,19 +3,17 @@ use crate::msg::{
     ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, ServiceFee, Target, Tip,
     TipsResponse,
 };
-use crate::state::{Config, StateServiceFee, TipsRecordKey, CONFIG, TIPS_KEY_LIST, TIPS_RECORD};
-use crate::utils;
+use crate::state::{tips_record, Config, StateServiceFee, StateTip, BLOCK_HEIGHT_INDEX, CONFIG};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
-    StdResult, Uint64,
+    StdResult, Storage,
 };
 use cw2::set_contract_version;
 use desmos_bindings::posts::querier::PostsQuerier;
 use desmos_bindings::subspaces::querier::SubspacesQuerier;
 use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
-use std::collections::vec_deque::VecDeque;
 use std::convert::TryFrom;
 use std::ops::Deref;
 
@@ -75,7 +73,8 @@ pub fn instantiate(
             tips_record_threshold: msg.saved_tips_threshold,
         },
     )?;
-    TIPS_KEY_LIST.save(deps.storage, &VecDeque::new())?;
+    // Initialize the block height index
+    BLOCK_HEIGHT_INDEX.save(deps.storage, &(0, 0))?;
 
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_INSTANTIATE)
@@ -98,7 +97,7 @@ pub fn execute(
     msg.validate()?;
 
     match msg {
-        ExecuteMsg::SendTip { target } => execute_send_tip(deps, info, target),
+        ExecuteMsg::SendTip { target } => execute_send_tip(deps, env, info, target),
         ExecuteMsg::UpdateServiceFee { new_fee } => execute_update_service_fee(deps, info, new_fee),
         ExecuteMsg::UpdateAdmin { new_admin } => execute_update_admin(deps, info, new_admin),
         ExecuteMsg::UpdateSavedTipsRecordThreshold { new_threshold } => {
@@ -110,6 +109,7 @@ pub fn execute(
 
 fn execute_send_tip(
     deps: DepsMut<DesmosQuery>,
+    env: Env,
     info: MessageInfo,
     target: Target,
 ) -> Result<Response<DesmosMsg>, ContractError> {
@@ -120,6 +120,10 @@ fn execute_send_tip(
         None => (Vec::<Coin>::new(), info.funds),
         Some(service_fee) => service_fee.compute_fees(info.funds)?,
     };
+
+    if coin_to_send.is_empty() {
+        return Err(ContractError::FoundAmountTooSmall {});
+    }
 
     // Resolve the receiver and the optional post id
     let (post_id, receiver) = match target {
@@ -136,39 +140,131 @@ fn execute_send_tip(
     };
 
     if config.tips_record_threshold > 0 {
-        let tip_key: TipsRecordKey = (info.sender.clone(), receiver.clone(), post_id);
-        let tip_record_key = TIPS_RECORD.key(tip_key.clone());
-        let tip_record_coins = if let Some(mut coins) = tip_record_key.may_load(deps.storage)? {
-            // Append the new coins
-            coins.extend(coin_to_send.clone());
-            utils::merge_coins(coins)?
-        } else {
-            // Load the key list
-            let mut tips_key_list = TIPS_KEY_LIST.load(deps.storage)?;
-            // If we have reached the threshold remove the oldest key
-            if tips_key_list.len() == config.tips_record_threshold as usize {
-                TIPS_RECORD.remove(deps.storage, tips_key_list.pop_front().unwrap());
-            }
-            // Add the new key to the end
-            tips_key_list.push_back(tip_key);
-            TIPS_KEY_LIST.save(deps.storage, &tips_key_list)?;
-            // Return the new coins
-            coin_to_send.clone()
-        };
-        tip_record_key.save(deps.storage, &tip_record_coins)?;
-    }
+        let (block, index) = BLOCK_HEIGHT_INDEX.update::<_, ContractError>(
+            deps.storage,
+            |(block_height, index)| {
+                if block_height == env.block.height {
+                    Ok((
+                        block_height,
+                        index
+                            .checked_add(1)
+                            .ok_or(ContractError::BlockIndexOverflow {})?,
+                    ))
+                } else {
+                    Ok((env.block.height, 0))
+                }
+            },
+        )?;
 
-    if coin_to_send.is_empty() {
-        return Err(ContractError::FoundAmountTooSmall {});
+        let tip_key = format!("{}_{}", block, index);
+        let tip = StateTip {
+            sender: info.sender.clone(),
+            receiver: receiver.clone(),
+            post_id,
+            amount: coin_to_send.clone(),
+            block_height: block,
+            block_height_index: index,
+        };
+
+        // Store the tip
+        let tips_record = tips_record();
+        tips_record.save(deps.storage, tip_key, &tip)?;
+
+        for to_remove_key in find_to_remove_tips(deps.storage, tip.sender, tip.receiver)?.drain(0..)
+        {
+            tips_record.remove(deps.storage, to_remove_key)?;
+        }
     }
 
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_SEND_TIP)
         .add_attribute(ATTRIBUTE_SENDER, info.sender)
+        .add_attribute(ATTRIBUTE_RECEIVER, receiver.as_str())
         .add_message(BankMsg::Send {
             to_address: receiver.to_string(),
             amount: coin_to_send,
         }))
+}
+
+/// Finds the tip that exceed the tips record threshold and should be deleted.
+/// * `sender` - User who sent the last tip.
+/// * `receiver` - User who received the last tip.
+fn find_to_remove_tips(
+    storage: &mut dyn Storage,
+    sender: Addr,
+    receiver: Addr,
+) -> Result<Vec<String>, ContractError> {
+    let threshold = CONFIG.load(storage)?.tips_record_threshold;
+
+    if threshold == 0 {
+        return Ok(Vec::new());
+    }
+
+    // The only tips history that has changed are the ones of sender and receiver
+    // to keep the tips history of both sender and receiver close to the threshold
+    // we check if some old sender tip is inside the oldest receiver tips
+    let tips_record = tips_record();
+
+    // Gets the sender tips history
+    let old_sender_tips_it = tips_record
+        .idx
+        .sender
+        .prefix(sender)
+        // Sort descending to have the oldest last
+        .range(storage, None, None, Order::Descending)
+        // Skip the ones that needs to be keep
+        .skip(threshold as usize);
+
+    let mut to_remove_keys: Vec<String> = vec![];
+
+    for tip in old_sender_tips_it {
+        let (sender_tip_key, tip) = tip?;
+        let found_tip_in_receiver_history = tips_record
+            .idx
+            .receiver
+            .prefix(tip.receiver)
+            .range(storage, None, None, Order::Descending)
+            .skip(threshold as usize)
+            .any(|result| {
+                if let Ok((key, _)) = result {
+                    key.eq(&sender_tip_key)
+                } else {
+                    false
+                }
+            });
+        if found_tip_in_receiver_history {
+            to_remove_keys.push(sender_tip_key);
+        }
+    }
+
+    let old_receiver_tips_it = tips_record
+        .idx
+        .receiver
+        .prefix(receiver)
+        .range(storage, None, None, Order::Descending)
+        .skip(threshold as usize);
+
+    for tip in old_receiver_tips_it {
+        let (receiver_tip_key, tip) = tip?;
+        let found_tip_in_sender_history = tips_record
+            .idx
+            .sender
+            .prefix(tip.sender)
+            .range(storage, None, None, Order::Descending)
+            .skip(threshold as usize)
+            .any(|result| {
+                if let Ok((key, _)) = result {
+                    key.eq(&receiver_tip_key)
+                } else {
+                    false
+                }
+            });
+        if found_tip_in_sender_history {
+            to_remove_keys.push(receiver_tip_key);
+        }
+    }
+
+    Ok(to_remove_keys)
 }
 
 fn execute_update_service_fee(
@@ -226,18 +322,24 @@ fn execute_update_saved_tips_record_threshold(
         return Err(ContractError::Unauthorized {});
     }
 
-    // The new size is smaller of the current one maybe we have to shrink the tips record
-    if config.tips_record_threshold > new_threshold {
-        let mut keys = TIPS_KEY_LIST.load(deps.storage)?;
-        // If we have more tips that the allowed threshold shrink the tips record
-        if keys.len() > new_threshold as usize {
-            let to_remove = keys.len() - new_threshold as usize;
-            for _ in 0..to_remove {
-                if let Some(key) = keys.pop_front() {
-                    TIPS_RECORD.remove(deps.storage, key);
-                }
-            }
-            TIPS_KEY_LIST.save(deps.storage, &keys)?;
+    // Wipe the tips threshold otherwise leave to SendTip to shrink the tips record
+    if new_threshold == 0 {
+        let mut wiped = false;
+        let tips_record = tips_record();
+        while !wiped {
+            // Read the data paginated since tips_record can not fit inside the VM heap.
+            let mut tips_key_raw = tips_record
+                .keys(deps.storage, None, None, Order::Ascending)
+                .take(20)
+                .collect::<StdResult<Vec<_>>>()
+                .unwrap();
+
+            tips_key_raw
+                .drain(0..)
+                .try_for_each(|key| tips_record.remove(deps.storage, key))
+                .unwrap();
+
+            wiped = tips_key_raw.len() < 20;
         }
     }
 
@@ -281,21 +383,13 @@ fn execute_claim_fees(
 pub fn query(deps: Deps<DesmosQuery>, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::Config { .. } => to_binary(&query_config(deps)?),
-        QueryMsg::UserReceivedTips { user } => to_binary(&query_tips(
-            deps,
-            None,
-            Some(deps.api.addr_validate(&user)?),
-            None,
-        )?),
-        QueryMsg::UserSentTips { user } => to_binary(&query_tips(
-            deps,
-            Some(deps.api.addr_validate(&user)?),
-            None,
-            None,
-        )?),
-        QueryMsg::PostReceivedTips { post_id } => {
-            to_binary(&query_tips(deps, None, None, Some(post_id))?)
+        QueryMsg::UserReceivedTips { user } => {
+            to_binary(&query_received_tips(deps, deps.api.addr_validate(&user)?)?)
         }
+        QueryMsg::UserSentTips { user } => {
+            to_binary(&query_sent_tips(deps, deps.api.addr_validate(&user)?)?)
+        }
+        QueryMsg::PostReceivedTips { post_id } => to_binary(&query_post_tips(deps, post_id.u64())?),
     }
     .map_err(ContractError::from)
 }
@@ -310,46 +404,44 @@ pub fn query_config(deps: Deps<DesmosQuery>) -> StdResult<QueryConfigResponse> {
     })
 }
 
-pub fn query_tips(
+fn query_sent_tips(deps: Deps<DesmosQuery>, sender: Addr) -> Result<TipsResponse, ContractError> {
+    let tips = tips_record()
+        .idx
+        .sender
+        .prefix(sender)
+        .range(deps.storage, None, None, Order::Ascending)
+        .map(|result| result.map(|(_, tip)| Tip::from(tip)))
+        .collect::<StdResult<Vec<_>>>()?;
+    Ok(TipsResponse { tips })
+}
+
+fn query_received_tips(
     deps: Deps<DesmosQuery>,
-    sender: Option<Addr>,
-    receiver: Option<Addr>,
-    post_id: Option<Uint64>,
+    receiver: Addr,
 ) -> Result<TipsResponse, ContractError> {
-    if post_id.is_some() && post_id.unwrap().is_zero() {
+    let tips = tips_record()
+        .idx
+        .receiver
+        .prefix(receiver)
+        .range(deps.storage, None, None, Order::Ascending)
+        .map(|result| result.map(|(_, tip)| Tip::from(tip)))
+        .collect::<StdResult<Vec<_>>>()?;
+    Ok(TipsResponse { tips })
+}
+
+fn query_post_tips(deps: Deps<DesmosQuery>, post_id: u64) -> Result<TipsResponse, ContractError> {
+    if post_id == 0 {
         return Err(ContractError::InvalidPostId {});
     }
 
-    let tips_tuple: StdResult<Vec<(TipsRecordKey, Vec<Coin>)>> = TIPS_RECORD
+    let tips = tips_record()
+        .idx
+        .post_id
+        .prefix(post_id)
         .range(deps.storage, None, None, Order::Ascending)
-        .filter(|tuple| {
-            if let Ok(((tip_sender, tip_receiver, tip_post_id), _)) = tuple {
-                if sender.is_some() && !sender.as_ref().unwrap().eq(tip_sender) {
-                    return false;
-                }
-                if receiver.is_some() && !receiver.as_ref().unwrap().eq(tip_receiver) {
-                    return false;
-                }
-                if post_id.is_some() && *tip_post_id != post_id.unwrap().u64() {
-                    return false;
-                }
-                true
-            } else {
-                false
-            }
-        })
-        .collect();
-
-    Ok(TipsResponse {
-        tips: tips_tuple?
-            .drain(0..)
-            .map(|tuple| Tip {
-                sender: tuple.0 .0,
-                receiver: tuple.0 .1,
-                amount: tuple.1,
-            })
-            .collect(),
-    })
+        .map(|result| result.map(|(_, tip)| Tip::from(tip)))
+        .collect::<StdResult<Vec<_>>>()?;
+    Ok(TipsResponse { tips })
 }
 
 #[cfg(test)]
@@ -360,7 +452,7 @@ mod tests {
         ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, ServiceFee, Target, Tip,
         TipsResponse,
     };
-    use crate::state::{StateServiceFee, TipsRecordKey, CONFIG, TIPS_KEY_LIST, TIPS_RECORD};
+    use crate::state::{tips_record, StateServiceFee, StateTip, CONFIG};
     use cosmwasm_std::testing::{
         mock_env, mock_info, MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
     };
@@ -375,7 +467,6 @@ mod tests {
     use desmos_bindings::query::DesmosQuery;
     use desmos_bindings::subspaces::mocks::mock_subspaces_query_response;
     use desmos_bindings::subspaces::query::SubspacesQuery;
-    use std::collections::VecDeque;
     use std::marker::PhantomData;
 
     const ADMIN: &str = "admin";
@@ -440,11 +531,14 @@ mod tests {
         )
     }
 
-    fn get_tips_record_items(deps: DepsMut<DesmosQuery>) -> Vec<(TipsRecordKey, Vec<Coin>)> {
-        TIPS_RECORD
+    fn get_tips_record_items(deps: DepsMut<DesmosQuery>) -> Vec<StateTip> {
+        tips_record()
             .range(deps.storage, None, None, Order::Ascending)
-            .collect::<StdResult<Vec<(TipsRecordKey, Vec<Coin>)>>>()
+            .collect::<StdResult<Vec<(String, StateTip)>>>()
             .unwrap()
+            .drain(0..)
+            .map(|(_, tip)| tip)
+            .collect()
     }
 
     #[test]
@@ -690,10 +784,14 @@ mod tests {
         let tips = get_tips_record_items(deps.as_mut());
 
         assert_eq!(
-            vec![(
-                (Addr::unchecked(USER_1), Addr::unchecked(USER_2), 0),
-                vec![Coin::new(5000, "udsm")]
-            )],
+            vec![StateTip {
+                sender: Addr::unchecked(USER_1),
+                receiver: Addr::unchecked(USER_2),
+                post_id: 0,
+                amount: vec![Coin::new(5000, "udsm")],
+                block_height: 12345,
+                block_height_index: 0
+            }],
             tips
         );
     }
@@ -716,10 +814,14 @@ mod tests {
         let tips = get_tips_record_items(deps.as_mut());
 
         assert_eq!(
-            vec![(
-                (Addr::unchecked(USER_1), Addr::unchecked(USER_2), 0),
-                vec![Coin::new(4000, "udsm")]
-            )],
+            vec![StateTip {
+                sender: Addr::unchecked(USER_1),
+                receiver: Addr::unchecked(USER_2),
+                post_id: 0,
+                amount: vec![Coin::new(4000, "udsm")],
+                block_height: 12345,
+                block_height_index: 0
+            }],
             tips
         );
     }
@@ -742,10 +844,14 @@ mod tests {
         let tips = get_tips_record_items(deps.as_mut());
 
         assert_eq!(
-            vec![(
-                (Addr::unchecked(USER_1), Addr::unchecked(USER_2), 0),
-                vec![Coin::new(4950, "udsm")]
-            )],
+            vec![StateTip {
+                sender: Addr::unchecked(USER_1),
+                receiver: Addr::unchecked(USER_2),
+                post_id: 0,
+                amount: vec![Coin::new(4950, "udsm")],
+                block_height: 12345,
+                block_height_index: 0
+            }],
             tips
         );
     }
@@ -783,7 +889,6 @@ mod tests {
                 DesmosQuery::Subspaces(subspaces_query) => {
                     SystemResult::Ok(mock_subspaces_query_response(subspaces_query))
                 }
-                _ => SystemResult::Err(SystemError::Unknown {}),
             });
         let mut deps = OwnedDeps {
             storage: MockStorage::default(),
@@ -893,10 +998,14 @@ mod tests {
         let post_author = MockPostsQueries::get_mocked_post(Uint64::new(1), Uint64::new(1));
 
         assert_eq!(
-            vec![(
-                (Addr::unchecked(USER_1), post_author.author, 1),
-                vec![Coin::new(5000, "udsm")]
-            )],
+            vec![StateTip {
+                sender: Addr::unchecked(USER_1),
+                receiver: post_author.author,
+                post_id: 1,
+                amount: vec![Coin::new(5000, "udsm")],
+                block_height: 12345,
+                block_height_index: 0
+            }],
             tips
         );
     }
@@ -918,13 +1027,17 @@ mod tests {
         tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap();
         let tips = get_tips_record_items(deps.as_mut());
 
-        let post_author = MockPostsQueries::get_mocked_post(Uint64::new(1), Uint64::new(1));
+        let post = MockPostsQueries::get_mocked_post(Uint64::new(1), Uint64::new(1));
 
         assert_eq!(
-            vec![(
-                (Addr::unchecked(USER_1), post_author.author, 1),
-                vec![Coin::new(4000, "udsm")]
-            )],
+            vec![StateTip {
+                sender: Addr::unchecked(USER_1),
+                receiver: post.author,
+                post_id: 1,
+                amount: vec![Coin::new(4000, "udsm")],
+                block_height: 12345,
+                block_height_index: 0
+            }],
             tips
         );
     }
@@ -945,14 +1058,17 @@ mod tests {
 
         tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap();
         let tips = get_tips_record_items(deps.as_mut());
-
-        let post_author = MockPostsQueries::get_mocked_post(Uint64::new(1), Uint64::new(1));
+        let post = MockPostsQueries::get_mocked_post(Uint64::new(1), Uint64::new(1));
 
         assert_eq!(
-            vec![(
-                (Addr::unchecked(USER_1), post_author.author, 1),
-                vec![Coin::new(4950, "udsm")]
-            )],
+            vec![StateTip {
+                sender: Addr::unchecked(USER_1),
+                receiver: post.author,
+                post_id: 1,
+                amount: vec![Coin::new(4950, "udsm")],
+                block_height: 12345,
+                block_height_index: 0
+            }],
             tips
         );
     }
@@ -971,24 +1087,32 @@ mod tests {
         )
         .unwrap();
 
-        tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap();
         tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_2, USER_3, &[Coin::new(5000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
+        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
 
         let tips = get_tips_record_items(deps.as_mut());
         assert_eq!(
             vec![
-                (
-                    (Addr::unchecked(USER_1), Addr::unchecked(USER_2), 0),
-                    vec![Coin::new(4900, "udsm")]
-                ),
-                (
-                    (Addr::unchecked(USER_2), Addr::unchecked(USER_3), 0),
-                    vec![Coin::new(4900, "udsm")]
-                ),
+                StateTip {
+                    sender: Addr::unchecked(USER_1),
+                    receiver: Addr::unchecked(USER_2),
+                    post_id: 0,
+                    amount: vec![Coin::new(4900, "udsm")],
+                    block_height: 12345,
+                    block_height_index: 1
+                },
+                StateTip {
+                    sender: Addr::unchecked(USER_1),
+                    receiver: Addr::unchecked(USER_2),
+                    post_id: 0,
+                    amount: vec![Coin::new(4900, "udsm")],
+                    block_height: 12345,
+                    block_height_index: 2
+                }
             ],
             tips
-        )
+        );
     }
 
     #[test]
@@ -1327,65 +1451,6 @@ mod tests {
     }
 
     #[test]
-    fn update_tips_record_threshold_shrink_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
-
-        init_contract(
-            deps.as_mut(),
-            1,
-            Some(ServiceFee::Fixed {
-                amount: vec![Coin::new(1000, "udsm")],
-            }),
-            10,
-        )
-        .unwrap();
-
-        tip_user(deps.as_mut(), USER_3, USER_1, &[Coin::new(2000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(2000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_1, USER_3, &[Coin::new(2000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_3, USER_2, &[Coin::new(2000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_2, USER_1, &[Coin::new(2000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_2, USER_3, &[Coin::new(2000, "udsm")]).unwrap();
-
-        execute(
-            deps.as_mut(),
-            mock_env(),
-            mock_info(ADMIN, &[]),
-            ExecuteMsg::UpdateSavedTipsRecordThreshold { new_threshold: 3 },
-        )
-        .unwrap();
-
-        let tips = get_tips_record_items(deps.as_mut());
-        assert_eq!(
-            vec![
-                (
-                    (Addr::unchecked(USER_2), Addr::unchecked(USER_1), 0),
-                    vec![Coin::new(1000, "udsm")]
-                ),
-                (
-                    (Addr::unchecked(USER_2), Addr::unchecked(USER_3), 0),
-                    vec![Coin::new(1000, "udsm")]
-                ),
-                (
-                    (Addr::unchecked(USER_3), Addr::unchecked(USER_2), 0),
-                    vec![Coin::new(1000, "udsm")]
-                ),
-            ],
-            tips
-        );
-
-        let keys = TIPS_KEY_LIST.load(deps.as_mut().storage).unwrap();
-        assert_eq!(
-            VecDeque::from([
-                (Addr::unchecked(USER_3), Addr::unchecked(USER_2), 0),
-                (Addr::unchecked(USER_2), Addr::unchecked(USER_1), 0),
-                (Addr::unchecked(USER_2), Addr::unchecked(USER_3), 0),
-            ]),
-            keys
-        )
-    }
-
-    #[test]
     fn update_tips_record_threshold_records_wipe_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
@@ -1405,14 +1470,22 @@ mod tests {
         let tips = get_tips_record_items(deps.as_mut());
         assert_eq!(
             vec![
-                (
-                    (Addr::unchecked(USER_1), Addr::unchecked(USER_2), 0),
-                    vec![Coin::new(1000, "udsm")]
-                ),
-                (
-                    (Addr::unchecked(USER_3), Addr::unchecked(USER_1), 0),
-                    vec![Coin::new(1000, "udsm")]
-                ),
+                StateTip {
+                    sender: Addr::unchecked(USER_1),
+                    receiver: Addr::unchecked(USER_2),
+                    post_id: 0,
+                    amount: vec![Coin::new(1000, "udsm")],
+                    block_height: 12345,
+                    block_height_index: 0
+                },
+                StateTip {
+                    sender: Addr::unchecked(USER_3),
+                    receiver: Addr::unchecked(USER_1),
+                    post_id: 0,
+                    amount: vec![Coin::new(1000, "udsm")],
+                    block_height: 12345,
+                    block_height_index: 1
+                }
             ],
             tips
         );
@@ -1427,9 +1500,6 @@ mod tests {
 
         let tips = get_tips_record_items(deps.as_mut());
         assert!(tips.is_empty());
-
-        let keys = TIPS_KEY_LIST.load(deps.as_mut().storage).unwrap();
-        assert!(keys.is_empty());
     }
 
     #[test]
@@ -1550,8 +1620,7 @@ mod tests {
         )
         .unwrap();
         let tips: TipsResponse = from_binary(&response).unwrap();
-        // Must be 2 since the two tips made from USER_2 should be merged into one
-        assert_eq!(2, tips.tips.len());
+        assert_eq!(3, tips.tips.len());
         assert_eq!(
             tips,
             TipsResponse {
@@ -1564,7 +1633,12 @@ mod tests {
                     Tip {
                         sender: Addr::unchecked(USER_2),
                         receiver: Addr::unchecked(USER_3),
-                        amount: vec![Coin::new(2000, "udsm")]
+                        amount: vec![Coin::new(1000, "udsm")]
+                    },
+                    Tip {
+                        sender: Addr::unchecked(USER_2),
+                        receiver: Addr::unchecked(USER_3),
+                        amount: vec![Coin::new(1000, "udsm")]
                     },
                 ]
             }
@@ -1607,13 +1681,13 @@ mod tests {
                 tips: vec![
                     Tip {
                         sender: Addr::unchecked(USER_1),
-                        receiver: Addr::unchecked(USER_2),
-                        amount: vec![Coin::new(99000, "udsm")]
+                        receiver: Addr::unchecked(USER_3),
+                        amount: vec![Coin::new(4000, "udsm")]
                     },
                     Tip {
                         sender: Addr::unchecked(USER_1),
-                        receiver: Addr::unchecked(USER_3),
-                        amount: vec![Coin::new(4000, "udsm")]
+                        receiver: Addr::unchecked(USER_2),
+                        amount: vec![Coin::new(99000, "udsm")]
                     },
                 ]
             }
@@ -1701,7 +1775,7 @@ mod tests {
         )
         .unwrap();
         let tips: TipsResponse = from_binary(&response).unwrap();
-        assert_eq!(3, tips.tips.len());
+        assert_eq!(4, tips.tips.len());
         assert_eq!(
             tips,
             TipsResponse {
@@ -1709,7 +1783,7 @@ mod tests {
                     Tip {
                         sender: Addr::unchecked(USER_1),
                         receiver: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
-                        amount: vec![Coin::new(4000 + 99000, "udsm")]
+                        amount: vec![Coin::new(4000, "udsm")]
                     },
                     Tip {
                         sender: Addr::unchecked(USER_2),
@@ -1718,6 +1792,11 @@ mod tests {
                     },
                     Tip {
                         sender: Addr::unchecked(USER_3),
+                        receiver: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
+                        amount: vec![Coin::new(99000, "udsm")]
+                    },
+                    Tip {
+                        sender: Addr::unchecked(USER_1),
                         receiver: Addr::unchecked("desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc"),
                         amount: vec![Coin::new(99000, "udsm")]
                     },
