@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use crate::state::StateServiceFee;
+use crate::state::{StateServiceFee, StateTip};
 use cosmwasm_std::{Addr, Coin, Decimal, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -190,6 +190,16 @@ pub struct Tip {
     pub sender: Addr,
     pub receiver: Addr,
     pub amount: Vec<Coin>,
+}
+
+impl From<StateTip> for Tip {
+    fn from(tip: StateTip) -> Self {
+        Tip {
+            sender: tip.sender,
+            receiver: tip.receiver,
+            amount: tip.amount,
+        }
+    }
 }
 
 #[cfg(test)]

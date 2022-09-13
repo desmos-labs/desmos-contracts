@@ -39,4 +39,7 @@ pub enum ContractError {
 
     #[error("fee coin {denom} not provided")]
     FeeCoinNotProvided { denom: String },
+
+    #[error("block index overflow")]
+    BlockIndexOverflow {},
 }
