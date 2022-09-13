@@ -15,30 +15,27 @@ pub enum ContractError {
     #[error("subspace with id {id} does not exist, {error}")]
     SubspaceNotExist { id: u64, error: StdError },
 
+    #[error("invalid post id")]
+    InvalidPostId {},
+
+    #[error("provided a fee coin with value = 0, denom: {denom}")]
+    ZeroFeeCoin { denom: String },
+
     #[error("empty fixed fee")]
     EmptyFixedFee {},
-
-    #[error("zero fee coin provided: {denom}")]
-    ZeroFeeCoin { denom: String },
 
     #[error("invalid percentage fee")]
     InvalidPercentageFee {},
 
-    #[error("invalid post id")]
-    InvalidPostId {},
-
     #[error("insufficient {denom}, requested: {requested} provided: {provided}")]
-    InsufficientFee {
+    InsufficientAmount {
         denom: String,
         requested: Uint128,
         provided: Uint128,
     },
 
-    #[error("not enough funds to pay tips and contract's fees")]
-    FoundAmountTooSmall {},
-
-    #[error("fee coin {denom} not provided")]
-    FeeCoinNotProvided { denom: String },
+    #[error("founds message field is empty")]
+    EmptyFounds {},
 
     #[error("block index overflow")]
     BlockIndexOverflow {},

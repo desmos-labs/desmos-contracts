@@ -2,9 +2,10 @@ use crate::error::ContractError;
 use cosmwasm_std::{Coin, OverflowError, OverflowOperation, StdError};
 use std::collections::btree_map::BTreeMap;
 
-/// Iterates over the coins vector and merges the coins having the same `denom`.
+/// Iterates over the coins vector and merges the coins having the same `denom`
+/// and return them sorted by denom.
 /// * `coins` - Vector of coins to merge.
-pub fn merge_coins(coins: Vec<Coin>) -> Result<Vec<Coin>, ContractError> {
+pub fn sum_coins_sorted(coins: Vec<Coin>) -> Result<Vec<Coin>, ContractError> {
     if coins.len() <= 1 {
         return Ok(coins);
     }
@@ -40,12 +41,12 @@ pub fn merge_coins(coins: Vec<Coin>) -> Result<Vec<Coin>, ContractError> {
 #[cfg(test)]
 mod tests {
     use crate::error::ContractError;
-    use crate::utils::merge_coins;
+    use crate::utils::sum_coins_sorted;
     use cosmwasm_std::{Coin, OverflowError, OverflowOperation, StdError};
 
     #[test]
     fn test_coin_merge_duplicates() {
-        let merged = merge_coins(vec![
+        let merged = sum_coins_sorted(vec![
             Coin::new(100, "uatom"),
             Coin::new(3000, "udsm"),
             Coin::new(1000, "uosmo"),
@@ -66,7 +67,7 @@ mod tests {
 
     #[test]
     fn test_coin_merge_no_duplicates() {
-        let merged = merge_coins(vec![
+        let merged = sum_coins_sorted(vec![
             Coin::new(100, "uatom"),
             Coin::new(3000, "udsm"),
             Coin::new(1000, "uosmo"),
@@ -85,7 +86,7 @@ mod tests {
 
     #[test]
     fn test_coin_merge_overflow() {
-        let overflow_err = merge_coins(vec![
+        let overflow_err = sum_coins_sorted(vec![
             Coin::new(u128::MAX - 1, "uatom"),
             Coin::new(3000, "uatom"),
         ])
