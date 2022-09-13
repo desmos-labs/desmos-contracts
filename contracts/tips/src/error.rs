@@ -18,6 +18,9 @@ pub enum ContractError {
     #[error("invalid post id")]
     InvalidPostId {},
 
+    #[error("can't tip yourself")]
+    SenderEqReceiver {},
+
     #[error("provided a fee coin with value = 0, denom: {denom}")]
     ZeroFeeCoin { denom: String },
 
