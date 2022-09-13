@@ -12,9 +12,17 @@
         "send_tip": {
           "type": "object",
           "required": [
+            "amount",
             "target"
           ],
           "properties": {
+            "amount": {
+              "description": "Amount from which fees will be calculated.",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Coin"
+              }
+            },
             "target": {
               "description": "Tip target.",
               "allOf": [
@@ -139,11 +147,15 @@
         }
       }
     },
+    "Decimal": {
+      "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 (which is (2^128 - 1) / 10^18)",
+      "type": "string"
+    },
     "ServiceFee": {
       "description": "Fees required to execute [`ExecuteMsg::SendTip`].",
       "oneOf": [
         {
-          "description": "Represents a fixed fee that is deducted from the tip.",
+          "description": "Represents a fixed fee that the sender needs to pay in order to send the tip.",
           "type": "object",
           "required": [
             "fixed"
@@ -156,7 +168,7 @@
               ],
               "properties": {
                 "amount": {
-                  "description": "Coins that are deducted from the tip.",
+                  "description": "Coins that the sender needs to pay.",
                   "type": "array",
                   "items": {
                     "$ref": "#/definitions/Coin"
@@ -168,7 +180,7 @@
           "additionalProperties": false
         },
         {
-          "description": "Represents a percentage that is deducted from the tip.",
+          "description": "Represents a percentage that the sender needs to pay in order to send the tip.",
           "type": "object",
           "required": [
             "percentage"
@@ -177,21 +189,14 @@
             "percentage": {
               "type": "object",
               "required": [
-                "decimals",
                 "value"
               ],
               "properties": {
-                "decimals": {
-                  "description": "Percentage decimals. Example if this value is 3 means that the value should have 3 decimals numbers so if value is - 1 means 0,001% - 10 means 0,01% - 100 means 0,1% - 1000 means 1% - 10000 means 10% - 100000 means 100%",
-                  "type": "integer",
-                  "format": "uint32",
-                  "minimum": 0.0
-                },
                 "value": {
                   "description": "Percentage value.",
                   "allOf": [
                     {
-                      "$ref": "#/definitions/Uint128"
+                      "$ref": "#/definitions/Decimal"
                     }
                   ]
                 }
