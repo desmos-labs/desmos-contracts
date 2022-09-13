@@ -39,8 +39,9 @@ pub fn merge_coins(coins: Vec<Coin>) -> Result<Vec<Coin>, ContractError> {
 
 #[cfg(test)]
 mod tests {
+    use crate::error::ContractError;
     use crate::utils::merge_coins;
-    use cosmwasm_std::Coin;
+    use cosmwasm_std::{Coin, OverflowError, OverflowOperation, StdError};
 
     #[test]
     fn test_coin_merge_duplicates() {
@@ -79,6 +80,24 @@ mod tests {
                 Coin::new(1000, "uosmo")
             ],
             merged
+        )
+    }
+
+    #[test]
+    fn test_coin_merge_overflow() {
+        let overflow_err = merge_coins(vec![
+            Coin::new(u128::MAX - 1, "uatom"),
+            Coin::new(3000, "uatom"),
+        ])
+        .unwrap_err();
+
+        assert_eq!(
+            ContractError::Std(StdError::overflow(OverflowError {
+                operation: OverflowOperation::Add,
+                operand1: (u128::MAX - 1).to_string(),
+                operand2: 3000.to_string(),
+            })),
+            overflow_err
         )
     }
 }
