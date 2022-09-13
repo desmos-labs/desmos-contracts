@@ -47,9 +47,8 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response<DesmosMsg>, ContractError> {
     msg.validate()?;
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-
     let admin = deps.api.addr_validate(&msg.admin)?;
+
     // Ensure that the subspace exists
     SubspacesQuerier::new(deps.querier.deref())
         .query_subspace(msg.subspace_id.u64())
@@ -64,16 +63,16 @@ pub fn instantiate(
         None
     };
 
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     CONFIG.save(
         deps.storage,
         &Config {
             admin,
             subspace_id: msg.subspace_id.u64(),
             service_fee,
-            tips_record_threshold: msg.saved_tips_threshold,
+            saved_tips_record_size: msg.saved_tips_threshold,
         },
     )?;
-    // Initialize the block height index
     BLOCK_HEIGHT_INDEX.save(deps.storage, &(0, 0))?;
 
     Ok(Response::new()
@@ -97,7 +96,7 @@ pub fn execute(
     msg.validate()?;
 
     match msg {
-        ExecuteMsg::SendTip { target } => execute_send_tip(deps, env, info, target),
+        ExecuteMsg::SendTip { target, amount } => execute_send_tip(deps, env, info, target, amount),
         ExecuteMsg::UpdateServiceFee { new_fee } => execute_update_service_fee(deps, info, new_fee),
         ExecuteMsg::UpdateAdmin { new_admin } => execute_update_admin(deps, info, new_admin),
         ExecuteMsg::UpdateSavedTipsRecordThreshold { new_threshold } => {
@@ -112,17 +111,16 @@ fn execute_send_tip(
     env: Env,
     info: MessageInfo,
     target: Target,
+    tip_amount: Vec<Coin>,
 ) -> Result<Response<DesmosMsg>, ContractError> {
+    if info.funds.is_empty() {
+        return Err(ContractError::EmptyFounds {});
+    }
+
     let config = CONFIG.load(deps.storage)?;
 
-    // Computes the fee and the coins to be sent to the user
-    let (_, coin_to_send) = match config.service_fee {
-        None => (Vec::<Coin>::new(), info.funds),
-        Some(service_fee) => service_fee.compute_fees(info.funds)?,
-    };
-
-    if coin_to_send.is_empty() {
-        return Err(ContractError::FoundAmountTooSmall {});
+    if let Some(service_fee) = config.service_fee {
+        service_fee.check_fees(&info.funds, &tip_amount)?;
     }
 
     // Resolve the receiver and the optional post id
@@ -139,7 +137,7 @@ fn execute_send_tip(
         }
     };
 
-    if config.tips_record_threshold > 0 {
+    if config.saved_tips_record_size > 0 {
         let (block, index) = BLOCK_HEIGHT_INDEX.update::<_, ContractError>(
             deps.storage,
             |(block_height, index)| {
@@ -161,7 +159,7 @@ fn execute_send_tip(
             sender: info.sender.clone(),
             receiver: receiver.clone(),
             post_id,
-            amount: coin_to_send.clone(),
+            amount: tip_amount.clone(),
             block_height: block,
             block_height_index: index,
         };
@@ -170,10 +168,9 @@ fn execute_send_tip(
         let tips_record = tips_record();
         tips_record.save(deps.storage, tip_key, &tip)?;
 
-        for to_remove_key in find_to_remove_tips(deps.storage, tip.sender, tip.receiver)?.drain(0..)
-        {
-            tips_record.remove(deps.storage, to_remove_key)?;
-        }
+        find_to_remove_tips(deps.storage, tip.sender, tip.receiver)?
+            .drain(0..)
+            .try_for_each(|key| tips_record.remove(deps.storage, key))?;
     }
 
     Ok(Response::new()
@@ -182,11 +179,12 @@ fn execute_send_tip(
         .add_attribute(ATTRIBUTE_RECEIVER, receiver.as_str())
         .add_message(BankMsg::Send {
             to_address: receiver.to_string(),
-            amount: coin_to_send,
+            amount: tip_amount,
         }))
 }
 
 /// Finds the tip that exceed the tips record threshold and should be deleted.
+/// NOTE: This functions assume that `saved_tips_record_size` is > 0.
 /// * `sender` - User who sent the last tip.
 /// * `receiver` - User who received the last tip.
 fn find_to_remove_tips(
@@ -194,15 +192,7 @@ fn find_to_remove_tips(
     sender: Addr,
     receiver: Addr,
 ) -> Result<Vec<String>, ContractError> {
-    let threshold = CONFIG.load(storage)?.tips_record_threshold;
-
-    if threshold == 0 {
-        return Ok(Vec::new());
-    }
-
-    // The only tips history that has changed are the ones of sender and receiver
-    // to keep the tips history of both sender and receiver close to the threshold
-    // we check if some old sender tip is inside the oldest receiver tips
+    let tips_record_size = CONFIG.load(storage)?.saved_tips_record_size;
     let tips_record = tips_record();
 
     // Gets the sender tips history
@@ -213,18 +203,21 @@ fn find_to_remove_tips(
         // Sort descending to have the oldest last
         .range(storage, None, None, Order::Descending)
         // Skip the ones that needs to be keep
-        .skip(threshold as usize);
+        .skip(tips_record_size as usize);
 
     let mut to_remove_keys: Vec<String> = vec![];
 
+    // Look inside the sender sent tips history if some of the oldest tips can be removed
     for tip in old_sender_tips_it {
         let (sender_tip_key, tip) = tip?;
-        let found_tip_in_receiver_history = tips_record
+        // Check if the sent tip that exceed the sender sent tips history is
+        // exceeding also the receiver received tips history.
+        let found_removable_tip_in_receiver_history = tips_record
             .idx
             .receiver
             .prefix(tip.receiver)
             .range(storage, None, None, Order::Descending)
-            .skip(threshold as usize)
+            .skip(tips_record_size as usize)
             .any(|result| {
                 if let Ok((key, _)) = result {
                     key.eq(&sender_tip_key)
@@ -232,26 +225,32 @@ fn find_to_remove_tips(
                     false
                 }
             });
-        if found_tip_in_receiver_history {
+        if found_removable_tip_in_receiver_history {
             to_remove_keys.push(sender_tip_key);
         }
     }
 
+    // Gets the receiver tips history
     let old_receiver_tips_it = tips_record
         .idx
         .receiver
         .prefix(receiver)
+        // Sort descending to have the oldest last
         .range(storage, None, None, Order::Descending)
-        .skip(threshold as usize);
+        // Skip the ones that needs to be keep
+        .skip(tips_record_size as usize);
 
+    // Look inside the receiver received tips history if some of the oldest tips can be removed
     for tip in old_receiver_tips_it {
         let (receiver_tip_key, tip) = tip?;
-        let found_tip_in_sender_history = tips_record
+        // Check if the received tip that exceed the receiver received tips history is
+        // exceeding also a sender sent tips history
+        let found_removable_tip_in_sender_history = tips_record
             .idx
             .sender
             .prefix(tip.sender)
             .range(storage, None, None, Order::Descending)
-            .skip(threshold as usize)
+            .skip(tips_record_size as usize)
             .any(|result| {
                 if let Ok((key, _)) = result {
                     key.eq(&receiver_tip_key)
@@ -259,7 +258,7 @@ fn find_to_remove_tips(
                     false
                 }
             });
-        if found_tip_in_sender_history {
+        if found_removable_tip_in_sender_history {
             to_remove_keys.push(receiver_tip_key);
         }
     }
@@ -327,7 +326,7 @@ fn execute_update_saved_tips_record_threshold(
         let mut wiped = false;
         let tips_record = tips_record();
         while !wiped {
-            // Read the data paginated since tips_record can not fit inside the VM heap.
+            // Read the data paginated since all the tips_record may not fit inside the VM heap.
             let mut tips_key_raw = tips_record
                 .keys(deps.storage, None, None, Order::Ascending)
                 .take(20)
@@ -343,7 +342,7 @@ fn execute_update_saved_tips_record_threshold(
         }
     }
 
-    config.tips_record_threshold = new_threshold;
+    config.saved_tips_record_size = new_threshold;
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new()
@@ -400,7 +399,7 @@ pub fn query_config(deps: Deps<DesmosQuery>) -> StdResult<QueryConfigResponse> {
         admin: config.admin,
         subspace_id: config.subspace_id.into(),
         service_fee: config.service_fee.map(StateServiceFee::into),
-        saved_tips_record_threshold: config.tips_record_threshold,
+        saved_tips_record_threshold: config.saved_tips_record_size,
     })
 }
 
@@ -497,9 +496,10 @@ mod tests {
         deps: DepsMut<DesmosQuery>,
         from: &str,
         to: &str,
+        founds: &[Coin],
         coins: &[Coin],
     ) -> Result<Response<DesmosMsg>, ContractError> {
-        let info = mock_info(from, coins);
+        let info = mock_info(from, founds);
         execute(
             deps,
             mock_env(),
@@ -508,6 +508,7 @@ mod tests {
                 target: Target::UserTarget {
                     receiver: to.to_string(),
                 },
+                amount: coins.to_vec(),
             },
         )
     }
@@ -516,9 +517,10 @@ mod tests {
         deps: DepsMut<DesmosQuery>,
         from: &str,
         post_id: u64,
+        founds: &[Coin],
         coins: &[Coin],
     ) -> Result<Response<DesmosMsg>, ContractError> {
-        let info = mock_info(from, coins);
+        let info = mock_info(from, founds);
         execute(
             deps,
             mock_env(),
@@ -527,6 +529,7 @@ mod tests {
                 target: Target::ContentTarget {
                     post_id: post_id.into(),
                 },
+                amount: coins.to_vec(),
             },
         )
     }
@@ -681,18 +684,16 @@ mod tests {
     fn tip_user_with_invalid_address() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
-        init_contract(
-            deps.as_mut(),
-            1,
-            Some(ServiceFee::Fixed {
-                amount: vec![Coin::new(100, "udsm"), Coin::new(100, "udsm")],
-            }),
-            5,
-        )
-        .unwrap();
+        init_contract(deps.as_mut(), 1, None, 5).unwrap();
 
-        let tip_error =
-            tip_user(deps.as_mut(), USER_1, "a", &[Coin::new(5000, "udsm")]).unwrap_err();
+        let tip_error = tip_user(
+            deps.as_mut(),
+            USER_1,
+            "a",
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(5000, "udsm")],
+        )
+        .unwrap_err();
 
         assert_eq!(
             ContractError::Std(StdError::generic_err(
@@ -700,6 +701,24 @@ mod tests {
             )),
             tip_error
         );
+    }
+
+    #[test]
+    fn tip_with_empty_founds() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(deps.as_mut(), 1, None, 5).unwrap();
+
+        let tip_error = tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[],
+            &[Coin::new(5000, "udsm")],
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::EmptyFounds {}, tip_error);
     }
 
     #[test]
@@ -716,19 +735,27 @@ mod tests {
         )
         .unwrap();
 
-        let tip_error =
-            tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap_err();
+        let tip_error = tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(5100, "udsm")],
+            &[Coin::new(5000, "udsm")],
+        )
+        .unwrap_err();
 
         assert_eq!(
-            ContractError::FeeCoinNotProvided {
-                denom: "uatom".to_string()
+            ContractError::InsufficientAmount {
+                denom: "uatom".to_string(),
+                requested: Uint128::new(100),
+                provided: Uint128::zero(),
             },
             tip_error
         );
     }
 
     #[test]
-    fn tip_user_with_insufficient_fees() {
+    fn tip_user_with_insufficient_amount() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -741,37 +768,23 @@ mod tests {
         )
         .unwrap();
 
-        let tip_error =
-            tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(1000, "udsm")]).unwrap_err();
+        let tip_error = tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(5999, "udsm")],
+            &[Coin::new(1000, "udsm")],
+        )
+        .unwrap_err();
 
         assert_eq!(
-            ContractError::InsufficientFee {
+            ContractError::InsufficientAmount {
                 denom: "udsm".to_string(),
-                requested: Uint128::new(5000),
-                provided: Uint128::new(1000),
+                requested: Uint128::new(6000),
+                provided: Uint128::new(5999),
             },
             tip_error
         );
-    }
-
-    #[test]
-    fn tip_user_with_amount_eq_fees() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
-
-        init_contract(
-            deps.as_mut(),
-            1,
-            Some(ServiceFee::Fixed {
-                amount: vec![Coin::new(5000, "udsm")],
-            }),
-            5,
-        )
-        .unwrap();
-
-        let tip_error =
-            tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap_err();
-
-        assert_eq!(ContractError::FoundAmountTooSmall {}, tip_error);
     }
 
     #[test]
@@ -780,7 +793,14 @@ mod tests {
 
         init_contract(deps.as_mut(), 1, None, 5).unwrap();
 
-        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(5000, "udsm")],
+        )
+        .unwrap();
         let tips = get_tips_record_items(deps.as_mut());
 
         assert_eq!(
@@ -810,7 +830,14 @@ mod tests {
         )
         .unwrap();
 
-        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(4000, "udsm")],
+        )
+        .unwrap();
         let tips = get_tips_record_items(deps.as_mut());
 
         assert_eq!(
@@ -840,7 +867,14 @@ mod tests {
         )
         .unwrap();
 
-        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(4950, "udsm")],
+        )
+        .unwrap();
         let tips = get_tips_record_items(deps.as_mut());
 
         assert_eq!(
@@ -870,7 +904,14 @@ mod tests {
         )
         .unwrap();
 
-        let tip_error = tip_post(deps.as_mut(), USER_1, 0, &[Coin::new(5000, "udsm")]).unwrap_err();
+        let tip_error = tip_post(
+            deps.as_mut(),
+            USER_1,
+            0,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(4900, "udsm")],
+        )
+        .unwrap_err();
 
         assert_eq!(ContractError::InvalidPostId {}, tip_error);
     }
@@ -889,6 +930,7 @@ mod tests {
                 DesmosQuery::Subspaces(subspaces_query) => {
                     SystemResult::Ok(mock_subspaces_query_response(subspaces_query))
                 }
+                _ => SystemResult::Err(SystemError::Unknown {}),
             });
         let mut deps = OwnedDeps {
             storage: MockStorage::default(),
@@ -907,7 +949,14 @@ mod tests {
         )
         .unwrap();
 
-        let tip_error = tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap_err();
+        let tip_error = tip_post(
+            deps.as_mut(),
+            USER_1,
+            1,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(4900, "udsm")],
+        )
+        .unwrap_err();
 
         assert_eq!(
             ContractError::Std(StdError::generic_err(
@@ -931,11 +980,20 @@ mod tests {
         )
         .unwrap();
 
-        let tip_error = tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap_err();
+        let tip_error = tip_post(
+            deps.as_mut(),
+            USER_1,
+            1,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(4900, "udsm")],
+        )
+        .unwrap_err();
 
         assert_eq!(
-            ContractError::FeeCoinNotProvided {
-                denom: "uatom".to_string()
+            ContractError::InsufficientAmount {
+                denom: "uatom".to_string(),
+                requested: Uint128::new(100),
+                provided: Uint128::zero(),
             },
             tip_error
         );
@@ -955,35 +1013,23 @@ mod tests {
         )
         .unwrap();
 
-        let tip_error = tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(1000, "udsm")]).unwrap_err();
+        let tip_error = tip_post(
+            deps.as_mut(),
+            USER_1,
+            1,
+            &[Coin::new(1000, "udsm")],
+            &[Coin::new(1000, "udsm")],
+        )
+        .unwrap_err();
 
         assert_eq!(
-            ContractError::InsufficientFee {
+            ContractError::InsufficientAmount {
                 denom: "udsm".to_string(),
-                requested: Uint128::new(5000),
+                requested: Uint128::new(6000),
                 provided: Uint128::new(1000),
             },
             tip_error
         );
-    }
-
-    #[test]
-    fn tip_post_with_amount_eq_fees() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
-
-        init_contract(
-            deps.as_mut(),
-            1,
-            Some(ServiceFee::Fixed {
-                amount: vec![Coin::new(5000, "udsm")],
-            }),
-            5,
-        )
-        .unwrap();
-
-        let tip_error = tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap_err();
-
-        assert_eq!(ContractError::FoundAmountTooSmall {}, tip_error);
     }
 
     #[test]
@@ -992,7 +1038,14 @@ mod tests {
 
         init_contract(deps.as_mut(), 1, None, 5).unwrap();
 
-        tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap();
+        tip_post(
+            deps.as_mut(),
+            USER_1,
+            1,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(5000, "udsm")],
+        )
+        .unwrap();
         let tips = get_tips_record_items(deps.as_mut());
 
         let post_author = MockPostsQueries::get_mocked_post(Uint64::new(1), Uint64::new(1));
@@ -1024,7 +1077,14 @@ mod tests {
         )
         .unwrap();
 
-        tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap();
+        tip_post(
+            deps.as_mut(),
+            USER_1,
+            1,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(4000, "udsm")],
+        )
+        .unwrap();
         let tips = get_tips_record_items(deps.as_mut());
 
         let post = MockPostsQueries::get_mocked_post(Uint64::new(1), Uint64::new(1));
@@ -1056,7 +1116,14 @@ mod tests {
         )
         .unwrap();
 
-        tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap();
+        tip_post(
+            deps.as_mut(),
+            USER_1,
+            1,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(4950, "udsm")],
+        )
+        .unwrap();
         let tips = get_tips_record_items(deps.as_mut());
         let post = MockPostsQueries::get_mocked_post(Uint64::new(1), Uint64::new(1));
 
@@ -1087,9 +1154,30 @@ mod tests {
         )
         .unwrap();
 
-        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(4900, "udsm")],
+        )
+        .unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(4900, "udsm")],
+        )
+        .unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(4900, "udsm")],
+        )
+        .unwrap();
 
         let tips = get_tips_record_items(deps.as_mut());
         assert_eq!(
@@ -1129,7 +1217,14 @@ mod tests {
         )
         .unwrap();
 
-        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(5000, "udsm")]).unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(4000, "udsm")],
+        )
+        .unwrap();
 
         assert!(get_tips_record_items(deps.as_mut()).is_empty())
     }
@@ -1464,8 +1559,22 @@ mod tests {
         )
         .unwrap();
 
-        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(2000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_3, USER_1, &[Coin::new(2000, "udsm")]).unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(2000, "udsm")],
+            &[Coin::new(1000, "udsm")],
+        )
+        .unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_3,
+            USER_1,
+            &[Coin::new(2000, "udsm")],
+            &[Coin::new(1000, "udsm")],
+        )
+        .unwrap();
 
         let tips = get_tips_record_items(deps.as_mut());
         assert_eq!(
@@ -1604,12 +1713,47 @@ mod tests {
         )
         .unwrap();
 
-        tip_user(deps.as_mut(), USER_1, USER_3, &[Coin::new(5000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_2, USER_3, &[Coin::new(2000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_2, USER_3, &[Coin::new(2000, "udsm")]).unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_3,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(4000, "udsm")],
+        )
+        .unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_2,
+            USER_3,
+            &[Coin::new(2000, "udsm")],
+            &[Coin::new(1000, "udsm")],
+        )
+        .unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_2,
+            USER_3,
+            &[Coin::new(2000, "udsm")],
+            &[Coin::new(1000, "udsm")],
+        )
+        .unwrap();
         // Some more data not related to user 3
-        tip_user(deps.as_mut(), USER_2, USER_1, &[Coin::new(100000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(100000, "udsm")]).unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_2,
+            USER_1,
+            &[Coin::new(100000, "udsm")],
+            &[Coin::new(99000, "udsm")],
+        )
+        .unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(100000, "udsm")],
+            &[Coin::new(99000, "udsm")],
+        )
+        .unwrap();
 
         let response = query(
             deps.as_ref(),
@@ -1659,11 +1803,46 @@ mod tests {
         )
         .unwrap();
 
-        tip_user(deps.as_mut(), USER_1, USER_3, &[Coin::new(5000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_2, USER_3, &[Coin::new(2000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_2, USER_3, &[Coin::new(2000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_2, USER_1, &[Coin::new(100000, "udsm")]).unwrap();
-        tip_user(deps.as_mut(), USER_1, USER_2, &[Coin::new(100000, "udsm")]).unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_3,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(4000, "udsm")],
+        )
+        .unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_2,
+            USER_3,
+            &[Coin::new(2000, "udsm")],
+            &[Coin::new(1000, "udsm")],
+        )
+        .unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_2,
+            USER_3,
+            &[Coin::new(2000, "udsm")],
+            &[Coin::new(1000, "udsm")],
+        )
+        .unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_2,
+            USER_1,
+            &[Coin::new(100000, "udsm")],
+            &[Coin::new(99000, "udsm")],
+        )
+        .unwrap();
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(100000, "udsm")],
+            &[Coin::new(99000, "udsm")],
+        )
+        .unwrap();
 
         let response = query(
             deps.as_ref(),
@@ -1761,10 +1940,38 @@ mod tests {
         )
         .unwrap();
 
-        tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(5000, "udsm")]).unwrap();
-        tip_post(deps.as_mut(), USER_2, 1, &[Coin::new(2000, "udsm")]).unwrap();
-        tip_post(deps.as_mut(), USER_3, 1, &[Coin::new(100000, "udsm")]).unwrap();
-        tip_post(deps.as_mut(), USER_1, 1, &[Coin::new(100000, "udsm")]).unwrap();
+        tip_post(
+            deps.as_mut(),
+            USER_1,
+            1,
+            &[Coin::new(5000, "udsm")],
+            &[Coin::new(4000, "udsm")],
+        )
+        .unwrap();
+        tip_post(
+            deps.as_mut(),
+            USER_2,
+            1,
+            &[Coin::new(2000, "udsm")],
+            &[Coin::new(1000, "udsm")],
+        )
+        .unwrap();
+        tip_post(
+            deps.as_mut(),
+            USER_3,
+            1,
+            &[Coin::new(100000, "udsm")],
+            &[Coin::new(99000, "udsm")],
+        )
+        .unwrap();
+        tip_post(
+            deps.as_mut(),
+            USER_1,
+            1,
+            &[Coin::new(100000, "udsm")],
+            &[Coin::new(99000, "udsm")],
+        )
+        .unwrap();
 
         let response = query(
             deps.as_ref(),

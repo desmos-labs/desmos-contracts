@@ -1,6 +1,6 @@
 use crate::error::ContractError;
 use crate::msg::ServiceFee;
-use crate::utils;
+use crate::utils::sum_coins_sorted;
 use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
 use cw_storage_plus::{Index, IndexList, IndexedMap, Item, MultiIndex, UniqueIndex};
 use schemars::JsonSchema;
@@ -20,7 +20,7 @@ pub struct Config {
     pub admin: Addr,
     pub subspace_id: u64,
     pub service_fee: Option<StateServiceFee>,
-    pub tips_record_threshold: u32,
+    pub saved_tips_record_size: u32,
 }
 
 /// Represents the tip that is saved inside the contract state
@@ -91,91 +91,50 @@ pub fn tips_record<'a>() -> IndexedMap<'a, String, StateTip, StateTipIndex<'a>> 
 impl StateServiceFee {
     /// Computes the fees that the contract will holds and the coins that
     /// can be sent to the user.
-    /// * `coins` - Coins from which to calculate the fees.
-    pub fn compute_fees(&self, coins: Vec<Coin>) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
-        let received_coins = utils::merge_coins(coins)?;
-        match self {
-            StateServiceFee::Fixed { amount } => {
-                StateServiceFee::compute_fixed_service_fees(amount, received_coins)
-            }
+    /// * `founds` - Coins sent from the user to the contract.
+    /// * `tip_amount` - Coins from which to calculate the fees.
+    pub fn check_fees(&self, founds: &[Coin], tip_amount: &[Coin]) -> Result<(), ContractError> {
+        let founds = sum_coins_sorted(founds.to_vec())?;
+        // Compute the fees
+        let mut fee = match self {
+            StateServiceFee::Fixed { amount } => amount.clone(),
             StateServiceFee::Percentage { value } => {
-                StateServiceFee::compute_percentage_service_fees(value, received_coins)
+                let percentage_value = value.div(Decimal::from_atomics(100u32, 0).unwrap());
+                tip_amount
+                    .iter()
+                    .map(|coin| Coin {
+                        amount: coin.amount.mul(percentage_value),
+                        denom: coin.denom.clone(),
+                    })
+                    .collect()
             }
-        }
-    }
+        };
 
-    fn compute_fixed_service_fees(
-        fee_coins: &[Coin],
-        received_coins: Vec<Coin>,
-    ) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
-        let mut fees: Vec<Coin> = vec![];
-        let mut to_user: Vec<Coin> = vec![];
+        // Put the tip amount inside the fees
+        fee.extend(tip_amount.to_vec());
+        // Check fees + tips < founds
+        for fee_plus_tip in sum_coins_sorted(fee)?.drain(0..) {
+            // Search the fee coin inside the founds sent to the contract
+            let found_coin_amount = founds
+                .binary_search_by(|coin| coin.denom.cmp(&fee_plus_tip.denom))
+                .map(|index| founds[index].amount)
+                .map_err(|_| ContractError::InsufficientAmount {
+                    denom: fee_plus_tip.denom.clone(),
+                    requested: fee_plus_tip.amount,
+                    provided: Uint128::zero(),
+                })?;
 
-        for coin in received_coins {
-            let fee_option = fee_coins
-                .iter()
-                .find(|fee_coin| fee_coin.denom.eq(&coin.denom));
-            // This coin is present inside the service fees.
-            if let Some(fee) = fee_option {
-                // Return error if the provided amount is not enough.
-                if fee.amount.u128() > coin.amount.u128() {
-                    return Err(ContractError::InsufficientFee {
-                        denom: coin.denom.to_owned(),
-                        provided: coin.amount,
-                        requested: fee.amount,
-                    });
-                }
-
-                // Update the fees array
-                fees.push(fee.clone());
-
-                let to_user_coin = Coin::new(coin.amount.u128() - fee.amount.u128(), &coin.denom);
-                if !to_user_coin.amount.is_zero() {
-                    to_user.push(to_user_coin);
-                }
-            } else {
-                to_user.push(coin);
-            }
-        }
-        // Ensure that we have processed all the fees
-        if fee_coins.len() > fees.len() {
-            for fee in fee_coins {
-                let fee_found = fees.iter().any(|user_fee| user_fee.denom.eq(&fee.denom));
-                if !fee_found {
-                    return Err(ContractError::FeeCoinNotProvided {
-                        denom: fee.denom.to_owned(),
-                    });
-                }
+            // Ensure tip amount + fee <= provided founds
+            if fee_plus_tip.amount > found_coin_amount {
+                return Err(ContractError::InsufficientAmount {
+                    denom: fee_plus_tip.denom,
+                    requested: fee_plus_tip.amount,
+                    provided: found_coin_amount,
+                });
             }
         }
 
-        Ok((fees, to_user))
-    }
-
-    fn compute_percentage_service_fees(
-        value: &Decimal,
-        received_coins: Vec<Coin>,
-    ) -> Result<(Vec<Coin>, Vec<Coin>), ContractError> {
-        let mut fees: Vec<Coin> = vec![];
-        let mut to_user: Vec<Coin> = vec![];
-        let percentage_value = value.div(Decimal::from_atomics(100u32, 0).unwrap());
-
-        for coin in received_coins {
-            // Safe to mul since we are percentage value is (0, 1) and coin amount can't overflow
-            let coin_fee: Uint128 = coin.amount.mul(percentage_value);
-
-            if coin_fee.u128() > 0 {
-                to_user.push(Coin::new(
-                    coin.amount.u128() - coin_fee.u128(),
-                    coin.denom.clone(),
-                ));
-                fees.push(Coin::new(coin_fee.u128(), coin.denom));
-            } else {
-                to_user.push(Coin::new(coin.amount.u128() - coin_fee.u128(), coin.denom));
-            }
-        }
-
-        Ok((fees, to_user))
+        Ok(())
     }
 }
 
@@ -187,7 +146,7 @@ impl TryFrom<ServiceFee> for StateServiceFee {
 
         match service_fees {
             ServiceFee::Fixed { amount } => Ok(StateServiceFee::Fixed {
-                amount: utils::merge_coins(amount)?,
+                amount: sum_coins_sorted(amount)?,
             }),
             ServiceFee::Percentage { value } => Ok(StateServiceFee::Percentage { value }),
         }
@@ -221,23 +180,24 @@ mod tests {
     }
 
     #[test]
-    fn fixed_fees_insufficient_amount() {
-        let requested_amount = 20000;
-        let provided_amount = 1000;
+    fn fixed_fees_insufficient_founds() {
+        let fixed_fee_amount = 2000;
+        let tip_amount = 1000;
+        let found_amount = 2500;
 
         let service_fees = StateServiceFee::Fixed {
-            amount: vec![Coin::new(requested_amount, "udsm")],
+            amount: vec![Coin::new(fixed_fee_amount, "udsm")],
         };
 
-        let computed_fees = service_fees
-            .compute_fees(vec![Coin::new(provided_amount, "udsm")])
-            .unwrap_err();
+        let founds = vec![Coin::new(found_amount, "udsm")];
+        let tips = vec![Coin::new(tip_amount, "udsm")];
+        let computed_fees = service_fees.check_fees(&founds, &tips).unwrap_err();
 
         assert_eq!(
-            ContractError::InsufficientFee {
+            ContractError::InsufficientAmount {
                 denom: "udsm".to_string(),
-                provided: Uint128::new(provided_amount),
-                requested: Uint128::new(requested_amount)
+                requested: Uint128::new(fixed_fee_amount + tip_amount),
+                provided: Uint128::new(found_amount),
             },
             computed_fees
         );
@@ -245,75 +205,90 @@ mod tests {
 
     #[test]
     fn fixed_fees_fee_coin_not_provided() {
-        let requested_amount = 20000;
-        let provided_amount = 100000;
+        let fixed_fee_amount = 20000;
+        let tip_amount = 100000;
 
         let service_fees = StateServiceFee::Fixed {
             amount: vec![
-                Coin::new(requested_amount, "udsm"),
-                Coin::new(requested_amount, "uatom"),
+                Coin::new(fixed_fee_amount, "udsm"),
+                Coin::new(fixed_fee_amount, "uatom"),
             ],
         };
 
         let computed_fees = service_fees
-            .compute_fees(vec![Coin::new(provided_amount, "udsm")])
+            .check_fees(
+                &vec![Coin::new(fixed_fee_amount + tip_amount, "udsm")],
+                &vec![Coin::new(tip_amount, "udsm")],
+            )
             .unwrap_err();
 
         assert_eq!(
-            ContractError::FeeCoinNotProvided {
+            ContractError::InsufficientAmount {
                 denom: "uatom".to_string(),
+                requested: fixed_fee_amount.into(),
+                provided: Uint128::zero()
             },
             computed_fees
         );
     }
 
     #[test]
-    fn fixed_fees_empty() {
-        let provided_amount = 100000;
-
-        let service_fees = StateServiceFee::Fixed { amount: vec![] };
-
-        let (fees, to_user) = service_fees
-            .compute_fees(vec![Coin::new(provided_amount, "udsm")])
-            .unwrap();
-
-        assert!(fees.is_empty());
-        assert_eq!(vec![Coin::new(provided_amount, "udsm")], to_user);
-    }
-
-    #[test]
-    fn fixed_fees_computes_properly() {
-        let requested_amount = 20000;
-        let provided_amount = 100000;
-        let fees = vec![Coin::new(requested_amount, "udsm")];
+    fn fixed_fees_fee_found_coin_not_provided() {
+        let fixed_fee_amount = 20000;
+        let tip_amount = 100000;
 
         let service_fees = StateServiceFee::Fixed {
-            amount: fees.clone(),
+            amount: vec![Coin::new(fixed_fee_amount, "udsm")],
         };
 
-        let (computed_fees, to_user) = service_fees
-            .compute_fees(vec![
-                Coin::new(provided_amount, "uatom"),
-                Coin::new(provided_amount, "udsm"),
-            ])
-            .unwrap();
-
-        assert_eq!(fees, computed_fees);
+        let computed_fees = service_fees
+            .check_fees(
+                &vec![Coin::new(fixed_fee_amount + tip_amount, "udsm")],
+                &vec![
+                    Coin::new(tip_amount, "udsm"),
+                    Coin::new(tip_amount, "uatom"),
+                ],
+            )
+            .unwrap_err();
 
         assert_eq!(
-            vec![
-                Coin::new(provided_amount, "uatom"),
-                Coin::new(provided_amount - requested_amount, "udsm"),
-            ],
-            to_user
+            ContractError::InsufficientAmount {
+                denom: "uatom".to_string(),
+                requested: tip_amount.into(),
+                provided: Uint128::zero(),
+            },
+            computed_fees
         );
     }
 
     #[test]
+    fn fixed_fees_check_properly() {
+        let fixed_fee_amount = 20000;
+        let tip_amount = 100000;
+
+        let service_fees = StateServiceFee::Fixed {
+            amount: vec![
+                Coin::new(fixed_fee_amount, "udsm"),
+                Coin::new(fixed_fee_amount, "uatom"),
+            ],
+        };
+
+        service_fees
+            .check_fees(
+                &vec![
+                    Coin::new(fixed_fee_amount + tip_amount, "udsm"),
+                    Coin::new(fixed_fee_amount, "uatom"),
+                ],
+                &vec![Coin::new(tip_amount, "udsm")],
+            )
+            .unwrap();
+    }
+
+    #[test]
     fn percentage_state_service_fee_from_service_fee_invalid_percentage() {
-        // Service fees at 200%
+        // Service fees at 100%
         let service_fee = ServiceFee::Percentage {
-            value: Decimal::from_atomics(200u32, 0).unwrap(),
+            value: Decimal::from_atomics(100u32, 0).unwrap(),
         };
 
         let error = StateServiceFee::try_from(service_fee).unwrap_err();
@@ -338,51 +313,53 @@ mod tests {
     }
 
     #[test]
-    fn percentage_fees_zero() {
-        let zero_percent = StateServiceFee::Percentage {
-            value: Decimal::zero(),
+    fn percentage_fees_insufficient_founds() {
+        let tip_amount = 1000;
+        let found_amount = 1099;
+
+        // Fee at 10%
+        let service_fees = StateServiceFee::Percentage {
+            value: Decimal::from_atomics(10u128, 0u32).unwrap(),
         };
-        let tips = vec![
-            Coin::new(600000000, "uatom"),
-            Coin::new(100000000, "udsm"),
-            Coin::new(100000000, "uosmo"),
-        ];
 
-        let (computed_fees, to_user) = zero_percent.compute_fees(tips.clone()).unwrap();
+        let tips = vec![Coin::new(tip_amount, "udsm")];
+        let founds = vec![Coin::new(found_amount, "udsm")];
+        let computed_fees = service_fees.check_fees(&founds, &tips).unwrap_err();
 
-        assert_eq!(Vec::<Coin>::new(), computed_fees);
-        assert_eq!(tips, to_user);
+        assert_eq!(
+            ContractError::InsufficientAmount {
+                denom: "udsm".to_string(),
+                requested: Uint128::new(tip_amount + 100),
+                provided: Uint128::new(found_amount),
+            },
+            computed_fees
+        );
     }
 
     #[test]
-    fn percentage_fees_compute_properly() {
-        let three_percent = StateServiceFee::Percentage {
-            value: Decimal::from_atomics(3300000u32, 6).unwrap(),
+    fn percentage_fee_found_coin_not_provided() {
+        let tip_amount = 1000;
+        let found_amount = 1100;
+
+        // Fee at 10%
+        let service_fees = StateServiceFee::Percentage {
+            value: Decimal::from_atomics(10u128, 0u32).unwrap(),
         };
 
-        let (computed_fees, to_user) = three_percent
-            .compute_fees(vec![
-                Coin::new(100, "udsm"),
-                Coin::new(600, "uatom"),
-                Coin::new(1000, "uosmo"),
-            ])
-            .unwrap();
+        let tips = vec![
+            Coin::new(tip_amount, "udsm"),
+            Coin::new(tip_amount, "uatom"),
+        ];
+        let founds = vec![Coin::new(found_amount, "udsm")];
+        let computed_fees = service_fees.check_fees(&founds, &tips).unwrap_err();
 
         assert_eq!(
-            vec![
-                Coin::new(19, "uatom"),
-                Coin::new(3, "udsm"),
-                Coin::new(33, "uosmo"),
-            ],
+            ContractError::InsufficientAmount {
+                denom: "uatom".to_string(),
+                requested: Uint128::new(tip_amount + 100),
+                provided: Uint128::zero(),
+            },
             computed_fees
-        );
-        assert_eq!(
-            vec![
-                Coin::new(581, "uatom"),
-                Coin::new(97, "udsm"),
-                Coin::new(967, "uosmo"),
-            ],
-            to_user
         );
     }
 }
