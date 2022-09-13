@@ -137,6 +137,10 @@ fn execute_send_tip(
         }
     };
 
+    if info.sender == receiver {
+        return Err(ContractError::SenderEqReceiver {});
+    }
+
     if config.saved_tips_record_size > 0 {
         let (block, index) = BLOCK_HEIGHT_INDEX.update::<_, ContractError>(
             deps.storage,
@@ -719,6 +723,32 @@ mod tests {
         .unwrap_err();
 
         assert_eq!(ContractError::EmptyFounds {}, tip_error);
+    }
+
+    #[test]
+    fn tip_to_yourself() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            Some(ServiceFee::Fixed {
+                amount: vec![Coin::new(100, "udsm")],
+            }),
+            5,
+        )
+        .unwrap();
+
+        let tip_error = tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_1,
+            &[Coin::new(1100, "udsm")],
+            &[Coin::new(1000, "udsm")],
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::SenderEqReceiver {}, tip_error);
     }
 
     #[test]
