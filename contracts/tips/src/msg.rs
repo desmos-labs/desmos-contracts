@@ -106,6 +106,8 @@ pub enum ExecuteMsg {
     SendTip {
         /// Tip target.
         target: Target,
+        /// Amount from which fees will be calculated.
+        amount: Vec<Coin>,
     },
     /// Updates the fee required to execute [`ExecuteMsg::SendTip`].
     UpdateServiceFee {
@@ -133,7 +135,7 @@ pub enum ExecuteMsg {
 impl ExecuteMsg {
     pub fn validate(&self) -> Result<(), ContractError> {
         match self {
-            ExecuteMsg::SendTip { target } => match target {
+            ExecuteMsg::SendTip { target, .. } => match target {
                 Target::ContentTarget { post_id } => {
                     if post_id.is_zero() {
                         Err(ContractError::InvalidPostId {})
