@@ -6,7 +6,6 @@ use cw_storage_plus::{Item, Map};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct RarityState {
-    pub level: u32,
     pub mint_fees: Vec<Coin>,
     pub engagement_threshold: u32,
 }

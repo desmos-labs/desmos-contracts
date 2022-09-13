@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use crate::contract::convert_post_id_to_token_id;
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, Rarity};
     use crate::test_utils::*;
     use cosmwasm_std::{wasm_execute, Addr, Empty, Uint64};
@@ -229,13 +230,12 @@ mod tests {
                     },
                 )
                 .unwrap();
-            assert_eq!(vec![POST_ID.to_string()], response.tokens);
+            let token_id = convert_post_id_to_token_id(POST_ID.into(), ACCEPTED_RARITY_LEVEL);
+            assert_eq!(vec![token_id.clone()], response.tokens);
             let minted_nft_info: NftInfoResponse<Empty> = querier
                 .query_wasm_smart(
                     config.cw721_address.as_str(),
-                    &Cw721QueryMsg::<Empty>::NftInfo {
-                        token_id: POST_ID.into(),
-                    },
+                    &Cw721QueryMsg::<Empty>::NftInfo { token_id },
                 )
                 .unwrap();
             assert_eq!(
@@ -336,7 +336,10 @@ mod tests {
                 .query_wasm_smart(
                     config.cw721_address.as_str(),
                     &Cw721QueryMsg::<Empty>::AllNftInfo {
-                        token_id: POST_ID.into(),
+                        token_id: convert_post_id_to_token_id(
+                            POST_ID.into(),
+                            ACCEPTED_RARITY_LEVEL,
+                        ),
                         include_expired: None,
                     },
                 )
@@ -345,7 +348,10 @@ mod tests {
                 .query_wasm_smart(
                     &addr,
                     &QueryMsg::AllNftInfo {
-                        token_id: POST_ID.to_string(),
+                        token_id: convert_post_id_to_token_id(
+                            POST_ID.into(),
+                            ACCEPTED_RARITY_LEVEL,
+                        ),
                         include_expired: None,
                     },
                 )

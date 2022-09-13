@@ -70,7 +70,6 @@ pub fn instantiate(
     // Save the info of rarities
     for rarity in msg.rarities {
         let state = RarityState {
-            level: rarity.level,
             mint_fees: rarity.mint_fees,
             engagement_threshold: rarity.engagement_threshold,
         };
@@ -151,8 +150,9 @@ fn execute_mint_to(
         rarity.engagement_threshold,
     )?;
     // Create the cw721 message to send to mint the remarkables
+    let token_id = convert_post_id_to_token_id(post_id, rarity_level);
     let mint_msg = Cw721ExecuteMsg::<Empty, Empty>::Mint(MintMsg::<Empty> {
-        token_id: post_id.to_string(),
+        token_id: token_id.clone(),
         owner: info.sender.clone().into(),
         token_uri: Some(remarkables_uri.clone()),
         extension: Empty {},
@@ -162,10 +162,15 @@ fn execute_mint_to(
         .add_attribute(ATTRIBUTE_ACTION, ACTION_MINT_TO)
         .add_attribute(ATTRIBUTE_SENDER, &info.sender)
         .add_attribute(ATTRIBUTE_RARITY_LEVEL, rarity_level.to_string())
-        .add_attribute(ATTRIBUTE_TOKEN_ID, post_id.to_string())
+        .add_attribute(ATTRIBUTE_TOKEN_ID, token_id.to_string())
         .add_attribute(ATTRIBUTE_RECIPIENT, &info.sender)
         .add_attribute(ATTRIBUTE_TOKEN_URI, remarkables_uri)
         .add_message(wasm_execute_mint_msg))
+}
+
+// Returns the token id as "<post-id>-<rarity-level>"
+pub fn convert_post_id_to_token_id(post_id: u64, rarity_level: u32) -> String {
+    post_id.to_string() + "-" + &rarity_level.to_string()
 }
 
 fn is_enough_fees(funds: Vec<Coin>, requireds: Vec<Coin>) -> bool {
@@ -244,6 +249,9 @@ fn execute_update_rarity_mint_fees(
     check_admin(deps.storage, &info)?;
     RARITY.update(deps.storage, level, |rarity| -> Result<_, ContractError> {
         let mut new_rarity = rarity.ok_or(ContractError::RarityNotExists { level })?;
+        if new_rarity.mint_fees == new_fees {
+            return Err(ContractError::NewMintFeesEqualToCurrent {});
+        }
         new_rarity.mint_fees = new_fees;
         Ok(new_rarity)
     })?;
@@ -372,12 +380,13 @@ mod tests {
     const SUBSPACE_ID: u64 = 1;
     const DENOM: &str = "test";
     const CW721_CODE_ID: u64 = 1;
+    const MINT_FEES: u128 = 100;
 
     fn get_instantiate_rarities() -> Vec<Rarity> {
         vec![Rarity {
             level: 1,
             engagement_threshold: 100,
-            mint_fees: coins(100, DENOM),
+            mint_fees: coins(MINT_FEES, DENOM),
         }]
     }
     fn get_valid_instantiate_msg() -> InstantiateMsg {
@@ -512,11 +521,43 @@ mod tests {
             assert!(execute(deps.as_mut(), env, info, msg).is_err())
         }
         #[test]
-        fn mint_to_without_enough_fees_error() {
+        fn mint_to_with_empty_fees_error() {
             let mut deps = mock_dependencies_with_custom_querier(&[]);
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(NEW_ADMIN, &vec![]);
+            let msg = ExecuteMsg::MintTo {
+                post_id: 1u64.into(),
+                remarkables_uri: "ipfs://test.com".into(),
+                rarity_level: 1,
+            };
+            assert_eq!(
+                execute(deps.as_mut(), env, info, msg).unwrap_err(),
+                ContractError::MintFeesNotEnough {},
+            )
+        }
+        #[test]
+        fn mint_to_with_other_denom_fees_error() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let info = mock_info(NEW_ADMIN, &coins(100, "other"));
+            let msg = ExecuteMsg::MintTo {
+                post_id: 1u64.into(),
+                remarkables_uri: "ipfs://test.com".into(),
+                rarity_level: 1,
+            };
+            assert_eq!(
+                execute(deps.as_mut(), env, info, msg).unwrap_err(),
+                ContractError::MintFeesNotEnough {},
+            )
+        }
+        #[test]
+        fn mint_to_without_enough_fees_error() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let info = mock_info(NEW_ADMIN, &coins(MINT_FEES - 1, DENOM));
             let msg = ExecuteMsg::MintTo {
                 post_id: 1u64.into(),
                 remarkables_uri: "ipfs://test.com".into(),
@@ -617,6 +658,21 @@ mod tests {
             )
         }
         #[test]
+        fn update_rarity_mint_fees_same_as_the_current_error() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let info = mock_info(ADMIN, &vec![]);
+            let msg = ExecuteMsg::UpdateRarityMintFee {
+                rarity_level: 1,
+                new_fees: coins(MINT_FEES, DENOM),
+            };
+            assert_eq!(
+                execute(deps.as_mut(), env, info, msg).unwrap_err(),
+                ContractError::NewMintFeesEqualToCurrent {},
+            )
+        }
+        #[test]
         fn update_rarity_mint_fees_properly() {
             let mut deps = mock_dependencies_with_custom_querier(&[]);
             do_instantiate(deps.as_mut());
@@ -629,7 +685,6 @@ mod tests {
             execute(deps.as_mut(), env, info, msg).unwrap();
             let new_rarity = RARITY.load(&deps.storage, 1).unwrap();
             let expected = RarityState {
-                level: 1,
                 engagement_threshold: 100,
                 mint_fees: coins(50, DENOM),
             };
@@ -676,7 +731,6 @@ mod tests {
                     deps.as_mut().storage,
                     1,
                     &RarityState {
-                        level: 1,
                         engagement_threshold: 100,
                         mint_fees: coins(1, DENOM),
                     },

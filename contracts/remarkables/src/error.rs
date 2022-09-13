@@ -29,4 +29,7 @@ pub enum ContractError {
 
     #[error("No eligibility error")]
     NoEligibilityError {},
+
+    #[error("New mint fees equal to the current fees")]
+    NewMintFeesEqualToCurrent {},
 }

@@ -1,7 +1,7 @@
 [package]
 name = "remarkables"
 version = "0.1.0"
-authors = ["Paul <p22626262@gmail.com>"]
+authors = ["Paul <paul@forbole.com>"]
 edition = "2018"
 
 exclude = [
