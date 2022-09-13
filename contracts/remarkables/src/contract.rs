@@ -304,9 +304,9 @@ fn query_rarities(deps: Deps<DesmosQuery>) -> StdResult<QueryRaritiesResponse> {
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
     let rarities = res?
-        .iter()
+        .drain(..)
         .map(|(level, rarity)| Rarity {
-            level: *level,
+            level,
             engagement_threshold: rarity.engagement_threshold,
             mint_fees: rarity.mint_fees.clone(),
         })
