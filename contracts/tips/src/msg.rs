@@ -1,3 +1,4 @@
+use crate::contract::MAX_TIPS_HISTORY_SIZE;
 use crate::error::ContractError;
 use crate::state::{PostTip, ReceivedTip, SentTip, StateServiceFee};
 use cosmwasm_std::{Addr, Coin, Decimal, Uint64};
@@ -79,6 +80,13 @@ impl InstantiateMsg {
             service_fee.validate()?;
         }
 
+        if self.saved_tips_record_size > MAX_TIPS_HISTORY_SIZE {
+            return Err(ContractError::InvalidTipsHistorySize {
+                value: self.saved_tips_record_size,
+                max: MAX_TIPS_HISTORY_SIZE,
+            });
+        }
+
         Ok(())
     }
 }
@@ -149,6 +157,16 @@ impl ExecuteMsg {
             ExecuteMsg::UpdateServiceFee { new_fee } => {
                 if let Some(service_fee) = new_fee {
                     service_fee.validate()
+                } else {
+                    Ok(())
+                }
+            }
+            ExecuteMsg::UpdateSavedTipsRecordSize { new_size } => {
+                if *new_size > MAX_TIPS_HISTORY_SIZE {
+                    Err(ContractError::InvalidTipsHistorySize {
+                        value: *new_size,
+                        max: MAX_TIPS_HISTORY_SIZE,
+                    })
                 } else {
                     Ok(())
                 }

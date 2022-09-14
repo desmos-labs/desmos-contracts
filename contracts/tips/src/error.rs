@@ -9,6 +9,9 @@ pub enum ContractError {
     #[error("unauthorized")]
     Unauthorized {},
 
+    #[error("invalid tips history size, value: {value} max allowed: {max}")]
+    InvalidTipsHistorySize { value: u32, max: u32 },
+
     #[error("invalid subspace id")]
     InvalidSubspaceId {},
 
