@@ -6,17 +6,19 @@
 - Aug 30, 2022: First review;
 - Sept 1, 2022: Second review;
 - Sept 5, 2022: Third review;
-- Sept 5, 2022: Fourth review.
+- Sept 5, 2022: Fourth review;
+- Sept 14, 2022: Fifth Review;
 
 ## Status
-DRAFTED
+IMPLEMENTED
 
 ## Abstract
 This ADR defines the architecture of the Tips contract. This contract manages sending and tracking of tips made within
 Desmos based applications and exposes queries that allow to gather all users sent and received tips easily.
 
 ## Context
-Desmos based applications may want to leverage on the web3 features and one of the most popular one is for sure the possibility to tip users. Currently, it's easy to integrate a feature that allows sending tokens as tips between users, but it's very difficult to track those tips in an easy way.
+Desmos based applications may want to leverage on the web3 features and one of the most popular one is for sure the possibility to tip users. 
+Currently, it's easy to integrate a feature that allows sending tokens as tips between users, but it's very difficult to track those tips in an easy way.
 Additionally, application developers might want to integrate some form of monetization that allows them to earn a little percentage when users send tips to each other.
 
 ## Decision
@@ -38,14 +40,14 @@ pub struct InstantiateMsg {
   pub admin: String,
   pub subspace_id: u64,
   pub service_fee: ServiceFee,
-  pub saved_tips_record_threshold: u32
+  pub tips_history_size: u32
 }
 ```
 
 * The `admin` identifies the user that controls the contract;
 * The `subspace_id` identifies the application which is deploying the contract;
 * The `service_fee` identifies a fee that the users need to pay to use the contract;
-* The `save_tips_record_threshold` identifies the number of records saved of a user tips history.
+* The `tips_history_size` identifies the number of records saved of a user tips history.
 
 The service fee can be set in two different ways, depending on the needs of the contract's admin.
 It can be a `Fixed` or a `Percentage` fee.
@@ -55,58 +57,47 @@ tip and paid to the contract.
 
 ```rust
 pub enum ServiceFee {
-  Fixed {amount: Vec<Coin>},
-  Percentage{value: u32, decimals: u32}
+  Fixed { amount: Vec<Coin> },
+  Percentage { value: Decimal }
 }
 ```
 
-The `Percentage` fee is represented by a:
-  * `value` field that identifies the number of percentage the admin applies (e.g. value = 2 means that the percentage can be 2%, 0,2%, etc..based on the 2nd field);
-  * `decimals` field represents the number of decimal places that come before the `value`.
-
-The `Percentage` fee will then be calculated as follows so: `tip_amount * value/10^decimals`
-
 #### Execute
 ```rust
-pub enum ExecuteMsg{
-  SendTip{target: Target},
-  ClaimFees{recipient: String},
-  UpdateServiceFee{new_fee: ServiceFee},
-  UpdateAdmin{new_admin: String},
-  UpdateSavedTipsRecordThreshold{new_threshold: u64}
-
+pub enum ExecuteMsg {
+  SendTip { amount: Vec<Coin>, target: Target },
+  ClaimFees { recipient: String },
+  UpdateServiceFee { new_fee: ServiceFee },
+  UpdateAdmin { new_admin: String },
+  UpdateSavedTipsHistorySize { new_size: u32 }
 }
 ```
 
 ```rust
 pub enum Target {
-  ContentTarget {post_id: u64},
-  UserTarget {receiver: String}
+  ContentTarget { post_id: u64 },
+  UserTarget { receiver: String }
 }
 ```
 
 ##### SendTip
 With the `SendTip` message the user can call the contract to send a tip to another user to show their support towards a specific content they made.
-The `MessagInfo` field of the message contains both:
-* the tip identified by the `funds` field
+The `MessagInfo` fields contains:
+* the funds necessary to cover the fees plus the tip amount specified inside the `funds` field
 * the sender identified by the `sender` field
 
-Ideally the message should perform the following checks:
-* Check that the post associated with the given `post_id` exists
-* Check that the `receiver` is equal to the post author
-* If there's any service fee, check that it's covered by the tip amount
+Ideally the contract should perform the following checks:
+* If the tips is for a post check that the post associated with the given `post_id` exists.
+* If there's any service fee, check that the service fee plus the tip amount specified inside the `ExecuteMsg::SendTip` are covered from `MessageInfo::founds`.
 
-If the checks pass successfully, then the tip record can be saved. The number of records saved should never surpass the threshold set.
-The record can be saved using the `Map` structure of the `cw_storage_plus` package that allows to:
-* save elements with combined keys (similar to what we do in the storages of Desmos Core modules);
-* iterate through them easily with pre-built iterators;
-* fetch data more efficiently.
-
-Ideally the map should have the following key `post_id + sender + receiver` pointing at the tip amount.
-With this prefix, using the possibilities offer by the `Map`'s iterators it's possible to retrieve:
-* all the post's received tips;
-* all the tips sent by a user;
-* all the tips received by a user.
+If the checks pass successfully, then the tip record can be saved.
+The contract should keep track of:
+1. User sent tips
+2. User received tips
+3. Tips sent towards a post  
+ 
+For each of these informations the contract should not keep more tips than the configured `tips_history_size`.
+If for one of these informations the amount of tips stored become greater then `tips_history_size` the contract should remove the oldest received tips.
 
 ##### ClaimFees
 With the `ClaimFees` message the contract's admin can withdraw all the collected fees and send them to the given `recipient`.
@@ -120,21 +111,25 @@ The message should make sure that the user tyring to make the edit is the actual
 With the `UpdateAdmin` message the user can update the contract's admin.
 The message should make sure that the user trying to make the edit is the actual contract admin.
 
-##### UpdateSavedTipsRecordThreshold
-With the `UpdateSavedTipsRecordThreshold` message the user can update the tips records threshold.
+##### UpdateSavedTipsHistorySize
+With the `UpdateSavedTipsHistorySize` message the user can update the max number of tips that the contract keeps regarding:
+1. Tips sent from a user
+2. Tips received by a user
+3. Tips sent towards a post
+
 The message should make sure that the user tyring to make the edit is the actual contract admin.
 
 ### Query
 ```rust
 pub enum QueryMsg {
   /// Return a ConfigResponse containing the configuration info of the contract
-  Config{},
+  Config {},
   /// Return a TipsResponse containing all the received tips of the user
-  UserReceivedTips{user: String},
+  UserReceivedTips { user: String },
   /// Return a TipsResponse containing all the sent tips from the user
-  UserSentTips{user: String},
+  UserSentTips { user: String },
   ///Return a TipsResponse containing all the tips associated with a given post
-  PostReceivedTips{post_id: u64}
+  PostReceivedTips { post_id: u64 }
 }
 ```
 
@@ -150,15 +145,15 @@ pub struct QueryConfigResponse {
 ```
 
 #### UserReceivedTips
-The `UserReceivedTips{user}` query returns all the received tips of the given `user` inside a `TipsResponse`.
+The `UserReceivedTips{ user }` query returns all the received tips of the given `user` inside a `TipsResponse`.
 
 
 #### UserSentTips
-The `UserSentTips{user}` query returns all the tips sent by the given `user` inside a `TipsResponse`.
+The `UserSentTips{ user }` query returns all the tips sent by the given `user` inside a `TipsResponse`.
 
 
 #### PostReceivedTips
-The `PostReceivedTips{post_id}` query returns all the tips associated with the given `post_id` inside a `TipsResponse`
+The `PostReceivedTips{ post_id }` query returns all the tips associated with the given `post_id` inside a `TipsResponse`
 
 ```rust
 pub struct TipsResponse {
@@ -170,6 +165,7 @@ pub struct TipsResponse {
 pub struct Tip {
   pub sender: Addr,
   pub receiver: Addr,
-  pub amount: Vec<Coin>
+  pub amount: Vec<Coin>,
+  pub post_id: Option<Uint64>
 }
 ```
