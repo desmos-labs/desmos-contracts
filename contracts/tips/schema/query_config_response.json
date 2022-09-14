@@ -4,7 +4,7 @@
   "type": "object",
   "required": [
     "admin",
-    "saved_tips_record_threshold",
+    "saved_tips_record_size",
     "subspace_id"
   ],
   "properties": {
@@ -16,7 +16,7 @@
         }
       ]
     },
-    "saved_tips_record_threshold": {
+    "saved_tips_record_size": {
       "description": "The number of records saved of a user tips history.",
       "type": "integer",
       "format": "uint32",
