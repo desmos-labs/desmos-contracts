@@ -27,8 +27,7 @@ mod tests {
     }
 
     const ADMIN: &str = "cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t";
-    const UNACCEPTED_RARITY_LEVEL: u32 = 0;
-    const ACCEPTED_RARITY_LEVEL: u32 = 1;
+    const RARITY_LEVEL: u32 = 1;
     const POST_ID: Uint64 = Uint64::new(1);
     const REMARKABLES_URI: &str = "ipfs://remarkables.com";
     const AUTHOR: &str = "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc";
@@ -170,7 +169,7 @@ mod tests {
                     &ExecuteMsg::MintTo {
                         post_id: POST_ID,
                         remarkables_uri: REMARKABLES_URI.into(),
-                        rarity_level: ACCEPTED_RARITY_LEVEL,
+                        rarity_level: RARITY_LEVEL,
                     },
                     vec![],
                 )
@@ -192,7 +191,7 @@ mod tests {
                     },
                 )
                 .unwrap();
-            let token_id = convert_post_id_to_token_id(POST_ID.into(), ACCEPTED_RARITY_LEVEL);
+            let token_id = convert_post_id_to_token_id(POST_ID.into(), RARITY_LEVEL);
             assert_eq!(vec![token_id.clone()], response.tokens);
             let minted_nft_info: NftInfoResponse<Empty> = querier
                 .query_wasm_smart(
@@ -222,7 +221,7 @@ mod tests {
                     &ExecuteMsg::MintTo {
                         post_id: POST_ID,
                         remarkables_uri: REMARKABLES_URI.into(),
-                        rarity_level: ACCEPTED_RARITY_LEVEL,
+                        rarity_level: RARITY_LEVEL,
                     },
                     vec![],
                 )
@@ -269,7 +268,7 @@ mod tests {
                     &ExecuteMsg::MintTo {
                         post_id: POST_ID,
                         remarkables_uri: REMARKABLES_URI.into(),
-                        rarity_level: ACCEPTED_RARITY_LEVEL,
+                        rarity_level: RARITY_LEVEL,
                     },
                     vec![],
                 )
@@ -298,10 +297,7 @@ mod tests {
                 .query_wasm_smart(
                     config.cw721_address.as_str(),
                     &Cw721QueryMsg::<Empty>::AllNftInfo {
-                        token_id: convert_post_id_to_token_id(
-                            POST_ID.into(),
-                            ACCEPTED_RARITY_LEVEL,
-                        ),
+                        token_id: convert_post_id_to_token_id(POST_ID.into(), RARITY_LEVEL),
                         include_expired: None,
                     },
                 )
@@ -310,10 +306,7 @@ mod tests {
                 .query_wasm_smart(
                     &addr,
                     &QueryMsg::AllNftInfo {
-                        token_id: convert_post_id_to_token_id(
-                            POST_ID.into(),
-                            ACCEPTED_RARITY_LEVEL,
-                        ),
+                        token_id: convert_post_id_to_token_id(POST_ID.into(), RARITY_LEVEL),
                         include_expired: None,
                     },
                 )

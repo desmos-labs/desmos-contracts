@@ -75,9 +75,11 @@ pub fn instantiate(
         };
         RARITY.save(deps.storage, rarity.level, &state)?;
     }
+    let subspace_id = msg.subspace_id.u64();
     // Check subspace exists and it is owned by the sender.
     let subspace = SubspacesQuerier::new(deps.querier.deref())
-        .query_subspace(msg.subspace_id.into())?
+        .query_subspace(subspace_id)
+        .map_err(|_| ContractError::SubspaceNotFound { id: subspace_id })?
         .subspace;
     if info.sender != subspace.owner {
         return Err(ContractError::NotSubspaceOwner {
@@ -391,7 +393,7 @@ mod tests {
             mocks::mock_reactions_query_response, models_query::QueryReactionsResponse,
             query::ReactionsQuery,
         },
-        subspaces::mocks::mock_subspaces_query_response,
+        subspaces::{mocks::mock_subspaces_query_response, query::SubspacesQuery},
         types::PageResponse,
     };
     use std::marker::PhantomData;
@@ -444,6 +446,36 @@ mod tests {
                 ContractError::Std(StdError::generic_err(
                     "Invalid input: human address too short"
                 ))
+            )
+        }
+        #[test]
+        fn instatiate_with_non_existing_subspace_error() {
+            let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
+                .with_custom_handler(|query| match query {
+                    DesmosQuery::Subspaces(query) => match query {
+                        SubspacesQuery::Subspace { .. } => {
+                            SystemResult::Err(SystemError::InvalidRequest {
+                                error: "subspace not found".to_string(),
+                                request: Default::default(),
+                            })
+                        }
+                        _ => SystemResult::Err(SystemError::Unknown {}),
+                    },
+                    _ => SystemResult::Err(SystemError::Unknown {}),
+                });
+            let mut deps = OwnedDeps {
+                storage: MockStorage::default(),
+                querier,
+                api: MockApi::default(),
+                custom_query_type: PhantomData,
+            };
+            let env = mock_env();
+            let info = mock_info(NEW_ADMIN, &vec![]);
+            let mut invalid_msg = get_valid_instantiate_msg();
+            invalid_msg.admin = NEW_ADMIN.into();
+            assert_eq!(
+                instantiate(deps.as_mut(), env, info, invalid_msg).unwrap_err(),
+                ContractError::SubspaceNotFound { id: SUBSPACE_ID }
             )
         }
         #[test]
