@@ -136,7 +136,12 @@ fn execute_mint_to(
     post_id: u64,
     remarkables_uri: String,
 ) -> Result<Response<DesmosMsg>, ContractError> {
-    let rarity = RARITY.load(deps.storage, rarity_level)?;
+    let rarity =
+        RARITY
+            .may_load(deps.storage, rarity_level)?
+            .ok_or(ContractError::RarityNotExists {
+                level: rarity_level,
+            })?;
     // Check if rarity mint fees is enough
     if !is_enough_fees(info.funds, rarity.mint_fees) {
         return Err(ContractError::MintFeesNotEnough {});
@@ -196,7 +201,8 @@ fn check_eligibility<'a>(
     let subspace_id = CONFIG.load(storage)?.subspace_id;
     // Check if the post exists and it is owned by sender.
     let post = PostsQuerier::new(querier)
-        .query_post(subspace_id, post_id)?
+        .query_post(subspace_id, post_id)
+        .map_err(|_| ContractError::PostNotFound { id: post_id })?
         .post;
     if post.author != sender {
         return Err(ContractError::NoEligibilityError {});
@@ -370,10 +376,25 @@ pub fn reply(
 mod tests {
     use super::*;
     use crate::state::ConfigState;
-    use cosmwasm_std::testing::{mock_env, mock_info};
-    use cosmwasm_std::{coins, from_binary, StdError, SubMsgResponse, SubMsgResult};
+    use cosmwasm_std::testing::{
+        mock_env, mock_info, MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR,
+    };
+    use cosmwasm_std::{
+        coins, from_binary, to_binary, ContractResult, OwnedDeps, StdError, SubMsgResponse,
+        SubMsgResult, SystemError, SystemResult,
+    };
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
     use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
+    use desmos_bindings::{
+        posts::{mocks::mock_posts_query_response, query::PostsQuery},
+        reactions::{
+            mocks::mock_reactions_query_response, models_query::QueryReactionsResponse,
+            query::ReactionsQuery,
+        },
+        subspaces::mocks::mock_subspaces_query_response,
+        types::PageResponse,
+    };
+    use std::marker::PhantomData;
 
     const ADMIN: &str = "cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t";
     const NEW_ADMIN: &str = "new_admin";
@@ -381,6 +402,7 @@ mod tests {
     const DENOM: &str = "test";
     const CW721_CODE_ID: u64 = 1;
     const MINT_FEES: u128 = 100;
+    const POST_ID: u64 = 1;
 
     fn get_instantiate_rarities() -> Vec<Rarity> {
         vec![Rarity {
@@ -518,7 +540,10 @@ mod tests {
                 remarkables_uri: "ipfs://test.com".into(),
                 rarity_level: 2,
             };
-            assert!(execute(deps.as_mut(), env, info, msg).is_err())
+            assert_eq!(
+                execute(deps.as_mut(), env, info, msg).unwrap_err(),
+                ContractError::RarityNotExists { level: 2 }
+            )
         }
         #[test]
         fn mint_to_with_empty_fees_error() {
@@ -566,6 +591,113 @@ mod tests {
             assert_eq!(
                 execute(deps.as_mut(), env, info, msg).unwrap_err(),
                 ContractError::MintFeesNotEnough {},
+            )
+        }
+        #[test]
+        fn mint_to_with_non_existing_post_error() {
+            let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
+                .with_custom_handler(|query| match query {
+                    DesmosQuery::Posts(query) => match query {
+                        PostsQuery::Post { .. } => SystemResult::Err(SystemError::InvalidRequest {
+                            error: "post not found".to_string(),
+                            request: Default::default(),
+                        }),
+                        _ => SystemResult::Err(SystemError::Unknown {}),
+                    },
+                    DesmosQuery::Subspaces(query) => {
+                        SystemResult::Ok(mock_subspaces_query_response(query))
+                    }
+                    _ => SystemResult::Err(SystemError::Unknown {}),
+                });
+            let mut deps = OwnedDeps {
+                storage: MockStorage::default(),
+                querier,
+                api: MockApi::default(),
+                custom_query_type: PhantomData,
+            };
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let info = mock_info(NEW_ADMIN, &coins(MINT_FEES, DENOM));
+            let msg = ExecuteMsg::MintTo {
+                post_id: POST_ID.into(),
+                remarkables_uri: "ipfs://test.com".into(),
+                rarity_level: 1,
+            };
+            assert_eq!(
+                execute(deps.as_mut(), env, info, msg).unwrap_err(),
+                ContractError::PostNotFound { id: POST_ID },
+            )
+        }
+        #[test]
+        fn mint_to_without_eligible_amount_reactions_error() {
+            let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
+                .with_custom_handler(|query| match query {
+                    DesmosQuery::Posts(query) => SystemResult::Ok(mock_posts_query_response(query)),
+                    DesmosQuery::Subspaces(query) => {
+                        SystemResult::Ok(mock_subspaces_query_response(query))
+                    }
+                    DesmosQuery::Reactions(query) => {
+                        SystemResult::Ok(mock_reactions_query_response(query))
+                    }
+                });
+            let mut deps = OwnedDeps {
+                storage: MockStorage::default(),
+                querier,
+                api: MockApi::default(),
+                custom_query_type: PhantomData,
+            };
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let info = mock_info(NEW_ADMIN, &coins(MINT_FEES, DENOM));
+            let msg = ExecuteMsg::MintTo {
+                post_id: POST_ID.into(),
+                remarkables_uri: "ipfs://test.com".into(),
+                rarity_level: 1,
+            };
+            assert_eq!(
+                execute(deps.as_mut(), env, info, msg).unwrap_err(),
+                ContractError::NoEligibilityError {},
+            )
+        }
+        #[test]
+        fn mint_to_properly() {
+            let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
+                .with_custom_handler(|query| match query {
+                    DesmosQuery::Posts(query) => SystemResult::Ok(mock_posts_query_response(query)),
+                    DesmosQuery::Subspaces(query) => {
+                        SystemResult::Ok(mock_subspaces_query_response(query))
+                    }
+                    DesmosQuery::Reactions(query) => match query {
+                        ReactionsQuery::Reactions { .. } => SystemResult::Ok(ContractResult::Ok(
+                            to_binary(&QueryReactionsResponse {
+                                reactions: vec![],
+                                pagination: Some(PageResponse {
+                                    next_key: None,
+                                    total: Some(100u64.into()),
+                                }),
+                            })
+                            .unwrap(),
+                        )),
+                        _ => SystemResult::Err(SystemError::Unknown {}),
+                    },
+                });
+            let mut deps = OwnedDeps {
+                storage: MockStorage::default(),
+                querier,
+                api: MockApi::default(),
+                custom_query_type: PhantomData,
+            };
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let info = mock_info(NEW_ADMIN, &coins(MINT_FEES, DENOM));
+            let msg = ExecuteMsg::MintTo {
+                post_id: POST_ID.into(),
+                remarkables_uri: "ipfs://test.com".into(),
+                rarity_level: 1,
+            };
+            assert_eq!(
+                execute(deps.as_mut(), env, info, msg).unwrap_err(),
+                ContractError::NoEligibilityError {},
             )
         }
     }

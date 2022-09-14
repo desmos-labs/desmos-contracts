@@ -161,44 +161,6 @@ mod tests {
     mod mint_to {
         use super::*;
         #[test]
-        fn mint_to_without_owned_post_error() {
-            let (mut app, addr, _) = proper_instantiate();
-            let result = app.execute(
-                Addr::unchecked(AUTHOR),
-                wasm_execute(
-                    &addr,
-                    &ExecuteMsg::MintTo {
-                        post_id: POST_ID.into(),
-                        remarkables_uri: REMARKABLES_URI.into(),
-                        rarity_level: UNACCEPTED_RARITY_LEVEL,
-                    },
-                    vec![],
-                )
-                .unwrap()
-                .into(),
-            );
-            assert!(result.is_err())
-        }
-        #[test]
-        fn mint_to_without_eligible_amount_reactions_error() {
-            let (mut app, addr, _) = proper_instantiate();
-            let result = app.execute(
-                Addr::unchecked(AUTHOR),
-                wasm_execute(
-                    &addr,
-                    &ExecuteMsg::MintTo {
-                        post_id: POST_ID.into(),
-                        remarkables_uri: REMARKABLES_URI.into(),
-                        rarity_level: UNACCEPTED_RARITY_LEVEL,
-                    },
-                    vec![],
-                )
-                .unwrap()
-                .into(),
-            );
-            assert!(result.is_err())
-        }
-        #[test]
         fn mint_to_properly() {
             let (mut app, addr, _) = proper_instantiate();
             app.execute(

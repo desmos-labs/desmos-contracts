@@ -32,4 +32,10 @@ pub enum ContractError {
 
     #[error("New mint fees equal to the current fees")]
     NewMintFeesEqualToCurrent {},
+
+    #[error("Post with id {id} not found")]
+    PostNotFound{ id: u64 },
+
+    #[error("Subspace with id {id} not found")]
+    SubspaceNotFound{ id: u64 }
 }
