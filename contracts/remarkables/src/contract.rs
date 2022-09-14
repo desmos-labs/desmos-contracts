@@ -670,7 +670,7 @@ mod tests {
                     }
                     DesmosQuery::Reactions(query) => {
                         SystemResult::Ok(mock_reactions_query_response(query))
-                    },
+                    }
                     #[allow(unreachable_patterns)]
                     _ => SystemResult::Err(SystemError::Unknown {}),
                 });
