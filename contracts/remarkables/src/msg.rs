@@ -219,10 +219,7 @@ mod tests {
                 rarity_level: 1,
                 remarkables_uri: "https://remarkables.com".into(),
             };
-            assert_eq!(
-                msg.validate().unwrap_err(),
-                ContractError::InvalidPostId {}
-            )
+            assert_eq!(msg.validate().unwrap_err(), ContractError::InvalidPostId {})
         }
         #[test]
         fn mint_to_msg_with_valid_uri_schema_no_error() {
