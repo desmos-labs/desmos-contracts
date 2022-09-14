@@ -37,8 +37,8 @@ pub enum ContractError {
         provided: Uint128,
     },
 
-    #[error("founds message field is empty")]
-    EmptyFounds {},
+    #[error("funds message field is empty")]
+    EmptyFunds {},
 
     #[error("block index overflow")]
     BlockIndexOverflow {},

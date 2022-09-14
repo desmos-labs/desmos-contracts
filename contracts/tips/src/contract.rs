@@ -114,7 +114,7 @@ fn execute_send_tip(
     tip_amount: Vec<Coin>,
 ) -> Result<Response<DesmosMsg>, ContractError> {
     if info.funds.is_empty() {
-        return Err(ContractError::EmptyFounds {});
+        return Err(ContractError::EmptyFunds {});
     }
 
     let config = CONFIG.load(deps.storage)?;
@@ -500,10 +500,10 @@ mod tests {
         deps: DepsMut<DesmosQuery>,
         from: &str,
         to: &str,
-        founds: &[Coin],
+        funds: &[Coin],
         coins: &[Coin],
     ) -> Result<Response<DesmosMsg>, ContractError> {
-        let info = mock_info(from, founds);
+        let info = mock_info(from, funds);
         execute(
             deps,
             mock_env(),
@@ -521,10 +521,10 @@ mod tests {
         deps: DepsMut<DesmosQuery>,
         from: &str,
         post_id: u64,
-        founds: &[Coin],
+        funds: &[Coin],
         coins: &[Coin],
     ) -> Result<Response<DesmosMsg>, ContractError> {
-        let info = mock_info(from, founds);
+        let info = mock_info(from, funds);
         execute(
             deps,
             mock_env(),
@@ -708,7 +708,7 @@ mod tests {
     }
 
     #[test]
-    fn tip_with_empty_founds() {
+    fn tip_with_empty_funds() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(deps.as_mut(), 1, None, 5).unwrap();
@@ -722,7 +722,7 @@ mod tests {
         )
         .unwrap_err();
 
-        assert_eq!(ContractError::EmptyFounds {}, tip_error);
+        assert_eq!(ContractError::EmptyFunds {}, tip_error);
     }
 
     #[test]
