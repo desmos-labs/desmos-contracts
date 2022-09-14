@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use crate::state::{StateServiceFee, StateTip};
+use crate::state::{PostTip, ReceivedTip, SentTip, StateServiceFee};
 use cosmwasm_std::{Addr, Coin, Decimal, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -86,6 +86,7 @@ impl InstantiateMsg {
 /// Enum that represents a tip target.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+#[allow(clippy::derive_partial_eq_without_eq)]
 pub enum Target {
     /// Tip related to an user's post to show their support towards a specific content.
     ContentTarget {
@@ -159,6 +160,7 @@ impl ExecuteMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+#[allow(clippy::derive_partial_eq_without_eq)]
 pub enum QueryMsg {
     /// Return a [`ConfigResponse`] containing the configuration info of the contract.
     Config {},
@@ -192,14 +194,42 @@ pub struct Tip {
     pub sender: Addr,
     pub receiver: Addr,
     pub amount: Vec<Coin>,
+    pub post_id: Option<Uint64>,
 }
 
-impl From<StateTip> for Tip {
-    fn from(tip: StateTip) -> Self {
+impl Tip {
+    pub fn from_sent_tip(sender: Addr, tip: SentTip) -> Self {
         Tip {
-            sender: tip.sender,
-            receiver: tip.receiver,
-            amount: tip.amount,
+            sender,
+            receiver: tip.0,
+            amount: tip.1,
+            post_id: if tip.2 > 0 {
+                Some(Uint64::new(tip.2))
+            } else {
+                None
+            },
+        }
+    }
+
+    pub fn from_received_tip(receiver: Addr, tip: ReceivedTip) -> Self {
+        Tip {
+            sender: tip.0,
+            receiver,
+            amount: tip.1,
+            post_id: if tip.2 > 0 {
+                Some(Uint64::new(tip.2))
+            } else {
+                None
+            },
+        }
+    }
+
+    pub fn from_post_tip(post_id: u64, post_author: Addr, tip: PostTip) -> Self {
+        Tip {
+            sender: tip.0,
+            receiver: post_author,
+            amount: tip.1,
+            post_id: Some(Uint64::new(post_id)),
         }
     }
 }
@@ -207,8 +237,8 @@ impl From<StateTip> for Tip {
 #[cfg(test)]
 mod tests {
     use crate::error::ContractError;
-    use crate::msg::ServiceFee;
-    use cosmwasm_std::{Coin, Decimal};
+    use crate::msg::{ServiceFee, Tip};
+    use cosmwasm_std::{Addr, Coin, Decimal, Uint64};
 
     #[test]
     fn fixed_service_fee_zero_fee_coin() {
@@ -274,5 +304,53 @@ mod tests {
         };
 
         service_fee.validate().unwrap();
+    }
+
+    #[test]
+    fn tip_from_sent_tip_properly() {
+        let sender = Addr::unchecked("sender");
+        let receiver = Addr::unchecked("receiver");
+
+        assert_eq!(
+            Tip {
+                sender: sender.clone(),
+                receiver: receiver.clone(),
+                amount: vec![],
+                post_id: None
+            },
+            Tip::from_sent_tip(sender, (receiver, vec![], 0))
+        )
+    }
+
+    #[test]
+    fn tip_from_received_tip_properly() {
+        let sender = Addr::unchecked("sender");
+        let receiver = Addr::unchecked("receiver");
+
+        assert_eq!(
+            Tip {
+                sender: sender.clone(),
+                receiver: receiver.clone(),
+                amount: vec![],
+                post_id: None
+            },
+            Tip::from_received_tip(receiver, (sender, vec![], 0))
+        )
+    }
+
+    #[test]
+    fn tip_from_post_tip_properly() {
+        let sender = Addr::unchecked("sender");
+        let receiver = Addr::unchecked("receiver");
+
+        assert_eq!(
+            Tip {
+                sender: sender.clone(),
+                receiver: receiver.clone(),
+                amount: vec![],
+                post_id: Some(Uint64::new(1))
+            },
+            Tip::from_post_tip(1, receiver, (sender, vec![]))
+        )
     }
 }

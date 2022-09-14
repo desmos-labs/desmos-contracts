@@ -2,9 +2,10 @@ use crate::error::ContractError;
 use crate::msg::ServiceFee;
 use crate::utils::sum_coins_sorted;
 use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
-use cw_storage_plus::{Index, IndexList, IndexedMap, Item, MultiIndex, UniqueIndex};
+use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
 use std::convert::TryFrom;
 use std::ops::{Div, Mul};
 
@@ -23,70 +24,15 @@ pub struct Config {
     pub saved_tips_record_size: u32,
 }
 
-/// Represents the tip that is saved inside the contract state
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct StateTip {
-    /// Address of who sent the tip.
-    pub sender: Addr,
-    /// Address of who received the tip.
-    pub receiver: Addr,
-    /// Id of the post to which the tip refers.
-    pub post_id: u64,
-    /// Tip amount.
-    pub amount: Vec<Coin>,
-    /// Block height at which the tip took place.
-    pub block_height: u64,
-    /// Index to avoid collision when more then one tip is received in the same block.
-    pub block_height_index: u64,
-}
-
-pub struct StateTipIndex<'a> {
-    /// Index to map a sender with block height and block height index to a [`StateTip`] to
-    /// have the tips sent from an user sorted by sent time.
-    pub sender: UniqueIndex<'a, (Addr, (u64, u64)), StateTip, String>,
-    /// Index to map a receiver with block height and block height index to a [`StateTip`] to
-    /// have the tips received from an user sorted by sent time.
-    pub receiver: UniqueIndex<'a, (Addr, (u64, u64)), StateTip, String>,
-    /// Index to map a post id to a list of [`StateTip`].
-    pub post_id: MultiIndex<'a, u64, StateTip, String>,
-}
-
-impl IndexList<StateTip> for StateTipIndex<'_> {
-    fn get_indexes(&'_ self) -> Box<dyn Iterator<Item = &'_ dyn Index<StateTip>> + '_> {
-        let vec: Vec<&dyn Index<StateTip>> = vec![&self.sender, &self.receiver, &self.post_id];
-        Box::new(vec.into_iter())
-    }
-}
+pub type SentTip = (Addr, Vec<Coin>, u64);
+pub type ReceivedTip = (Addr, Vec<Coin>, u64);
+pub type PostTip = (Addr, Vec<Coin>);
 
 pub const CONFIG: Item<Config> = Item::new("config");
-pub const BLOCK_HEIGHT_INDEX: Item<(u64, u64)> = Item::new("block_height_index");
-
-pub fn tips_record<'a>() -> IndexedMap<'a, String, StateTip, StateTipIndex<'a>> {
-    IndexedMap::new(
-        "tips_record",
-        StateTipIndex {
-            sender: UniqueIndex::new(
-                |tip| {
-                    (
-                        tip.sender.clone(),
-                        (tip.block_height, tip.block_height_index),
-                    )
-                },
-                "tips_record__sender",
-            ),
-            receiver: UniqueIndex::new(
-                |tip| {
-                    (
-                        tip.receiver.clone(),
-                        (tip.block_height, tip.block_height_index),
-                    )
-                },
-                "tips_record__receiver",
-            ),
-            post_id: MultiIndex::new(|tip| tip.post_id, "tips_record", "tips_record__post_id"),
-        },
-    )
-}
+pub const SENT_TIPS_HISTORY: Map<Addr, VecDeque<SentTip>> = Map::new("sent_tips_history");
+pub const RECEIVED_TIPS_HISTORY: Map<Addr, VecDeque<ReceivedTip>> =
+    Map::new("received_tips_history");
+pub const POST_TIPS_HISTORY: Map<u64, VecDeque<PostTip>> = Map::new("received_tips_history");
 
 impl StateServiceFee {
     /// Computes the fees that the contract will holds and the coins that

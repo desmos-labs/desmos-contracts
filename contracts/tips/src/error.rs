@@ -18,6 +18,9 @@ pub enum ContractError {
     #[error("invalid post id")]
     InvalidPostId {},
 
+    #[error("post with id: {id} not found")]
+    PostNotFound { id: u64 },
+
     #[error("can't tip yourself")]
     SenderEqReceiver {},
 
