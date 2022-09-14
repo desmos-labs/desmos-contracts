@@ -21,7 +21,7 @@ pub struct Config {
     pub admin: Addr,
     pub subspace_id: u64,
     pub service_fee: Option<StateServiceFee>,
-    pub saved_tips_record_size: u32,
+    pub tips_history_size: u32,
 }
 
 pub type SentTip = (Addr, Vec<Coin>, u64);

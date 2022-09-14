@@ -34,7 +34,7 @@ const ACTION_INSTANTIATE: &str = "instantiate";
 const ACTION_SEND_TIP: &str = "send_tip";
 const ACTION_UPDATE_SERVICE_FEE: &str = "update_service_fee";
 const ACTION_UPDATE_ADMIN: &str = "update_admin";
-const ACTION_UPDATE_SAVED_TIPS_RECORD_SIZE: &str = "update_saved_tips_record_size";
+const ACTION_UPDATE_SAVED_TIPS_HISTORY_SIZE: &str = "update_saved_tips_history_size";
 const ACTION_CLAIM_FEES: &str = "claim_fees";
 
 // attributes for executing messages
@@ -42,7 +42,7 @@ const ATTRIBUTE_ACTION: &str = "action";
 const ATTRIBUTE_SENDER: &str = "sender";
 const ATTRIBUTE_ADMIN: &str = "admin";
 const ATTRIBUTE_SUBSPACE_ID: &str = "subspace_id";
-const ATTRIBUTE_TIPS_RECORD_SIZE: &str = "tips_record_size";
+const ATTRIBUTE_TIPS_HISTORY_SIZE: &str = "tips_history_size";
 const ATTRIBUTE_NEW_ADMIN: &str = "new_admin";
 const ATTRIBUTE_NEW_SIZE: &str = "new_size";
 const ATTRIBUTE_RECEIVER: &str = "receiver";
@@ -78,7 +78,7 @@ pub fn instantiate(
             admin,
             subspace_id: msg.subspace_id.u64(),
             service_fee,
-            saved_tips_record_size: msg.saved_tips_record_size,
+            tips_history_size: msg.tips_history_size,
         },
     )?;
 
@@ -88,8 +88,8 @@ pub fn instantiate(
         .add_attribute(ATTRIBUTE_ADMIN, msg.admin)
         .add_attribute(ATTRIBUTE_SUBSPACE_ID, msg.subspace_id)
         .add_attribute(
-            ATTRIBUTE_TIPS_RECORD_SIZE,
-            msg.saved_tips_record_size.to_string(),
+            ATTRIBUTE_TIPS_HISTORY_SIZE,
+            msg.tips_history_size.to_string(),
         ))
 }
 
@@ -106,8 +106,8 @@ pub fn execute(
         ExecuteMsg::SendTip { target, amount } => execute_send_tip(deps, env, info, target, amount),
         ExecuteMsg::UpdateServiceFee { new_fee } => execute_update_service_fee(deps, info, new_fee),
         ExecuteMsg::UpdateAdmin { new_admin } => execute_update_admin(deps, info, new_admin),
-        ExecuteMsg::UpdateSavedTipsRecordSize { new_size } => {
-            execute_update_saved_tips_record_size(deps, info, new_size)
+        ExecuteMsg::UpdateSavedTipsHistorySize { new_size } => {
+            execute_update_saved_tips_history_size(deps, info, new_size)
         }
         ExecuteMsg::ClaimFees { receiver } => execute_claim_fees(deps, env, info, receiver),
     }
@@ -149,7 +149,7 @@ fn execute_send_tip(
         return Err(ContractError::SenderEqReceiver {});
     }
 
-    if config.saved_tips_record_size > 0 {
+    if config.tips_history_size > 0 {
         SENT_TIPS_HISTORY.update::<_, ContractError>(
             deps.storage,
             info.sender.clone(),
@@ -157,7 +157,7 @@ fn execute_send_tip(
                 let mut history = history.unwrap_or_default();
                 history.push_back((receiver.clone(), tip_amount.clone(), post_id));
 
-                while history.len() > config.saved_tips_record_size as usize {
+                while history.len() > config.tips_history_size as usize {
                     history.pop_front();
                 }
                 Ok(history)
@@ -171,7 +171,7 @@ fn execute_send_tip(
                 let mut history = history.unwrap_or_default();
                 history.push_back((info.sender.clone(), tip_amount.clone(), post_id));
 
-                while history.len() > config.saved_tips_record_size as usize {
+                while history.len() > config.tips_history_size as usize {
                     history.pop_front();
                 }
                 Ok(history)
@@ -183,7 +183,7 @@ fn execute_send_tip(
                 let mut history = history.unwrap_or_default();
                 history.push_back((info.sender.clone(), tip_amount.clone()));
 
-                while history.len() > config.saved_tips_record_size as usize {
+                while history.len() > config.tips_history_size as usize {
                     history.pop_front();
                 }
                 Ok(history)
@@ -245,7 +245,7 @@ fn execute_update_admin(
         .add_attribute(ATTRIBUTE_NEW_ADMIN, new_admin))
 }
 
-fn execute_update_saved_tips_record_size(
+fn execute_update_saved_tips_history_size(
     deps: DepsMut<DesmosQuery>,
     info: MessageInfo,
     new_size: u32,
@@ -263,11 +263,11 @@ fn execute_update_saved_tips_record_size(
         wipe_map(&POST_TIPS_HISTORY, deps.storage)?;
     }
 
-    config.saved_tips_record_size = new_size;
+    config.tips_history_size = new_size;
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new()
-        .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_SAVED_TIPS_RECORD_SIZE)
+        .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_SAVED_TIPS_HISTORY_SIZE)
         .add_attribute(ATTRIBUTE_SENDER, info.sender)
         .add_attribute(ATTRIBUTE_NEW_SIZE, new_size.to_string()))
 }
@@ -279,7 +279,7 @@ where
 {
     let mut wiped = false;
     while !wiped {
-        // Read the data paginated since all the tips_record may not fit inside the VM heap.
+        // Read the data paginated since all the elements may not fit inside the VM heap.
         let mut keys: Vec<K::Output> = map
             .keys(storage, None, None, Order::Ascending)
             .take(20)
@@ -340,7 +340,7 @@ pub fn query_config(deps: Deps<DesmosQuery>) -> StdResult<QueryConfigResponse> {
         admin: config.admin,
         subspace_id: config.subspace_id.into(),
         service_fee: config.service_fee.map(StateServiceFee::into),
-        saved_tips_record_size: config.saved_tips_record_size,
+        tips_history_size: config.tips_history_size,
     })
 }
 
@@ -426,7 +426,7 @@ mod tests {
         deps: DepsMut<DesmosQuery>,
         subspace_id: u64,
         service_fee: Option<ServiceFee>,
-        saved_tips_record_size: u32,
+        tips_history_size: u32,
     ) -> Result<Response<DesmosMsg>, ContractError> {
         instantiate(
             deps,
@@ -436,7 +436,7 @@ mod tests {
                 admin: ADMIN.to_string(),
                 subspace_id: subspace_id.into(),
                 service_fee,
-                saved_tips_record_size,
+                tips_history_size,
             },
         )
     }
@@ -1155,7 +1155,7 @@ mod tests {
     }
 
     #[test]
-    fn tip_reach_tips_record_size() {
+    fn tips_reach_tips_history_size() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1213,7 +1213,7 @@ mod tests {
     }
 
     #[test]
-    fn tip_without_tips_record_properly() {
+    fn tip_without_tips_history_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1509,7 +1509,7 @@ mod tests {
     }
 
     #[test]
-    fn update_tips_record_size_from_non_admin() {
+    fn update_tips_history_size_from_non_admin() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1526,14 +1526,14 @@ mod tests {
             deps.as_mut(),
             mock_env(),
             mock_info(USER_1, &[]),
-            ExecuteMsg::UpdateSavedTipsRecordSize { new_size: 3 },
+            ExecuteMsg::UpdateSavedTipsHistorySize { new_size: 3 },
         )
         .unwrap_err();
         assert_eq!(ContractError::Unauthorized {}, error);
     }
 
     #[test]
-    fn update_tips_record_with_invalid_size() {
+    fn update_tips_history_with_invalid_size() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1550,7 +1550,7 @@ mod tests {
             deps.as_mut(),
             mock_env(),
             mock_info(ADMIN, &[]),
-            ExecuteMsg::UpdateSavedTipsRecordSize {
+            ExecuteMsg::UpdateSavedTipsHistorySize {
                 new_size: MAX_TIPS_HISTORY_SIZE + 1,
             },
         )
@@ -1566,7 +1566,7 @@ mod tests {
     }
 
     #[test]
-    fn update_tips_record_properly() {
+    fn update_tips_history_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1583,13 +1583,13 @@ mod tests {
             deps.as_mut(),
             mock_env(),
             mock_info(ADMIN, &[]),
-            ExecuteMsg::UpdateSavedTipsRecordSize { new_size: 10 },
+            ExecuteMsg::UpdateSavedTipsHistorySize { new_size: 10 },
         )
         .unwrap();
     }
 
     #[test]
-    fn update_tips_record_size_records_wipe_properly() {
+    fn update_tips_history_size_records_wipe_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1631,7 +1631,7 @@ mod tests {
             deps.as_mut(),
             mock_env(),
             mock_info(ADMIN, &[]),
-            ExecuteMsg::UpdateSavedTipsRecordSize { new_size: 0 },
+            ExecuteMsg::UpdateSavedTipsHistorySize { new_size: 0 },
         )
         .unwrap();
 
@@ -1727,7 +1727,7 @@ mod tests {
             }),
             config_response.service_fee
         );
-        assert_eq!(5, config_response.saved_tips_record_size)
+        assert_eq!(5, config_response.tips_history_size)
     }
 
     #[test]
