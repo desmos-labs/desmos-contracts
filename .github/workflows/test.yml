@@ -20,22 +20,7 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Generate coverage report 🧪
-        uses: actions-rs/tarpaulin@v0.1.3
-        with:
-          args: '--avoid-cfg-tarpaulin'
-
-      - name: Upload coverage 📤
-        uses: codecov/codecov-action@v1.0.2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Test POAP contract 🧪
-        run: cargo test --package poap
-        env:
-          RUST_BACKTRACE: 1
-
-      - name: Test POAP manager contract 🧪
-        run: cargo test --package poap-manager
+      - name: Test contracts 🧪
+        run: cargo test
         env:
           RUST_BACKTRACE: 1
