@@ -66,7 +66,7 @@ pub struct InstantiateMsg {
     /// If `None` no fees will be collected from the tipped amount.
     pub service_fee: Option<ServiceFee>,
     /// The number of records saved of a user tips history.
-    pub saved_tips_threshold: u32,
+    pub saved_tips_record_size: u32,
 }
 
 impl InstantiateMsg {
@@ -121,9 +121,9 @@ pub enum ExecuteMsg {
         new_admin: String,
     },
     /// Updates the number of tip records saved in the contract state.
-    UpdateSavedTipsRecordThreshold {
-        /// New tip records threshold.
-        new_threshold: u32,
+    UpdateSavedTipsRecordSize {
+        /// New tip records size.
+        new_size: u32,
     },
     /// Claims the fees paid to execute the contract.
     ClaimFees {
@@ -179,7 +179,7 @@ pub struct QueryConfigResponse {
     /// Fee required to execute [`ExecuteMsg::SendTip`].
     pub service_fee: Option<ServiceFee>,
     /// The number of records saved of a user tips history.
-    pub saved_tips_record_threshold: u32,
+    pub saved_tips_record_size: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

@@ -88,17 +88,17 @@
       "description": "Updates the number of tip records saved in the contract state.",
       "type": "object",
       "required": [
-        "update_saved_tips_record_threshold"
+        "update_saved_tips_record_size"
       ],
       "properties": {
-        "update_saved_tips_record_threshold": {
+        "update_saved_tips_record_size": {
           "type": "object",
           "required": [
-            "new_threshold"
+            "new_size"
           ],
           "properties": {
-            "new_threshold": {
-              "description": "New tip records threshold.",
+            "new_size": {
+              "description": "New tip records size.",
               "type": "integer",
               "format": "uint32",
               "minimum": 0.0

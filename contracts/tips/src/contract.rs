@@ -26,7 +26,7 @@ const ACTION_INSTANTIATE: &str = "instantiate";
 const ACTION_SEND_TIP: &str = "send_tip";
 const ACTION_UPDATE_SERVICE_FEE: &str = "update_service_fee";
 const ACTION_UPDATE_ADMIN: &str = "update_admin";
-const ACTION_UPDATE_SAVED_TIPS_RECORD_THRESHOLD: &str = "update_saved_tips_record_threshold";
+const ACTION_UPDATE_SAVED_TIPS_RECORD_SIZE: &str = "update_saved_tips_record_size";
 const ACTION_CLAIM_FEES: &str = "claim_fees";
 
 // attributes for executing messages
@@ -34,9 +34,9 @@ const ATTRIBUTE_ACTION: &str = "action";
 const ATTRIBUTE_SENDER: &str = "sender";
 const ATTRIBUTE_ADMIN: &str = "admin";
 const ATTRIBUTE_SUBSPACE_ID: &str = "subspace_id";
-const ATTRIBUTE_TIPS_RECORD_THRESHOLD: &str = "tips_record_threshold";
+const ATTRIBUTE_TIPS_RECORD_SIZE: &str = "tips_record_size";
 const ATTRIBUTE_NEW_ADMIN: &str = "new_admin";
-const ATTRIBUTE_NEW_THRESHOLD: &str = "new_threshold";
+const ATTRIBUTE_NEW_SIZE: &str = "new_size";
 const ATTRIBUTE_RECEIVER: &str = "receiver";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -70,7 +70,7 @@ pub fn instantiate(
             admin,
             subspace_id: msg.subspace_id.u64(),
             service_fee,
-            saved_tips_record_size: msg.saved_tips_threshold,
+            saved_tips_record_size: msg.saved_tips_record_size,
         },
     )?;
     BLOCK_HEIGHT_INDEX.save(deps.storage, &(0, 0))?;
@@ -81,8 +81,8 @@ pub fn instantiate(
         .add_attribute(ATTRIBUTE_ADMIN, msg.admin)
         .add_attribute(ATTRIBUTE_SUBSPACE_ID, msg.subspace_id)
         .add_attribute(
-            ATTRIBUTE_TIPS_RECORD_THRESHOLD,
-            msg.saved_tips_threshold.to_string(),
+            ATTRIBUTE_TIPS_RECORD_SIZE,
+            msg.saved_tips_record_size.to_string(),
         ))
 }
 
@@ -99,8 +99,8 @@ pub fn execute(
         ExecuteMsg::SendTip { target, amount } => execute_send_tip(deps, env, info, target, amount),
         ExecuteMsg::UpdateServiceFee { new_fee } => execute_update_service_fee(deps, info, new_fee),
         ExecuteMsg::UpdateAdmin { new_admin } => execute_update_admin(deps, info, new_admin),
-        ExecuteMsg::UpdateSavedTipsRecordThreshold { new_threshold } => {
-            execute_update_saved_tips_record_threshold(deps, info, new_threshold)
+        ExecuteMsg::UpdateSavedTipsRecordSize { new_size } => {
+            execute_update_saved_tips_record_size(deps, info, new_size)
         }
         ExecuteMsg::ClaimFees { receiver } => execute_claim_fees(deps, env, info, receiver),
     }
@@ -187,7 +187,7 @@ fn execute_send_tip(
         }))
 }
 
-/// Finds the tip that exceed the tips record threshold and should be deleted.
+/// Finds the tips that exceed the tips record size that should be deleted.
 /// NOTE: This functions assume that `saved_tips_record_size` is > 0.
 /// * `sender` - User who sent the last tip.
 /// * `receiver` - User who received the last tip.
@@ -314,10 +314,10 @@ fn execute_update_admin(
         .add_attribute(ATTRIBUTE_NEW_ADMIN, new_admin))
 }
 
-fn execute_update_saved_tips_record_threshold(
+fn execute_update_saved_tips_record_size(
     deps: DepsMut<DesmosQuery>,
     info: MessageInfo,
-    new_threshold: u32,
+    new_size: u32,
 ) -> Result<Response<DesmosMsg>, ContractError> {
     let mut config = CONFIG.load(deps.storage)?;
 
@@ -325,8 +325,8 @@ fn execute_update_saved_tips_record_threshold(
         return Err(ContractError::Unauthorized {});
     }
 
-    // Wipe the tips threshold otherwise leave to SendTip to shrink the tips record
-    if new_threshold == 0 {
+    // Wipe the tips history otherwise leave to SendTip to shrink the tips record
+    if new_size == 0 {
         let mut wiped = false;
         let tips_record = tips_record();
         while !wiped {
@@ -346,13 +346,13 @@ fn execute_update_saved_tips_record_threshold(
         }
     }
 
-    config.saved_tips_record_size = new_threshold;
+    config.saved_tips_record_size = new_size;
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::new()
-        .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_SAVED_TIPS_RECORD_THRESHOLD)
+        .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_SAVED_TIPS_RECORD_SIZE)
         .add_attribute(ATTRIBUTE_SENDER, info.sender)
-        .add_attribute(ATTRIBUTE_NEW_THRESHOLD, new_threshold.to_string()))
+        .add_attribute(ATTRIBUTE_NEW_SIZE, new_size.to_string()))
 }
 
 fn execute_claim_fees(
@@ -403,7 +403,7 @@ pub fn query_config(deps: Deps<DesmosQuery>) -> StdResult<QueryConfigResponse> {
         admin: config.admin,
         subspace_id: config.subspace_id.into(),
         service_fee: config.service_fee.map(StateServiceFee::into),
-        saved_tips_record_threshold: config.saved_tips_record_size,
+        saved_tips_record_size: config.saved_tips_record_size,
     })
 }
 
@@ -481,7 +481,7 @@ mod tests {
         deps: DepsMut<DesmosQuery>,
         subspace_id: u64,
         service_fee: Option<ServiceFee>,
-        saved_tips_threshold: u32,
+        saved_tips_record_size: u32,
     ) -> Result<Response<DesmosMsg>, ContractError> {
         instantiate(
             deps,
@@ -491,7 +491,7 @@ mod tests {
                 admin: ADMIN.to_string(),
                 subspace_id: subspace_id.into(),
                 service_fee,
-                saved_tips_threshold,
+                saved_tips_record_size,
             },
         )
     }
@@ -1171,7 +1171,7 @@ mod tests {
     }
 
     #[test]
-    fn tip_reach_tips_record_threshold() {
+    fn tip_reach_tips_record_size() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1529,7 +1529,7 @@ mod tests {
     }
 
     #[test]
-    fn update_tips_record_threshold_from_non_admin() {
+    fn update_tips_record_size_from_non_admin() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1546,7 +1546,7 @@ mod tests {
             deps.as_mut(),
             mock_env(),
             mock_info(USER_1, &[]),
-            ExecuteMsg::UpdateSavedTipsRecordThreshold { new_threshold: 3 },
+            ExecuteMsg::UpdateSavedTipsRecordSize { new_size: 3 },
         )
         .unwrap_err();
         assert_eq!(ContractError::Unauthorized {}, error);
@@ -1570,13 +1570,13 @@ mod tests {
             deps.as_mut(),
             mock_env(),
             mock_info(ADMIN, &[]),
-            ExecuteMsg::UpdateSavedTipsRecordThreshold { new_threshold: 10 },
+            ExecuteMsg::UpdateSavedTipsRecordSize { new_size: 10 },
         )
         .unwrap();
     }
 
     #[test]
-    fn update_tips_record_threshold_records_wipe_properly() {
+    fn update_tips_record_size_records_wipe_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1633,7 +1633,7 @@ mod tests {
             deps.as_mut(),
             mock_env(),
             mock_info(ADMIN, &[]),
-            ExecuteMsg::UpdateSavedTipsRecordThreshold { new_threshold: 0 },
+            ExecuteMsg::UpdateSavedTipsRecordSize { new_size: 0 },
         )
         .unwrap();
 
@@ -1726,7 +1726,7 @@ mod tests {
             }),
             config_response.service_fee
         );
-        assert_eq!(5, config_response.saved_tips_record_threshold)
+        assert_eq!(5, config_response.saved_tips_record_size)
     }
 
     #[test]
