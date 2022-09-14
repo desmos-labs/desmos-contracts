@@ -19,6 +19,20 @@ pub struct InstantiateMsg {
     pub rarities: Vec<Rarity>,
 }
 
+impl InstantiateMsg {
+    /// Checks that the data inside the message are coherent.
+    /// NOTE: This function don't checks if the address are valid.
+    pub fn validate(&self) -> Result<(), ContractError> {
+        if self.subspace_id.is_zero() {
+            return Err(ContractError::InvalidSubspaceId {});
+        }
+        if self.rarities.is_empty() {
+            return Err(ContractError::EmptyRarities {});
+        }
+        Ok(())
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Rarity {
     /// Level of the rarity.
@@ -53,8 +67,13 @@ impl ExecuteMsg {
     pub fn validate(&self) -> Result<(), ContractError> {
         match &self {
             ExecuteMsg::MintTo {
-                remarkables_uri, ..
+                remarkables_uri,
+                post_id,
+                ..
             } => {
+                if post_id.is_zero() {
+                    return Err(ContractError::InvalidPostId {});
+                }
                 // Check that the poap uri is a valid IPFS url
                 let uri = Url::parse(remarkables_uri)
                     .map_err(|_err| ContractError::InvalidRemarkablesUri {})?;
@@ -112,44 +131,114 @@ pub struct QueryRaritiesResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    fn mint_to_msg_without_valid_uri_error() {
-        let msg = ExecuteMsg::MintTo {
-            post_id: 1u64.into(),
-            rarity_level: 1,
-            remarkables_uri: "".into(),
-        };
-        assert_eq!(
-            msg.validate().unwrap_err(),
-            ContractError::InvalidRemarkablesUri {}
-        )
+    mod instantiate {
+        use super::*;
+        #[test]
+        fn instantiate_msg_with_invalid_subspace_id_error() {
+            let msg = InstantiateMsg {
+                admin: "admin".into(),
+                cw721_code_id: 0u64.into(),
+                cw721_instantiate_msg: Cw721InstantiateMsg {
+                    name: "".to_string(),
+                    minter: "".to_string(),
+                    symbol: "".to_string(),
+                },
+                subspace_id: 0u64.into(),
+                rarities: vec![],
+            };
+            assert_eq!(
+                ContractError::InvalidSubspaceId {},
+                msg.validate().unwrap_err()
+            )
+        }
+        #[test]
+        fn instantiate_msg_with_empty_rarities_error() {
+            let msg = InstantiateMsg {
+                admin: "admin".into(),
+                cw721_code_id: 0u64.into(),
+                cw721_instantiate_msg: Cw721InstantiateMsg {
+                    name: "".to_string(),
+                    minter: "".to_string(),
+                    symbol: "".to_string(),
+                },
+                subspace_id: 1u64.into(),
+                rarities: vec![],
+            };
+            assert_eq!(ContractError::EmptyRarities {}, msg.validate().unwrap_err())
+        }
+        #[test]
+        fn valid_instantiate_msg_no_error() {
+            let msg = InstantiateMsg {
+                admin: "admin".into(),
+                cw721_code_id: 0u64.into(),
+                cw721_instantiate_msg: Cw721InstantiateMsg {
+                    name: "".to_string(),
+                    minter: "".to_string(),
+                    symbol: "".to_string(),
+                },
+                subspace_id: 1u64.into(),
+                rarities: vec![Rarity {
+                    level: 0,
+                    engagement_threshold: 100,
+                    mint_fees: vec![],
+                }],
+            };
+            msg.validate().unwrap()
+        }
     }
-    #[test]
-    fn mint_to_msg_without_valid_uri_schema_error() {
-        let msg = ExecuteMsg::MintTo {
-            post_id: 1u64.into(),
-            rarity_level: 1,
-            remarkables_uri: "https://remarkables.com".into(),
-        };
-        assert_eq!(
-            msg.validate().unwrap_err(),
-            ContractError::InvalidRemarkablesUri {}
-        )
-    }
-    #[test]
-    fn mint_to_msg_with_valid_uri_schema_no_error() {
-        let msg = ExecuteMsg::MintTo {
-            post_id: 1u64.into(),
-            rarity_level: 1,
-            remarkables_uri: "ipfs://remarkables.com".into(),
-        };
-        msg.validate().unwrap()
-    }
-    #[test]
-    fn other_msgs_no_error() {
-        let msg = ExecuteMsg::UpdateAdmin {
-            new_admin: "new_admin".into(),
-        };
-        msg.validate().unwrap()
+    mod execute_msg {
+        use super::*;
+        #[test]
+        fn mint_to_msg_without_valid_uri_error() {
+            let msg = ExecuteMsg::MintTo {
+                post_id: 1u64.into(),
+                rarity_level: 1,
+                remarkables_uri: "".into(),
+            };
+            assert_eq!(
+                msg.validate().unwrap_err(),
+                ContractError::InvalidRemarkablesUri {}
+            )
+        }
+        #[test]
+        fn mint_to_msg_with_invalid_uri_schema_error() {
+            let msg = ExecuteMsg::MintTo {
+                post_id: 1u64.into(),
+                rarity_level: 1,
+                remarkables_uri: "https://remarkables.com".into(),
+            };
+            assert_eq!(
+                msg.validate().unwrap_err(),
+                ContractError::InvalidRemarkablesUri {}
+            )
+        }
+        #[test]
+        fn mint_to_msg_with_invalid_post_id_error() {
+            let msg = ExecuteMsg::MintTo {
+                post_id: 0u64.into(),
+                rarity_level: 1,
+                remarkables_uri: "https://remarkables.com".into(),
+            };
+            assert_eq!(
+                msg.validate().unwrap_err(),
+                ContractError::InvalidPostId {}
+            )
+        }
+        #[test]
+        fn mint_to_msg_with_valid_uri_schema_no_error() {
+            let msg = ExecuteMsg::MintTo {
+                post_id: 1u64.into(),
+                rarity_level: 1,
+                remarkables_uri: "ipfs://remarkables.com".into(),
+            };
+            msg.validate().unwrap()
+        }
+        #[test]
+        fn other_msgs_no_error() {
+            let msg = ExecuteMsg::UpdateAdmin {
+                new_admin: "new_admin".into(),
+            };
+            msg.validate().unwrap()
+        }
     }
 }

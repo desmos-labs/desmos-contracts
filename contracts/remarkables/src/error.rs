@@ -38,4 +38,13 @@ pub enum ContractError {
 
     #[error("Subspace with id {id} not found")]
     SubspaceNotFound { id: u64 },
+
+    #[error("Invalid post ID")]
+    InvalidPostId {},
+
+    #[error("Invalid subspace ID")]
+    InvalidSubspaceId {},
+
+    #[error("Empty rarities is not allowed")]
+    EmptyRarities{}
 }

@@ -57,6 +57,7 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response<DesmosMsg>, ContractError> {
+    msg.validate()?;
     // Save the config
     let admin_addr = deps.api.addr_validate(&msg.admin)?;
     CONFIG.save(
