@@ -67,7 +67,7 @@ pub struct InstantiateMsg {
     /// If `None` no fees will be collected from the tipped amount.
     pub service_fee: Option<ServiceFee>,
     /// The number of records saved of a user tips history.
-    pub saved_tips_record_size: u32,
+    pub tips_history_size: u32,
 }
 
 impl InstantiateMsg {
@@ -80,9 +80,9 @@ impl InstantiateMsg {
             service_fee.validate()?;
         }
 
-        if self.saved_tips_record_size > MAX_TIPS_HISTORY_SIZE {
+        if self.tips_history_size > MAX_TIPS_HISTORY_SIZE {
             return Err(ContractError::InvalidTipsHistorySize {
-                value: self.saved_tips_record_size,
+                value: self.tips_history_size,
                 max: MAX_TIPS_HISTORY_SIZE,
             });
         }
@@ -129,9 +129,9 @@ pub enum ExecuteMsg {
         /// Address of the new contract admin.
         new_admin: String,
     },
-    /// Updates the number of tip records saved in the contract state.
-    UpdateSavedTipsRecordSize {
-        /// New tip records size.
+    /// Updates the number of record saved in the tips history.
+    UpdateSavedTipsHistorySize {
+        /// New tips history size.
         new_size: u32,
     },
     /// Claims the fees paid to execute the contract.
@@ -161,7 +161,7 @@ impl ExecuteMsg {
                     Ok(())
                 }
             }
-            ExecuteMsg::UpdateSavedTipsRecordSize { new_size } => {
+            ExecuteMsg::UpdateSavedTipsHistorySize { new_size } => {
                 if *new_size > MAX_TIPS_HISTORY_SIZE {
                     Err(ContractError::InvalidTipsHistorySize {
                         value: *new_size,
@@ -199,7 +199,7 @@ pub struct QueryConfigResponse {
     /// Fee required to execute [`ExecuteMsg::SendTip`].
     pub service_fee: Option<ServiceFee>,
     /// The number of records saved of a user tips history.
-    pub saved_tips_record_size: u32,
+    pub tips_history_size: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
