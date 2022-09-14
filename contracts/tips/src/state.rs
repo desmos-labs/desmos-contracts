@@ -91,10 +91,10 @@ pub fn tips_record<'a>() -> IndexedMap<'a, String, StateTip, StateTipIndex<'a>> 
 impl StateServiceFee {
     /// Computes the fees that the contract will holds and the coins that
     /// can be sent to the user.
-    /// * `founds` - Coins sent from the user to the contract.
+    /// * `funds` - Coins sent from the user to the contract.
     /// * `tip_amount` - Coins from which to calculate the fees.
-    pub fn check_fees(&self, founds: &[Coin], tip_amount: &[Coin]) -> Result<(), ContractError> {
-        let founds = sum_coins_sorted(founds.to_vec())?;
+    pub fn check_fees(&self, funds: &[Coin], tip_amount: &[Coin]) -> Result<(), ContractError> {
+        let funds = sum_coins_sorted(funds.to_vec())?;
         // Compute the fees
         let mut fee = match self {
             StateServiceFee::Fixed { amount } => amount.clone(),
@@ -112,24 +112,24 @@ impl StateServiceFee {
 
         // Put the tip amount inside the fees
         fee.extend(tip_amount.to_vec());
-        // Check fees + tips < founds
+        // Check fees + tips < funds
         for fee_plus_tip in sum_coins_sorted(fee)?.drain(0..) {
-            // Search the fee coin inside the founds sent to the contract
-            let found_coin_amount = founds
+            // Search the fee coin inside the funds sent to the contract
+            let fund_coin_amount = funds
                 .binary_search_by(|coin| coin.denom.cmp(&fee_plus_tip.denom))
-                .map(|index| founds[index].amount)
+                .map(|index| funds[index].amount)
                 .map_err(|_| ContractError::InsufficientAmount {
                     denom: fee_plus_tip.denom.clone(),
                     requested: fee_plus_tip.amount,
                     provided: Uint128::zero(),
                 })?;
 
-            // Ensure tip amount + fee <= provided founds
-            if fee_plus_tip.amount > found_coin_amount {
+            // Ensure tip amount + fee <= provided funds
+            if fee_plus_tip.amount > fund_coin_amount {
                 return Err(ContractError::InsufficientAmount {
                     denom: fee_plus_tip.denom,
                     requested: fee_plus_tip.amount,
-                    provided: found_coin_amount,
+                    provided: fund_coin_amount,
                 });
             }
         }
@@ -180,24 +180,24 @@ mod tests {
     }
 
     #[test]
-    fn fixed_fees_insufficient_founds() {
+    fn fixed_fees_insufficient_funds() {
         let fixed_fee_amount = 2000;
         let tip_amount = 1000;
-        let found_amount = 2500;
+        let fund_amount = 2500;
 
         let service_fees = StateServiceFee::Fixed {
             amount: vec![Coin::new(fixed_fee_amount, "udsm")],
         };
 
-        let founds = vec![Coin::new(found_amount, "udsm")];
+        let funds = vec![Coin::new(fund_amount, "udsm")];
         let tips = vec![Coin::new(tip_amount, "udsm")];
-        let computed_fees = service_fees.check_fees(&founds, &tips).unwrap_err();
+        let computed_fees = service_fees.check_fees(&funds, &tips).unwrap_err();
 
         assert_eq!(
             ContractError::InsufficientAmount {
                 denom: "udsm".to_string(),
                 requested: Uint128::new(fixed_fee_amount + tip_amount),
-                provided: Uint128::new(found_amount),
+                provided: Uint128::new(fund_amount),
             },
             computed_fees
         );
@@ -233,7 +233,7 @@ mod tests {
     }
 
     #[test]
-    fn fixed_fees_fee_found_coin_not_provided() {
+    fn fixed_fees_fee_fund_coin_not_provided() {
         let fixed_fee_amount = 20000;
         let tip_amount = 100000;
 
@@ -313,9 +313,9 @@ mod tests {
     }
 
     #[test]
-    fn percentage_fees_insufficient_founds() {
+    fn percentage_fees_insufficient_funds() {
         let tip_amount = 1000;
-        let found_amount = 1099;
+        let fund_amount = 1099;
 
         // Fee at 10%
         let service_fees = StateServiceFee::Percentage {
@@ -323,23 +323,23 @@ mod tests {
         };
 
         let tips = vec![Coin::new(tip_amount, "udsm")];
-        let founds = vec![Coin::new(found_amount, "udsm")];
-        let computed_fees = service_fees.check_fees(&founds, &tips).unwrap_err();
+        let funds = vec![Coin::new(fund_amount, "udsm")];
+        let computed_fees = service_fees.check_fees(&funds, &tips).unwrap_err();
 
         assert_eq!(
             ContractError::InsufficientAmount {
                 denom: "udsm".to_string(),
                 requested: Uint128::new(tip_amount + 100),
-                provided: Uint128::new(found_amount),
+                provided: Uint128::new(fund_amount),
             },
             computed_fees
         );
     }
 
     #[test]
-    fn percentage_fee_found_coin_not_provided() {
+    fn percentage_fee_fund_coin_not_provided() {
         let tip_amount = 1000;
-        let found_amount = 1100;
+        let fund_amount = 1100;
 
         // Fee at 10%
         let service_fees = StateServiceFee::Percentage {
@@ -350,8 +350,8 @@ mod tests {
             Coin::new(tip_amount, "udsm"),
             Coin::new(tip_amount, "uatom"),
         ];
-        let founds = vec![Coin::new(found_amount, "udsm")];
-        let computed_fees = service_fees.check_fees(&founds, &tips).unwrap_err();
+        let funds = vec![Coin::new(fund_amount, "udsm")];
+        let computed_fees = service_fees.check_fees(&funds, &tips).unwrap_err();
 
         assert_eq!(
             ContractError::InsufficientAmount {
