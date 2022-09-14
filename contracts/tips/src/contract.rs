@@ -22,6 +22,9 @@ use serde::Serialize;
 use std::convert::TryFrom;
 use std::ops::Deref;
 
+// Contract constants
+pub const MAX_TIPS_HISTORY_SIZE: u32 = 30;
+
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:tips";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -389,7 +392,7 @@ fn query_post_tips(deps: Deps<DesmosQuery>, post_id: u64) -> Result<TipsResponse
 
 #[cfg(test)]
 mod tests {
-    use crate::contract::{execute, instantiate, query};
+    use crate::contract::{execute, instantiate, query, MAX_TIPS_HISTORY_SIZE};
     use crate::error::ContractError;
     use crate::msg::{
         ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, ServiceFee, Target, Tip,
@@ -522,6 +525,22 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(ContractError::InvalidSubspaceId {}, init_err);
+    }
+
+    #[test]
+    fn init_contract_with_invalid_tips_history_size() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        let init_err =
+            init_contract(deps.as_mut(), 1, None, MAX_TIPS_HISTORY_SIZE + 1).unwrap_err();
+
+        assert_eq!(
+            ContractError::InvalidTipsHistorySize {
+                value: MAX_TIPS_HISTORY_SIZE + 1,
+                max: MAX_TIPS_HISTORY_SIZE
+            },
+            init_err
+        );
     }
 
     #[test]
@@ -1511,6 +1530,39 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(ContractError::Unauthorized {}, error);
+    }
+
+    #[test]
+    fn update_tips_record_with_invalid_size() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            Some(ServiceFee::Fixed {
+                amount: vec![Coin::new(1000, "udsm")],
+            }),
+            3,
+        )
+        .unwrap();
+
+        let error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateSavedTipsRecordSize {
+                new_size: MAX_TIPS_HISTORY_SIZE + 1,
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(
+            ContractError::InvalidTipsHistorySize {
+                value: MAX_TIPS_HISTORY_SIZE + 1,
+                max: MAX_TIPS_HISTORY_SIZE
+            },
+            error
+        );
     }
 
     #[test]
