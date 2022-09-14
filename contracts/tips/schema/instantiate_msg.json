@@ -4,7 +4,7 @@
   "type": "object",
   "required": [
     "admin",
-    "saved_tips_threshold",
+    "saved_tips_record_size",
     "subspace_id"
   ],
   "properties": {
@@ -12,7 +12,7 @@
       "description": "Address of who will have the right to manage the contract.",
       "type": "string"
     },
-    "saved_tips_threshold": {
+    "saved_tips_record_size": {
       "description": "The number of records saved of a user tips history.",
       "type": "integer",
       "format": "uint32",
