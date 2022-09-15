@@ -33,13 +33,13 @@ cosmwasm-std = "1.0.0"
 cosmwasm-storage = "1.0.0"
 cw-storage-plus = "0.13.2"
 cw2 = "0.13.2"
-cw-utils = "0.13.4"
+cw-utils = "0.14.0"
 schemars = "0.8.8"
 serde = { version = "1.0.137", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0.31" }
+thiserror = { version = "1.0.35" }
 desmos-bindings = { version = "1.0.3", default-features = false, features = ["query", "msg"]}
 cw721-base = { git = "https://github.com/desmos-labs/cw-nfts", features = ["library"], branch = "paul/update-custom-msg-query" }
-url = "2.2.2"
+url = "2.3.1"
 cw721-poap = { path = "../cw721-poap", version = "0.1.0", features = ["library"]}
 cw721 = { git = "https://github.com/desmos-labs/cw-nfts", branch = "paul/update-custom-msg-query" }
 
