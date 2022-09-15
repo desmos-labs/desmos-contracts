@@ -78,14 +78,14 @@ During the instantiation, we should:
 #### Execute
 ```rust
 pub enum ExecuteMsg{
-  MintTo{post_id: u64, remarkable_uri: String, rarity_level: u64},
+  Mint{post_id: u64, remarkable_uri: String, rarity_level: u64},
   UpdateRarityMintFee{rarity_level: u64, new_fee: Vec<Coin>},
   UpdateAdmin{new_admin: String}
 }
 ```
 
 ##### Mint
-With the `MintTo{post_id}` message the user call the contract to try minting the Remarkable. The contract will perform some checks before
+With the `Mint{post_id}` message the user call the contract to try minting the Remarkable. The contract will perform some checks before
 calling the `CW721-base` to proceed with the mint:
 * Checks if the `post_id` exists inside the subspace;
 * Checks the validity of the `remarkable_uri` (as IPFS uri);
