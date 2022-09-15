@@ -39,7 +39,7 @@ pub struct Rarity {
     pub level: u32,
     /// Threshold of the reactions amount to mint.
     pub engagement_threshold: u32,
-    /// Minimum fees of minting.
+    /// Mint fees associated with the rarity
     pub mint_fees: Vec<Coin>,
 }
 
