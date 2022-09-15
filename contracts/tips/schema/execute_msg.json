@@ -85,20 +85,20 @@
       "additionalProperties": false
     },
     {
-      "description": "Updates the number of tip records saved in the contract state.",
+      "description": "Updates the number of record saved in the tips history.",
       "type": "object",
       "required": [
-        "update_saved_tips_record_size"
+        "update_saved_tips_history_size"
       ],
       "properties": {
-        "update_saved_tips_record_size": {
+        "update_saved_tips_history_size": {
           "type": "object",
           "required": [
             "new_size"
           ],
           "properties": {
             "new_size": {
-              "description": "New tip records size.",
+              "description": "New tips history size.",
               "type": "integer",
               "format": "uint32",
               "minimum": 0.0

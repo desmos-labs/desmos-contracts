@@ -4,19 +4,13 @@
   "type": "object",
   "required": [
     "admin",
-    "saved_tips_record_size",
-    "subspace_id"
+    "subspace_id",
+    "tips_history_size"
   ],
   "properties": {
     "admin": {
       "description": "Address of who will have the right to manage the contract.",
       "type": "string"
-    },
-    "saved_tips_record_size": {
-      "description": "The number of records saved of a user tips history.",
-      "type": "integer",
-      "format": "uint32",
-      "minimum": 0.0
     },
     "service_fee": {
       "description": "Fee that the users need to pay to use the contract. If `None` no fees will be collected from the tipped amount.",
@@ -36,6 +30,12 @@
           "$ref": "#/definitions/Uint64"
         }
       ]
+    },
+    "tips_history_size": {
+      "description": "The number of records saved of a user tips history.",
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0.0
     }
   },
   "definitions": {
