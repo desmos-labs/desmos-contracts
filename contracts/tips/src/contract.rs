@@ -272,6 +272,8 @@ fn execute_update_saved_tips_history_size(
         .add_attribute(ATTRIBUTE_NEW_SIZE, new_size.to_string()))
 }
 
+/// Removes all the items inside a [`cw_storage_plus::Map`].
+/// * `map` - Map from where will be removed all the items.
 fn wipe_map<'a, K, V>(map: &Map<'a, K, V>, storage: &mut dyn Storage) -> StdResult<()>
 where
     K: PrimaryKey<'a> + KeyDeserialize + KeyDeserialize<Output = K> + 'static,
