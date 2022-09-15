@@ -146,7 +146,7 @@ mod tests {
                 .query_wasm_smart(&addr, &QueryMsg::Config {})
                 .unwrap();
             assert_eq!(config.admin, ADMIN);
-            assert_eq!(config.cw721_code_id, cw721_code_id.into())
+            assert_eq!(config.cw721_code_id.u64(), cw721_code_id)
         }
     }
     mod mint {
