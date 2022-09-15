@@ -244,8 +244,6 @@ fn check_eligibility<'a>(
         .unwrap_or(PageResponse::default())
         .total
         .unwrap_or(0u64.into());
-    let a = total_reactions_count.checked_sub(self_reactions_count)?;
-    println!("{}", a);
     if engagement_threshold as u64
         > (total_reactions_count.checked_sub(self_reactions_count)?).into()
     {
