@@ -24,7 +24,7 @@ pub enum ContractError {
     #[error("post with id: {id} not found")]
     PostNotFound { id: u64 },
 
-    #[error("can't tip yourself")]
+    #[error("you can't tip yourself")]
     SenderEqReceiver {},
 
     #[error("provided a fee coin with value = 0, denom: {denom}")]
