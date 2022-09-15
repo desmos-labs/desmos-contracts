@@ -74,7 +74,7 @@ impl ExecuteMsg {
                 if post_id.is_zero() {
                     return Err(ContractError::InvalidPostId {});
                 }
-                // Check that the poap uri is a valid IPFS url
+                // Check that the remarkable uri is a valid IPFS url
                 let uri = Url::parse(remarkables_uri)
                     .map_err(|_err| ContractError::InvalidRemarkablesUri {})?;
                 if uri.scheme() != "ipfs" {
