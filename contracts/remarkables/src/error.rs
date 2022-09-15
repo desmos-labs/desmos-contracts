@@ -45,6 +45,6 @@ pub enum ContractError {
     #[error("Invalid subspace ID")]
     InvalidSubspaceId {},
 
-    #[error("Empty rarities is not allowed")]
+    #[error("Empty rarities are not allowed")]
     EmptyRarities {},
 }
