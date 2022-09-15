@@ -16,7 +16,13 @@ mod tests {
         query::DesmosQuery,
     };
 
-    pub fn contract_remarkables() -> Box<dyn Contract<DesmosMsg, DesmosQuery>> {
+    const ADMIN: &str = "cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t";
+    const RARITY_LEVEL: u32 = 1;
+    const POST_ID: Uint64 = Uint64::new(1);
+    const REMARKABLES_URI: &str = "ipfs://remarkables.com";
+    const AUTHOR: &str = "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc";
+
+    fn contract_remarkables() -> Box<dyn Contract<DesmosMsg, DesmosQuery>> {
         let contract = ContractWrapper::new(
             crate::contract::execute,
             crate::contract::instantiate,
@@ -25,25 +31,16 @@ mod tests {
         .with_reply(crate::contract::reply);
         Box::new(contract)
     }
-
-    const ADMIN: &str = "cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t";
-    const RARITY_LEVEL: u32 = 1;
-    const POST_ID: Uint64 = Uint64::new(1);
-    const REMARKABLES_URI: &str = "ipfs://remarkables.com";
-    const AUTHOR: &str = "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc";
-
     fn store_contracts(app: &mut DesmosApp) -> (u64, u64) {
         let cw721_code_id = app.store_code(CW721TestContract::success_contract());
         let remarkables_code_id = app.store_code(contract_remarkables());
         (cw721_code_id, remarkables_code_id)
     }
-
     fn store_contracts_to_failing_app(app: &mut FailingDesmosApp) -> (u64, u64) {
         let cw721_code_id = app.store_code(CW721TestContract::success_contract());
         let remarkables_code_id = app.store_code(contract_remarkables());
         (cw721_code_id, remarkables_code_id)
     }
-
     fn mock_app() -> DesmosApp {
         custom_desmos_app(|router, _, storage| {
             router
@@ -52,7 +49,6 @@ mod tests {
                 .unwrap();
         })
     }
-
     fn get_valid_init_msg(cw721_code_id: u64) -> InstantiateMsg {
         InstantiateMsg {
             admin: ADMIN.into(),
@@ -65,19 +61,16 @@ mod tests {
             subspace_id: POST_ID.into(),
             rarities: vec![
                 Rarity {
-                    level: 0,
                     engagement_threshold: 100,
                     mint_fees: vec![],
                 },
                 Rarity {
-                    level: 1,
                     engagement_threshold: 0,
                     mint_fees: vec![],
                 },
             ],
         }
     }
-
     fn proper_instantiate() -> (DesmosApp, Addr, (u64, u64)) {
         let mut app = mock_app();
         let (cw721_code_id, remarkables_code_id) = store_contracts(&mut app);
@@ -93,7 +86,6 @@ mod tests {
             .unwrap();
         (app, addr, (cw721_code_id, remarkables_code_id))
     }
-
     mod instantiate {
         use super::*;
         #[test]
@@ -157,16 +149,16 @@ mod tests {
             assert_eq!(config.cw721_code_id, cw721_code_id.into())
         }
     }
-    mod mint_to {
+    mod mint {
         use super::*;
         #[test]
-        fn mint_to_properly() {
+        fn mint_properly() {
             let (mut app, addr, _) = proper_instantiate();
             app.execute(
                 Addr::unchecked(AUTHOR),
                 wasm_execute(
                     &addr,
-                    &ExecuteMsg::MintTo {
+                    &ExecuteMsg::Mint {
                         post_id: POST_ID,
                         remarkables_uri: REMARKABLES_URI.into(),
                         rarity_level: RARITY_LEVEL,
@@ -208,7 +200,6 @@ mod tests {
             )
         }
     }
-
     mod query {
         use super::*;
         #[test]
@@ -218,7 +209,7 @@ mod tests {
                 Addr::unchecked(AUTHOR),
                 wasm_execute(
                     &addr,
-                    &ExecuteMsg::MintTo {
+                    &ExecuteMsg::Mint {
                         post_id: POST_ID,
                         remarkables_uri: REMARKABLES_URI.into(),
                         rarity_level: RARITY_LEVEL,
@@ -265,7 +256,7 @@ mod tests {
                 Addr::unchecked(AUTHOR),
                 wasm_execute(
                     &addr,
-                    &ExecuteMsg::MintTo {
+                    &ExecuteMsg::Mint {
                         post_id: POST_ID,
                         remarkables_uri: REMARKABLES_URI.into(),
                         rarity_level: RARITY_LEVEL,

@@ -26,6 +26,9 @@ impl InstantiateMsg {
         if self.subspace_id.is_zero() {
             return Err(ContractError::InvalidSubspaceId {});
         }
+        if self.cw721_code_id.is_zero() {
+            return Err(ContractError::InvalidCw721CodeId {});
+        }
         if self.rarities.is_empty() {
             return Err(ContractError::EmptyRarities {});
         }
@@ -35,8 +38,6 @@ impl InstantiateMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Rarity {
-    /// Level of the rarity.
-    pub level: u32,
     /// Threshold of the reactions amount to mint.
     pub engagement_threshold: u32,
     /// Mint fees associated with the rarity
@@ -47,7 +48,7 @@ pub struct Rarity {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Message allowing the user to mint a Remarkables for a specific post owned by the user.
-    MintTo {
+    Mint {
         post_id: Uint64,
         remarkables_uri: String,
         rarity_level: u32,
@@ -66,7 +67,7 @@ impl ExecuteMsg {
     /// NOTE: This function don't checks if the address are valid.
     pub fn validate(&self) -> Result<(), ContractError> {
         match &self {
-            ExecuteMsg::MintTo {
+            ExecuteMsg::Mint {
                 remarkables_uri,
                 post_id,
                 ..
@@ -137,7 +138,7 @@ mod tests {
         fn instantiate_msg_with_invalid_subspace_id_error() {
             let msg = InstantiateMsg {
                 admin: "admin".into(),
-                cw721_code_id: 0u64.into(),
+                cw721_code_id: 1u64.into(),
                 cw721_instantiate_msg: Cw721InstantiateMsg {
                     name: "".to_string(),
                     minter: "".to_string(),
@@ -152,10 +153,28 @@ mod tests {
             )
         }
         #[test]
-        fn instantiate_msg_with_empty_rarities_error() {
+        fn instantiate_msg_with_cw721_code_id_error() {
             let msg = InstantiateMsg {
                 admin: "admin".into(),
                 cw721_code_id: 0u64.into(),
+                cw721_instantiate_msg: Cw721InstantiateMsg {
+                    name: "".to_string(),
+                    minter: "".to_string(),
+                    symbol: "".to_string(),
+                },
+                subspace_id: 1u64.into(),
+                rarities: vec![],
+            };
+            assert_eq!(
+                ContractError::InvalidCw721CodeId {},
+                msg.validate().unwrap_err()
+            )
+        }
+        #[test]
+        fn instantiate_msg_with_empty_rarities_error() {
+            let msg = InstantiateMsg {
+                admin: "admin".into(),
+                cw721_code_id: 1u64.into(),
                 cw721_instantiate_msg: Cw721InstantiateMsg {
                     name: "".to_string(),
                     minter: "".to_string(),
@@ -170,7 +189,7 @@ mod tests {
         fn valid_instantiate_msg_no_error() {
             let msg = InstantiateMsg {
                 admin: "admin".into(),
-                cw721_code_id: 0u64.into(),
+                cw721_code_id: 1u64.into(),
                 cw721_instantiate_msg: Cw721InstantiateMsg {
                     name: "".to_string(),
                     minter: "".to_string(),
@@ -178,7 +197,6 @@ mod tests {
                 },
                 subspace_id: 1u64.into(),
                 rarities: vec![Rarity {
-                    level: 0,
                     engagement_threshold: 100,
                     mint_fees: vec![],
                 }],
@@ -189,8 +207,8 @@ mod tests {
     mod execute_msg {
         use super::*;
         #[test]
-        fn mint_to_msg_without_valid_uri_error() {
-            let msg = ExecuteMsg::MintTo {
+        fn mint_msg_without_valid_uri_error() {
+            let msg = ExecuteMsg::Mint {
                 post_id: 1u64.into(),
                 rarity_level: 1,
                 remarkables_uri: "".into(),
@@ -201,8 +219,8 @@ mod tests {
             )
         }
         #[test]
-        fn mint_to_msg_with_invalid_uri_schema_error() {
-            let msg = ExecuteMsg::MintTo {
+        fn mint_msg_with_invalid_uri_schema_error() {
+            let msg = ExecuteMsg::Mint {
                 post_id: 1u64.into(),
                 rarity_level: 1,
                 remarkables_uri: "https://remarkables.com".into(),
@@ -213,8 +231,8 @@ mod tests {
             )
         }
         #[test]
-        fn mint_to_msg_with_invalid_post_id_error() {
-            let msg = ExecuteMsg::MintTo {
+        fn mint_msg_with_invalid_post_id_error() {
+            let msg = ExecuteMsg::Mint {
                 post_id: 0u64.into(),
                 rarity_level: 1,
                 remarkables_uri: "https://remarkables.com".into(),
@@ -222,8 +240,8 @@ mod tests {
             assert_eq!(msg.validate().unwrap_err(), ContractError::InvalidPostId {})
         }
         #[test]
-        fn mint_to_msg_with_valid_uri_schema_no_error() {
-            let msg = ExecuteMsg::MintTo {
+        fn mint_msg_with_valid_uri_schema_no_error() {
+            let msg = ExecuteMsg::Mint {
                 post_id: 1u64.into(),
                 rarity_level: 1,
                 remarkables_uri: "ipfs://remarkables.com".into(),

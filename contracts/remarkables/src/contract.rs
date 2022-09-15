@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     has_coins, to_binary, wasm_execute, wasm_instantiate, Addr, Binary, Coin, Deps, DepsMut, Empty,
-    Env, MessageInfo, Order, Querier, Reply, Response, StdResult, Storage, SubMsg, Uint64,
+    Env, MessageInfo, Querier, Reply, Response, StdResult, Storage, SubMsg, Uint64,
 };
 use cw2::set_contract_version;
 use cw721::{AllNftInfoResponse, TokensResponse};
@@ -25,7 +25,7 @@ use crate::error::ContractError;
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, QueryRaritiesResponse, Rarity,
 };
-use crate::state::{ConfigState, RarityState, CONFIG, CW721_ADDRESS, RARITY};
+use crate::state::{ConfigState, CONFIG, CW721_ADDRESS, RARITIES};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:remarkables";
@@ -35,7 +35,7 @@ const INSTANTIATE_CW721_REPLY_ID: u64 = 1;
 // actions for executing messages
 const ACTION_INSTANTIATE: &str = "instantiate";
 const ACTION_INSTANTIATE_CW721_REPLY: &str = "instantiate_cw721_reply";
-const ACTION_MINT_TO: &str = "mint_to";
+const ACTION_MINT: &str = "mint";
 const ACTION_UPDATE_ADMIN: &str = "update_admin";
 const ACTION_UPDATE_RARITY_MINT_FEES: &str = "update_rarity_mint_fees";
 
@@ -69,13 +69,7 @@ pub fn instantiate(
         },
     )?;
     // Save the info of rarities
-    for rarity in msg.rarities {
-        let state = RarityState {
-            mint_fees: rarity.mint_fees,
-            engagement_threshold: rarity.engagement_threshold,
-        };
-        RARITY.save(deps.storage, rarity.level, &state)?;
-    }
+    RARITIES.save(deps.storage, &msg.rarities)?;
     let subspace_id = msg.subspace_id.u64();
     // Check subspace exists and it is owned by the sender.
     let subspace = SubspacesQuerier::new(deps.querier.deref())
@@ -119,11 +113,11 @@ pub fn execute(
 ) -> Result<Response<DesmosMsg>, ContractError> {
     msg.validate()?;
     match msg {
-        ExecuteMsg::MintTo {
+        ExecuteMsg::Mint {
             post_id,
             remarkables_uri,
             rarity_level,
-        } => execute_mint_to(deps, info, rarity_level, post_id.into(), remarkables_uri),
+        } => execute_mint(deps, info, rarity_level, post_id.into(), remarkables_uri),
         ExecuteMsg::UpdateAdmin { new_admin } => execute_update_admin(deps, info, new_admin),
         ExecuteMsg::UpdateRarityMintFee {
             rarity_level,
@@ -132,21 +126,21 @@ pub fn execute(
     }
 }
 
-fn execute_mint_to(
+fn execute_mint(
     deps: DepsMut<DesmosQuery>,
     info: MessageInfo,
     rarity_level: u32,
     post_id: u64,
     remarkables_uri: String,
 ) -> Result<Response<DesmosMsg>, ContractError> {
-    let rarity =
-        RARITY
-            .may_load(deps.storage, rarity_level)?
-            .ok_or(ContractError::RarityNotExists {
-                level: rarity_level,
-            })?;
+    let rarities = RARITIES.load(deps.storage)?;
+    let rarity = rarities
+        .get(rarity_level as usize)
+        .ok_or(ContractError::RarityNotExists {
+            level: rarity_level,
+        })?;
     // Check if rarity mint fees is enough
-    if !is_enough_fees(info.funds, rarity.mint_fees) {
+    if !is_enough_fees(info.funds, &rarity.mint_fees) {
         return Err(ContractError::MintFeesNotEnough {});
     }
     // Check if post reaches the eligible threshold
@@ -167,7 +161,7 @@ fn execute_mint_to(
     });
     let wasm_execute_mint_msg = wasm_execute(CW721_ADDRESS.load(deps.storage)?, &mint_msg, vec![])?;
     Ok(Response::new()
-        .add_attribute(ATTRIBUTE_ACTION, ACTION_MINT_TO)
+        .add_attribute(ATTRIBUTE_ACTION, ACTION_MINT)
         .add_attribute(ATTRIBUTE_SENDER, &info.sender)
         .add_attribute(ATTRIBUTE_RARITY_LEVEL, rarity_level.to_string())
         .add_attribute(ATTRIBUTE_TOKEN_ID, token_id.to_string())
@@ -176,24 +170,26 @@ fn execute_mint_to(
         .add_message(wasm_execute_mint_msg))
 }
 
-// Returns the token id as "<post-id>-<rarity-level>"
+/// Returns the token id as "<post-id>-<rarity-level>".
 pub fn convert_post_id_to_token_id(post_id: u64, rarity_level: u32) -> String {
     post_id.to_string() + "-" + &rarity_level.to_string()
 }
 
-fn is_enough_fees(funds: Vec<Coin>, requireds: Vec<Coin>) -> bool {
+/// Checks if the funds reach the required mint fees.
+fn is_enough_fees(funds: Vec<Coin>, requireds: &Vec<Coin>) -> bool {
     if requireds.len() == 0 {
         return true;
     }
     // It takes O(n^2) time complexity but both list are extremely small
     for required in requireds.iter() {
-        if has_coins(&funds, &required) {
-            return true;
+        if !has_coins(&funds, &required) {
+            return false;
         }
     }
-    false
+    true
 }
 
+/// Checks the post reaches the engagement threshold.
 fn check_eligibility<'a>(
     storage: &dyn Storage,
     querier: &'a dyn Querier,
@@ -208,7 +204,10 @@ fn check_eligibility<'a>(
         .map_err(|_| ContractError::PostNotFound { id: post_id })?
         .post;
     if post.author != sender {
-        return Err(ContractError::NoEligibilityError {});
+        return Err(ContractError::SenderNotPostAuthor {
+            sender: sender.into(),
+            author: post.author.into(),
+        });
     }
     // Check if the reactions of the post is larger than the threshold.
     let reactions = ReactionsQuerier::new(querier).query_reactions(
@@ -239,14 +238,14 @@ fn execute_update_admin(
     check_admin(deps.storage, &info)?;
     let new_admin_addr = deps.api.addr_validate(&new_admin)?;
     CONFIG.update(deps.storage, |mut config| -> Result<_, ContractError> {
-        config.admin = new_admin_addr.clone();
+        config.admin = new_admin_addr;
         Ok(config)
     })?;
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_ADMIN)
         .add_attribute(ATTRIBUTE_SENDER, &info.sender)
         .add_attribute(ATTRIBUTE_ADMIN, &info.sender)
-        .add_attribute(ATTRIBUTE_NEW_ADMIN, new_admin_addr))
+        .add_attribute(ATTRIBUTE_NEW_ADMIN, new_admin))
 }
 
 fn execute_update_rarity_mint_fees(
@@ -256,13 +255,16 @@ fn execute_update_rarity_mint_fees(
     new_fees: Vec<Coin>,
 ) -> Result<Response<DesmosMsg>, ContractError> {
     check_admin(deps.storage, &info)?;
-    RARITY.update(deps.storage, level, |rarity| -> Result<_, ContractError> {
-        let mut new_rarity = rarity.ok_or(ContractError::RarityNotExists { level })?;
+    RARITIES.update(deps.storage, |rarities| -> Result<_, ContractError> {
+        let mut new_rarities = rarities;
+        let new_rarity: &mut Rarity = new_rarities
+            .get_mut(level as usize)
+            .ok_or(ContractError::RarityNotExists { level })?;
         if new_rarity.mint_fees == new_fees {
             return Err(ContractError::NewMintFeesEqualToCurrent {});
         }
         new_rarity.mint_fees = new_fees;
-        Ok(new_rarity)
+        Ok(new_rarities)
     })?;
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_RARITY_MINT_FEES)
@@ -309,17 +311,7 @@ fn query_config(deps: Deps<DesmosQuery>) -> StdResult<QueryConfigResponse> {
 }
 
 fn query_rarities(deps: Deps<DesmosQuery>) -> StdResult<QueryRaritiesResponse> {
-    let res: StdResult<Vec<_>> = RARITY
-        .range(deps.storage, None, None, Order::Ascending)
-        .collect();
-    let rarities = res?
-        .drain(..)
-        .map(|(level, rarity)| Rarity {
-            level,
-            engagement_threshold: rarity.engagement_threshold,
-            mint_fees: rarity.mint_fees.clone(),
-        })
-        .collect();
+    let rarities = RARITIES.load(deps.storage)?;
     Ok(QueryRaritiesResponse { rarities })
 }
 
@@ -400,16 +392,17 @@ mod tests {
     use std::marker::PhantomData;
 
     const ADMIN: &str = "cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t";
+    const USER: &str = "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc";
     const NEW_ADMIN: &str = "new_admin";
     const SUBSPACE_ID: u64 = 1;
     const DENOM: &str = "test";
     const CW721_CODE_ID: u64 = 1;
     const MINT_FEES: u128 = 100;
     const POST_ID: u64 = 1;
+    const RARITY_LEVEL: u32 = 0;
 
     fn get_instantiate_rarities() -> Vec<Rarity> {
         vec![Rarity {
-            level: 1,
             engagement_threshold: 100,
             mint_fees: coins(MINT_FEES, DENOM),
         }]
@@ -505,18 +498,7 @@ mod tests {
             };
             assert_eq!(config, expected_config);
 
-            let res: StdResult<Vec<_>> = RARITY
-                .range(&deps.storage, None, None, Order::Ascending)
-                .collect();
-            let rarities: Vec<Rarity> = res
-                .unwrap()
-                .iter()
-                .map(|(level, rarity)| Rarity {
-                    level: *level,
-                    engagement_threshold: rarity.engagement_threshold,
-                    mint_fees: rarity.mint_fees.clone(),
-                })
-                .collect();
+            let rarities: Vec<Rarity> = RARITIES.load(&deps.storage).unwrap();
             let expected_rarities = get_instantiate_rarities();
             assert_eq!(expected_rarities, rarities)
         }
@@ -560,15 +542,15 @@ mod tests {
             assert_eq!(result.unwrap_err(), ContractError::InstantiateCw721Error {})
         }
     }
-    mod mint_to {
+    mod mint {
         use super::*;
         #[test]
-        fn mint_to_with_not_existing_rarity_error() {
+        fn mint_with_not_existing_rarity_error() {
             let mut deps = mock_dependencies_with_custom_querier(&[]);
             do_instantiate(deps.as_mut());
             let env = mock_env();
-            let info = mock_info(NEW_ADMIN, &vec![]);
-            let msg = ExecuteMsg::MintTo {
+            let info = mock_info(USER, &vec![]);
+            let msg = ExecuteMsg::Mint {
                 post_id: 1u64.into(),
                 remarkables_uri: "ipfs://test.com".into(),
                 rarity_level: 2,
@@ -579,15 +561,15 @@ mod tests {
             )
         }
         #[test]
-        fn mint_to_with_empty_fees_error() {
+        fn mint_with_empty_fees_error() {
             let mut deps = mock_dependencies_with_custom_querier(&[]);
             do_instantiate(deps.as_mut());
             let env = mock_env();
-            let info = mock_info(NEW_ADMIN, &vec![]);
-            let msg = ExecuteMsg::MintTo {
+            let info = mock_info(USER, &vec![]);
+            let msg = ExecuteMsg::Mint {
                 post_id: 1u64.into(),
                 remarkables_uri: "ipfs://test.com".into(),
-                rarity_level: 1,
+                rarity_level: RARITY_LEVEL,
             };
             assert_eq!(
                 execute(deps.as_mut(), env, info, msg).unwrap_err(),
@@ -595,15 +577,15 @@ mod tests {
             )
         }
         #[test]
-        fn mint_to_with_other_denom_fees_error() {
+        fn mint_with_other_denom_fees_error() {
             let mut deps = mock_dependencies_with_custom_querier(&[]);
             do_instantiate(deps.as_mut());
             let env = mock_env();
-            let info = mock_info(NEW_ADMIN, &coins(100, "other"));
-            let msg = ExecuteMsg::MintTo {
+            let info = mock_info(USER, &coins(100, "other"));
+            let msg = ExecuteMsg::Mint {
                 post_id: 1u64.into(),
                 remarkables_uri: "ipfs://test.com".into(),
-                rarity_level: 1,
+                rarity_level: RARITY_LEVEL,
             };
             assert_eq!(
                 execute(deps.as_mut(), env, info, msg).unwrap_err(),
@@ -611,15 +593,15 @@ mod tests {
             )
         }
         #[test]
-        fn mint_to_without_enough_fees_error() {
+        fn mint_without_enough_fees_error() {
             let mut deps = mock_dependencies_with_custom_querier(&[]);
             do_instantiate(deps.as_mut());
             let env = mock_env();
-            let info = mock_info(NEW_ADMIN, &coins(MINT_FEES - 1, DENOM));
-            let msg = ExecuteMsg::MintTo {
+            let info = mock_info(USER, &coins(MINT_FEES - 1, DENOM));
+            let msg = ExecuteMsg::Mint {
                 post_id: 1u64.into(),
                 remarkables_uri: "ipfs://test.com".into(),
-                rarity_level: 1,
+                rarity_level: RARITY_LEVEL,
             };
             assert_eq!(
                 execute(deps.as_mut(), env, info, msg).unwrap_err(),
@@ -627,7 +609,7 @@ mod tests {
             )
         }
         #[test]
-        fn mint_to_with_non_existing_post_error() {
+        fn mint_with_non_existing_post_error() {
             let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
                 .with_custom_handler(|query| match query {
                     DesmosQuery::Posts(query) => match query {
@@ -650,11 +632,11 @@ mod tests {
             };
             do_instantiate(deps.as_mut());
             let env = mock_env();
-            let info = mock_info(NEW_ADMIN, &coins(MINT_FEES, DENOM));
-            let msg = ExecuteMsg::MintTo {
+            let info = mock_info(USER, &coins(MINT_FEES, DENOM));
+            let msg = ExecuteMsg::Mint {
                 post_id: POST_ID.into(),
                 remarkables_uri: "ipfs://test.com".into(),
-                rarity_level: 1,
+                rarity_level: RARITY_LEVEL,
             };
             assert_eq!(
                 execute(deps.as_mut(), env, info, msg).unwrap_err(),
@@ -662,7 +644,7 @@ mod tests {
             )
         }
         #[test]
-        fn mint_to_without_eligible_amount_reactions_error() {
+        fn mint_without_eligible_amount_reactions_error() {
             let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
                 .with_custom_handler(|query| match query {
                     DesmosQuery::Posts(query) => SystemResult::Ok(mock_posts_query_response(query)),
@@ -683,11 +665,11 @@ mod tests {
             };
             do_instantiate(deps.as_mut());
             let env = mock_env();
-            let info = mock_info(NEW_ADMIN, &coins(MINT_FEES, DENOM));
-            let msg = ExecuteMsg::MintTo {
+            let info = mock_info(USER, &coins(MINT_FEES, DENOM));
+            let msg = ExecuteMsg::Mint {
                 post_id: POST_ID.into(),
                 remarkables_uri: "ipfs://test.com".into(),
-                rarity_level: 1,
+                rarity_level: RARITY_LEVEL,
             };
             assert_eq!(
                 execute(deps.as_mut(), env, info, msg).unwrap_err(),
@@ -695,7 +677,7 @@ mod tests {
             )
         }
         #[test]
-        fn mint_to_properly() {
+        fn mint_properly() {
             let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
                 .with_custom_handler(|query| match query {
                     DesmosQuery::Posts(query) => SystemResult::Ok(mock_posts_query_response(query)),
@@ -725,17 +707,17 @@ mod tests {
                 custom_query_type: PhantomData,
             };
             do_instantiate(deps.as_mut());
+            CW721_ADDRESS
+                .save(deps.as_mut().storage, &Addr::unchecked("cw_address"))
+                .unwrap();
             let env = mock_env();
-            let info = mock_info(NEW_ADMIN, &coins(MINT_FEES, DENOM));
-            let msg = ExecuteMsg::MintTo {
+            let info = mock_info(USER, &coins(MINT_FEES, DENOM));
+            let msg = ExecuteMsg::Mint {
                 post_id: POST_ID.into(),
                 remarkables_uri: "ipfs://test.com".into(),
-                rarity_level: 1,
+                rarity_level: RARITY_LEVEL,
             };
-            assert_eq!(
-                execute(deps.as_mut(), env, info, msg).unwrap_err(),
-                ContractError::NoEligibilityError {},
-            )
+            execute(deps.as_mut(), env, info, msg).unwrap();
         }
     }
     mod update_admin {
@@ -745,14 +727,14 @@ mod tests {
             let mut deps = mock_dependencies_with_custom_querier(&[]);
             do_instantiate(deps.as_mut());
             let env = mock_env();
-            let info = mock_info(NEW_ADMIN, &vec![]);
+            let info = mock_info(USER, &vec![]);
             let msg = ExecuteMsg::UpdateAdmin {
                 new_admin: NEW_ADMIN.into(),
             };
             assert_eq!(
                 execute(deps.as_mut(), env, info, msg).unwrap_err(),
                 ContractError::NotAdmin {
-                    caller: Addr::unchecked(NEW_ADMIN)
+                    caller: Addr::unchecked(USER)
                 }
             )
         }
@@ -799,15 +781,15 @@ mod tests {
             let mut deps = mock_dependencies_with_custom_querier(&[]);
             do_instantiate(deps.as_mut());
             let env = mock_env();
-            let info = mock_info(NEW_ADMIN, &vec![]);
+            let info = mock_info(USER, &vec![]);
             let msg = ExecuteMsg::UpdateRarityMintFee {
-                rarity_level: 1,
+                rarity_level: RARITY_LEVEL,
                 new_fees: coins(50, DENOM),
             };
             assert_eq!(
                 execute(deps.as_mut(), env, info, msg).unwrap_err(),
                 ContractError::NotAdmin {
-                    caller: Addr::unchecked(NEW_ADMIN)
+                    caller: Addr::unchecked(USER)
                 }
             )
         }
@@ -833,7 +815,7 @@ mod tests {
             let env = mock_env();
             let info = mock_info(ADMIN, &vec![]);
             let msg = ExecuteMsg::UpdateRarityMintFee {
-                rarity_level: 1,
+                rarity_level: RARITY_LEVEL,
                 new_fees: coins(MINT_FEES, DENOM),
             };
             assert_eq!(
@@ -848,16 +830,16 @@ mod tests {
             let env = mock_env();
             let info = mock_info(ADMIN, &vec![]);
             let msg = ExecuteMsg::UpdateRarityMintFee {
-                rarity_level: 1,
+                rarity_level: RARITY_LEVEL,
                 new_fees: coins(50, DENOM),
             };
             execute(deps.as_mut(), env, info, msg).unwrap();
-            let new_rarity = RARITY.load(&deps.storage, 1).unwrap();
-            let expected = RarityState {
+            let new_rarities = RARITIES.load(&deps.storage).unwrap();
+            let expected = Rarity {
                 engagement_threshold: 100,
                 mint_fees: coins(50, DENOM),
             };
-            assert_eq!(expected, new_rarity);
+            assert_eq!(expected, *new_rarities.get(0).unwrap())
         }
     }
     mod query {
@@ -895,14 +877,13 @@ mod tests {
         fn query_rarities() {
             let mut deps = mock_dependencies_with_custom_querier(&[]);
             let env = mock_env();
-            RARITY
+            RARITIES
                 .save(
                     deps.as_mut().storage,
-                    1,
-                    &RarityState {
+                    &vec![Rarity {
                         engagement_threshold: 100,
                         mint_fees: coins(1, DENOM),
-                    },
+                    }],
                 )
                 .unwrap();
             let bz = query(deps.as_ref(), env, QueryMsg::Rarities {}).unwrap();
@@ -910,7 +891,6 @@ mod tests {
             assert_eq!(
                 QueryRaritiesResponse {
                     rarities: vec![Rarity {
-                        level: 1,
                         engagement_threshold: 100,
                         mint_fees: coins(1, DENOM)
                     }]

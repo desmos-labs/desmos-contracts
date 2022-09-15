@@ -47,4 +47,10 @@ pub enum ContractError {
 
     #[error("Empty rarities are not allowed")]
     EmptyRarities {},
+
+    #[error("Invalid Cw721 code id")]
+    InvalidCw721CodeId {},
+
+    #[error("Minter {sender} is not the post author {author}")]
+    SenderNotPostAuthor { sender: String, author: String },
 }

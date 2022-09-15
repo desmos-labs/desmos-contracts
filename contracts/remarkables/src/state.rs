@@ -1,14 +1,12 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Addr, Coin};
-use cw_storage_plus::{Item, Map};
+use cosmwasm_std::Addr;
+use cw_storage_plus::Item;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct RarityState {
-    pub mint_fees: Vec<Coin>,
-    pub engagement_threshold: u32,
-}
+use crate::msg::Rarity;
+
+pub type RaritiesState = Vec<Rarity>;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ConfigState {
@@ -17,6 +15,6 @@ pub struct ConfigState {
     pub cw721_code_id: u64,
 }
 
-pub const RARITY: Map<u32, RarityState> = Map::new("rarity");
+pub const RARITIES: Item<RaritiesState> = Item::new("rarities");
 pub const CONFIG: Item<ConfigState> = Item::new("config");
 pub const CW721_ADDRESS: Item<Addr> = Item::new("cw721_address");
