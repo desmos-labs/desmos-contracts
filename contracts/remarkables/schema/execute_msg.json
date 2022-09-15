@@ -6,10 +6,10 @@
       "description": "Message allowing the user to mint a Remarkables for a specific post owned by the user.",
       "type": "object",
       "required": [
-        "mint_to"
+        "mint"
       ],
       "properties": {
-        "mint_to": {
+        "mint": {
           "type": "object",
           "required": [
             "post_id",

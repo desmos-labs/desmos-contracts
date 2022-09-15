@@ -35,7 +35,6 @@
       "type": "object",
       "required": [
         "engagement_threshold",
-        "level",
         "mint_fees"
       ],
       "properties": {
@@ -45,14 +44,8 @@
           "format": "uint32",
           "minimum": 0.0
         },
-        "level": {
-          "description": "Level of the rarity.",
-          "type": "integer",
-          "format": "uint32",
-          "minimum": 0.0
-        },
         "mint_fees": {
-          "description": "Minimum fees of minting.",
+          "description": "Mint fees associated with the rarity",
           "type": "array",
           "items": {
             "$ref": "#/definitions/Coin"
