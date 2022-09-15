@@ -35,11 +35,11 @@ cw-storage-plus = "0.13.2"
 cw2 = "0.13.2"
 schemars = "0.8.8"
 serde = { version = "1.0.137", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0.31" }
+thiserror = { version = "1.0.35" }
 desmos-bindings = { version = "1.0.3", default-features = false, features = ["profiles", "query", "msg"]}
 poap = { path = "../poap", version = "0.1.0", features = ["library"]}
 cw721-base = { git = "https://github.com/desmos-labs/cw-nfts", features = ["library"], branch = "paul/update-custom-msg-query" }
-cw-utils = "0.13.4"
+cw-utils = "0.14.0"
 cw721-poap = { path = "../cw721-poap", version = "0.1.0", features = ["library"]}
 
 [dev-dependencies]
