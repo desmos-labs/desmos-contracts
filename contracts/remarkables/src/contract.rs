@@ -204,27 +204,51 @@ fn check_eligibility<'a>(
         .map_err(|_| ContractError::PostNotFound { id: post_id })?
         .post;
     if post.author != sender {
-        return Err(ContractError::SenderNotPostAuthor {
-            sender: sender.into(),
+        return Err(ContractError::MinterNotPostAuthor {
+            minter: sender.into(),
             author: post.author.into(),
         });
     }
     // Check if the reactions of the post is larger than the threshold.
-    let reactions = ReactionsQuerier::new(querier).query_reactions(
-        subspace_id,
-        post_id,
-        None,
-        Some(PageRequest {
-            key: None,
-            offset: None,
-            limit: Uint64::new(1),
-            count_total: true,
-            reverse: false,
-        }),
-    )?;
-    let reactions_pagination = reactions.pagination.unwrap_or(PageResponse::default());
-    let reactions_count = reactions_pagination.total.unwrap_or(0u64.into());
-    if engagement_threshold as u64 > reactions_count.into() {
+    let total_reactions_count = ReactionsQuerier::new(querier)
+        .query_reactions(
+            subspace_id,
+            post_id,
+            None,
+            Some(PageRequest {
+                key: None,
+                offset: None,
+                limit: Uint64::new(1),
+                count_total: true,
+                reverse: false,
+            }),
+        )?
+        .pagination
+        .unwrap_or(PageResponse::default())
+        .total
+        .unwrap_or(0u64.into());
+    let self_reactions_count = ReactionsQuerier::new(querier)
+        .query_reactions(
+            subspace_id,
+            post_id,
+            Some(sender),
+            Some(PageRequest {
+                key: None,
+                offset: None,
+                limit: Uint64::new(1),
+                count_total: true,
+                reverse: false,
+            }),
+        )?
+        .pagination
+        .unwrap_or(PageResponse::default())
+        .total
+        .unwrap_or(0u64.into());
+    let a = total_reactions_count.checked_sub(self_reactions_count)?;
+    println!("{}", a);
+    if engagement_threshold as u64
+        > (total_reactions_count.checked_sub(self_reactions_count)?).into()
+    {
         return Err(ContractError::NoEligibilityError {});
     }
     Ok(())
@@ -400,10 +424,11 @@ mod tests {
     const MINT_FEES: u128 = 100;
     const POST_ID: u64 = 1;
     const RARITY_LEVEL: u32 = 0;
+    const ENGAGEMENT_THRESHOLD: u32 = 100;
 
     fn get_instantiate_rarities() -> Vec<Rarity> {
         vec![Rarity {
-            engagement_threshold: 100,
+            engagement_threshold: ENGAGEMENT_THRESHOLD,
             mint_fees: coins(MINT_FEES, DENOM),
         }]
     }
@@ -644,6 +669,25 @@ mod tests {
             )
         }
         #[test]
+        fn mint_from_non_author_error() {
+            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            do_instantiate(deps.as_mut());
+            let env = mock_env();
+            let info = mock_info(ADMIN, &coins(100, DENOM));
+            let msg = ExecuteMsg::Mint {
+                post_id: 1u64.into(),
+                remarkables_uri: "ipfs://test.com".into(),
+                rarity_level: RARITY_LEVEL,
+            };
+            assert_eq!(
+                execute(deps.as_mut(), env, info, msg).unwrap_err(),
+                ContractError::MinterNotPostAuthor {
+                    minter: ADMIN.into(),
+                    author: USER.into()
+                },
+            )
+        }
+        #[test]
         fn mint_without_eligible_amount_reactions_error() {
             let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
                 .with_custom_handler(|query| match query {
@@ -676,6 +720,64 @@ mod tests {
                 ContractError::NoEligibilityError {},
             )
         }
+        fn get_reaction_response(number: u32) -> QueryReactionsResponse {
+            QueryReactionsResponse {
+                reactions: vec![],
+                pagination: Some(PageResponse {
+                    next_key: None,
+                    total: Some(number.into()),
+                }),
+            }
+        }
+        fn get_reactions(user: &Option<Addr>, enough: bool) -> QueryReactionsResponse {
+            let self_reactions_count = 1;
+            if *user == Some(Addr::unchecked(USER)) {
+                return get_reaction_response(self_reactions_count);
+            }
+            if !enough {
+                return get_reaction_response(ENGAGEMENT_THRESHOLD);
+            }
+            get_reaction_response(ENGAGEMENT_THRESHOLD + self_reactions_count)
+        }
+        #[test]
+        fn mint_without_eligible_amount_reactions_after_sub_self_reactions_error() {
+            let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
+                .with_custom_handler(|query| match query {
+                    DesmosQuery::Posts(query) => SystemResult::Ok(mock_posts_query_response(query)),
+                    DesmosQuery::Subspaces(query) => {
+                        SystemResult::Ok(mock_subspaces_query_response(query))
+                    }
+                    DesmosQuery::Reactions(query) => match query {
+                        ReactionsQuery::Reactions { user, .. } => SystemResult::Ok(
+                            ContractResult::Ok(to_binary(&get_reactions(user, false)).unwrap()),
+                        ),
+                        _ => SystemResult::Err(SystemError::Unknown {}),
+                    },
+                    #[allow(unreachable_patterns)]
+                    _ => SystemResult::Err(SystemError::Unknown {}),
+                });
+            let mut deps = OwnedDeps {
+                storage: MockStorage::default(),
+                querier,
+                api: MockApi::default(),
+                custom_query_type: PhantomData,
+            };
+            do_instantiate(deps.as_mut());
+            CW721_ADDRESS
+                .save(deps.as_mut().storage, &Addr::unchecked("cw_address"))
+                .unwrap();
+            let env = mock_env();
+            let info = mock_info(USER, &coins(MINT_FEES, DENOM));
+            let msg = ExecuteMsg::Mint {
+                post_id: POST_ID.into(),
+                remarkables_uri: "ipfs://test.com".into(),
+                rarity_level: RARITY_LEVEL,
+            };
+            assert_eq!(
+                execute(deps.as_mut(), env, info, msg).unwrap_err(),
+                ContractError::NoEligibilityError {},
+            )
+        }
         #[test]
         fn mint_properly() {
             let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
@@ -685,16 +787,9 @@ mod tests {
                         SystemResult::Ok(mock_subspaces_query_response(query))
                     }
                     DesmosQuery::Reactions(query) => match query {
-                        ReactionsQuery::Reactions { .. } => SystemResult::Ok(ContractResult::Ok(
-                            to_binary(&QueryReactionsResponse {
-                                reactions: vec![],
-                                pagination: Some(PageResponse {
-                                    next_key: None,
-                                    total: Some(100u64.into()),
-                                }),
-                            })
-                            .unwrap(),
-                        )),
+                        ReactionsQuery::Reactions { user, .. } => SystemResult::Ok(
+                            ContractResult::Ok(to_binary(&get_reactions(user, true)).unwrap()),
+                        ),
                         _ => SystemResult::Err(SystemError::Unknown {}),
                     },
                     #[allow(unreachable_patterns)]

@@ -1,10 +1,13 @@
-use cosmwasm_std::{Addr, StdError};
+use cosmwasm_std::{Addr, OverflowError, StdError};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
+
+    #[error("{0}")]
+    OverflowError(#[from] OverflowError),
 
     #[error("Invalid remarkables uri")]
     InvalidRemarkablesUri {},
@@ -51,6 +54,6 @@ pub enum ContractError {
     #[error("Invalid Cw721 code id")]
     InvalidCw721CodeId {},
 
-    #[error("Minter {sender} is not the post author {author}")]
-    SenderNotPostAuthor { sender: String, author: String },
+    #[error("Minter {minter} is not the post author {author}")]
+    MinterNotPostAuthor { minter: String, author: String },
 }
