@@ -14,7 +14,15 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v2
 
-      - name: Setup Rust ⚙️
+      - name: Verify .rs files 👀
+        uses: technote-space/get-diff-action@v6.1.0
+        id: git_diff
+        with:
+          PATTERNS: |
+            **/**.rs
+
+      - name: Setup Rust ⚙
+        if: env.GIT_DIFF
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -23,7 +31,21 @@ jobs:
           components: rustfmt, clippy
 
       - name: Run cargo fmt ✅
+        if: env.GIT_DIFF
         run: cargo fmt --all -- --check
 
       - name: Run cargo clippy ✅
+        if: env.GIT_DIFF
         run: cargo clippy
+
+      - name: Generate coverage report 🧪
+        if: env.GIT_DIFF
+        uses: actions-rs/tarpaulin@v0.1.3
+        with:
+          args: '--avoid-cfg-tarpaulin'
+
+      - name: Upload coverage 📤
+        if: env.GIT_DIFF
+        uses: codecov/codecov-action@v1.0.2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
