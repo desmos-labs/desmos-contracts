@@ -30,6 +30,10 @@ jobs:
           override: true
           components: rustfmt, clippy
 
+      - name: Prepare rust cache 🗄️
+        if: env.GIT_DIFF
+        uses: Swatinem/rust-cache@v2
+
       - name: Run cargo fmt ✅
         if: env.GIT_DIFF
         run: cargo fmt --all -- --check
