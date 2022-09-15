@@ -14,13 +14,23 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v2
 
+      - name: Verify .rs and toml files 👀
+        uses: technote-space/get-diff-action@v6.1.0
+        id: git_diff
+        with:
+          PATTERNS: |
+            **/**.rs
+            **/**.toml
+
       - name: Setup Rust ⚙️
+        if: env.GIT_DIFF
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
 
       - name: Test contracts 🧪
+        if: env.GIT_DIFF
         run: cargo test
         env:
           RUST_BACKTRACE: 1
