@@ -4,13 +4,14 @@ use crate::msg::{
     TipsResponse,
 };
 use crate::state::{
-    Config, StateServiceFee, CONFIG, POST_TIPS_HISTORY, RECEIVED_TIPS_HISTORY, SENT_TIPS_HISTORY,
+    Config, StateServiceFee, StateTip, TipHistory, BLOCK_INDEX, CONFIG, POST_TIPS_HISTORY,
+    RECEIVED_TIPS_HISTORY, SENT_TIPS_HISTORY, TIPS,
 };
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
-    StdResult, Storage,
+    to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult,
+    Storage,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::{KeyDeserialize, Map, PrimaryKey};
@@ -81,6 +82,8 @@ pub fn instantiate(
             tips_history_size: msg.tips_history_size,
         },
     )?;
+    // Initialize the block index.
+    BLOCK_INDEX.save(deps.storage, &(0, 0))?;
 
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_INSTANTIATE)
@@ -115,7 +118,7 @@ pub fn execute(
 
 fn execute_send_tip(
     deps: DepsMut<DesmosQuery>,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     target: Target,
     tip_amount: Vec<Coin>,
@@ -150,44 +153,62 @@ fn execute_send_tip(
     }
 
     if config.tips_history_size > 0 {
-        SENT_TIPS_HISTORY.update::<_, ContractError>(
-            deps.storage,
-            info.sender.clone(),
-            |history| {
-                let mut history = history.unwrap_or_default();
-                history.push_back((receiver.clone(), tip_amount.clone(), post_id));
+        // Generates the tip key
+        let tip_key = BLOCK_INDEX.update::<_, ContractError>(deps.storage, |(block, index)| {
+            if block == env.block.height {
+                Ok((
+                    block,
+                    index
+                        .checked_add(1)
+                        .ok_or(ContractError::BlockIndexOverflow {})?,
+                ))
+            } else {
+                Ok((env.block.height, 0))
+            }
+        })?;
 
-                while history.len() > config.tips_history_size as usize {
-                    history.pop_front();
-                }
-                Ok(history)
+        // Build the tip that will be save inside the contract state
+        let tip = StateTip {
+            sender: info.sender.clone(),
+            receiver: receiver.clone(),
+            amount: tip_amount.clone(),
+            post_id,
+            ref_counter: if post_id > 0 {
+                3 // Sender + Receiver + Post histories
+            } else {
+                2 // Sender + Receiver histories
             },
+        };
+
+        // Save the tip
+        TIPS.save(deps.storage, tip_key.clone(), &tip)?;
+        // Update sender tips history
+        add_tip_to_subject_history(
+            deps.storage,
+            &SENT_TIPS_HISTORY,
+            tip.sender,
+            tip_key.clone(),
+            config.tips_history_size,
+        )?;
+        // Update receiver tips history
+        add_tip_to_subject_history(
+            deps.storage,
+            &RECEIVED_TIPS_HISTORY,
+            tip.receiver,
+            tip_key.clone(),
+            config.tips_history_size,
         )?;
 
-        RECEIVED_TIPS_HISTORY.update::<_, ContractError>(
-            deps.storage,
-            receiver.clone(),
-            |history| {
-                let mut history = history.unwrap_or_default();
-                history.push_back((info.sender.clone(), tip_amount.clone(), post_id));
-
-                while history.len() > config.tips_history_size as usize {
-                    history.pop_front();
-                }
-                Ok(history)
-            },
-        )?;
-
-        if post_id > 0 {
-            POST_TIPS_HISTORY.update::<_, ContractError>(deps.storage, post_id, |history| {
-                let mut history = history.unwrap_or_default();
-                history.push_back((info.sender.clone(), tip_amount.clone()));
-
-                while history.len() > config.tips_history_size as usize {
-                    history.pop_front();
-                }
-                Ok(history)
-            })?;
+        // Tip referencing a post, let's update the post's tip history
+        if tip.post_id > 0 {
+            // Update receiver tips history
+            add_tip_to_subject_history(
+                deps.storage,
+                &POST_TIPS_HISTORY,
+                tip.post_id,
+                tip_key,
+                config.tips_history_size,
+            )?;
         }
     }
 
@@ -199,6 +220,51 @@ fn execute_send_tip(
             to_address: receiver.to_string(),
             amount: tip_amount,
         }))
+}
+
+/// Adds to a subject's tips history the provided tip key removing the oldest tips if
+/// the history length become greater then `max_history_size`.
+/// * `storage` - CosmWASM storage.
+/// * `history_map` - Map that may contains the subject history.
+/// * `subject` - Subject to which the history of tips will be modified.
+/// * `tip_key` - The new tip key that will be added to the subject history.
+/// * `max_history_size` - The max allowed history size.
+fn add_tip_to_subject_history<'a, S>(
+    storage: &mut dyn Storage,
+    history_map: &Map<'a, S, TipHistory>,
+    subject: S,
+    tip_key: (u64, u32),
+    max_history_size: u32,
+) -> StdResult<()>
+where
+    S: PrimaryKey<'a> + KeyDeserialize + KeyDeserialize<Output = S> + 'static,
+{
+    // Load the subject tip history
+    let mut subject_history = history_map
+        .may_load(storage, subject.clone())?
+        .unwrap_or_default();
+
+    // Add the new into the subject's tip history
+    subject_history.push_back(tip_key);
+
+    // Remove the exceeding tips from the history
+    while subject_history.len() > max_history_size as usize {
+        // Get the key of the oldest tip
+        let removed_tip_key = subject_history.pop_front().unwrap();
+        // Load the tip that may needs to be removed
+        let mut tip = TIPS.load(storage, removed_tip_key.clone())?;
+        // Decrease the reference counter
+        tip.ref_counter -= 1;
+        if tip.ref_counter == 0 {
+            // Ref counter is zero, we can safely remove the tip from the storage
+            TIPS.remove(storage, removed_tip_key);
+        } else {
+            // Not zero, update the tip with the new ref counter
+            TIPS.save(storage, removed_tip_key, &tip)?;
+        }
+    }
+
+    history_map.save(storage, subject, &subject_history)
 }
 
 fn execute_update_service_fee(
@@ -258,6 +324,7 @@ fn execute_update_saved_tips_history_size(
 
     // Wipe the tips history otherwise leave to SendTip to shrink the tips record
     if new_size == 0 {
+        wipe_map(&TIPS, deps.storage)?;
         wipe_map(&SENT_TIPS_HISTORY, deps.storage)?;
         wipe_map(&RECEIVED_TIPS_HISTORY, deps.storage)?;
         wipe_map(&POST_TIPS_HISTORY, deps.storage)?;
@@ -325,13 +392,27 @@ fn execute_claim_fees(
 pub fn query(deps: Deps<DesmosQuery>, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::Config { .. } => to_binary(&query_config(deps)?),
-        QueryMsg::UserReceivedTips { user } => {
-            to_binary(&query_received_tips(deps, deps.api.addr_validate(&user)?)?)
+        QueryMsg::UserReceivedTips { user } => to_binary(&load_tips_from_history(
+            deps,
+            &RECEIVED_TIPS_HISTORY,
+            deps.api.addr_validate(&user)?,
+        )?),
+        QueryMsg::UserSentTips { user } => to_binary(&load_tips_from_history(
+            deps,
+            &SENT_TIPS_HISTORY,
+            deps.api.addr_validate(&user)?,
+        )?),
+        QueryMsg::PostReceivedTips { post_id } => {
+            if post_id.is_zero() {
+                return Err(ContractError::InvalidPostId {});
+            }
+
+            to_binary(&load_tips_from_history(
+                deps,
+                &POST_TIPS_HISTORY,
+                post_id.u64(),
+            )?)
         }
-        QueryMsg::UserSentTips { user } => {
-            to_binary(&query_sent_tips(deps, deps.api.addr_validate(&user)?)?)
-        }
-        QueryMsg::PostReceivedTips { post_id } => to_binary(&query_post_tips(deps, post_id.u64())?),
     }
     .map_err(ContractError::from)
 }
@@ -346,55 +427,33 @@ pub fn query_config(deps: Deps<DesmosQuery>) -> StdResult<QueryConfigResponse> {
     })
 }
 
-fn query_sent_tips(deps: Deps<DesmosQuery>, sender: Addr) -> Result<TipsResponse, ContractError> {
-    let tips = SENT_TIPS_HISTORY
-        .may_load(deps.storage, sender.clone())?
-        .unwrap_or_default()
-        .drain(0..)
-        .map(|tip| Tip::from_sent_tip(sender.clone(), tip))
-        .collect();
-    Ok(TipsResponse { tips })
-}
-
-fn query_received_tips(
+fn load_tips_from_history<'a, S>(
     deps: Deps<DesmosQuery>,
-    receiver: Addr,
-) -> Result<TipsResponse, ContractError> {
-    let tips = RECEIVED_TIPS_HISTORY
-        .may_load(deps.storage, receiver.clone())?
+    history_map: &Map<'a, S, TipHistory>,
+    subject: S,
+) -> Result<TipsResponse, ContractError>
+where
+    S: PrimaryKey<'a>,
+{
+    let tips = history_map
+        .may_load(deps.storage, subject)?
         .unwrap_or_default()
         .drain(0..)
-        .map(|tip| Tip::from_received_tip(receiver.clone(), tip))
-        .collect();
-    Ok(TipsResponse { tips })
-}
+        .map(|tip_key| {
+            let block_height = tip_key.0;
+            TIPS.load(deps.storage, tip_key)
+                .map(|state_tip| Tip::from_state_tip(state_tip, block_height))
+        })
+        .collect::<StdResult<Vec<_>>>();
 
-fn query_post_tips(deps: Deps<DesmosQuery>, post_id: u64) -> Result<TipsResponse, ContractError> {
-    if post_id == 0 {
-        return Err(ContractError::InvalidPostId {});
-    }
-    // Get the subspace id where is deployed the smart contract
-    let subspace_id = CONFIG.load(deps.storage)?.subspace_id;
-    // Get the post author
-    let post_author = PostsQuerier::new(deps.querier.deref())
-        .query_post(subspace_id, post_id)
-        .map_err(|_| ContractError::PostNotFound { id: post_id })?
-        .post
-        .author;
-
-    let tips = POST_TIPS_HISTORY
-        .may_load(deps.storage, post_id)?
-        .unwrap_or_default()
-        .drain(0..)
-        .map(|tip| Tip::from_post_tip(post_id, post_author.clone(), tip))
-        .collect();
-
-    Ok(TipsResponse { tips })
+    Ok(TipsResponse { tips: tips? })
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::contract::{execute, instantiate, query, MAX_TIPS_HISTORY_SIZE};
+    use crate::contract::{
+        execute, instantiate, load_tips_from_history, query, MAX_TIPS_HISTORY_SIZE,
+    };
     use crate::error::ContractError;
     use crate::msg::{
         ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, ServiceFee, Target, Tip,
@@ -486,33 +545,21 @@ mod tests {
     }
 
     fn get_user_sent_tips(deps: DepsMut<DesmosQuery>, addr: &str) -> Vec<Tip> {
-        SENT_TIPS_HISTORY
-            .may_load(deps.storage, Addr::unchecked(addr))
+        load_tips_from_history(deps.as_ref(), &SENT_TIPS_HISTORY, Addr::unchecked(addr))
             .unwrap()
-            .unwrap_or_default()
-            .drain(0..)
-            .map(|tip| Tip::from_sent_tip(Addr::unchecked(addr), tip))
-            .collect()
+            .tips
     }
 
     fn get_user_received_tips(deps: DepsMut<DesmosQuery>, addr: &str) -> Vec<Tip> {
-        RECEIVED_TIPS_HISTORY
-            .may_load(deps.storage, Addr::unchecked(addr))
+        load_tips_from_history(deps.as_ref(), &RECEIVED_TIPS_HISTORY, Addr::unchecked(addr))
             .unwrap()
-            .unwrap_or_default()
-            .drain(0..)
-            .map(|tip| Tip::from_received_tip(Addr::unchecked(addr), tip))
-            .collect()
+            .tips
     }
 
-    fn get_post_tips(deps: DepsMut<DesmosQuery>, post_id: u64, post_author: &str) -> Vec<Tip> {
-        POST_TIPS_HISTORY
-            .may_load(deps.storage, post_id)
+    fn get_post_tips(deps: DepsMut<DesmosQuery>, post_id: u64) -> Vec<Tip> {
+        load_tips_from_history(deps.as_ref(), &POST_TIPS_HISTORY, post_id)
             .unwrap()
-            .unwrap_or_default()
-            .drain(0..)
-            .map(|tip| Tip::from_post_tip(post_id, Addr::unchecked(post_author), tip))
-            .collect()
+            .tips
     }
 
     #[test]
@@ -820,6 +867,7 @@ mod tests {
             receiver: Addr::unchecked(USER_2),
             amount: vec![Coin::new(5000, "udsm")],
             post_id: None,
+            block_height: 12345u64.into(),
         };
 
         assert_eq!(
@@ -861,6 +909,7 @@ mod tests {
             receiver: Addr::unchecked(USER_2),
             amount: vec![Coin::new(4000, "udsm")],
             post_id: None,
+            block_height: 12345u64.into(),
         };
 
         assert_eq!(
@@ -902,6 +951,7 @@ mod tests {
             receiver: Addr::unchecked(USER_2),
             amount: vec![Coin::new(4950, "udsm")],
             post_id: None,
+            block_height: 12345u64.into(),
         };
 
         assert_eq!(
@@ -1072,6 +1122,7 @@ mod tests {
             receiver: Addr::unchecked(POST_AUTHOR),
             amount: vec![Coin::new(5000, "udsm")],
             post_id: Some(Uint64::new(1)),
+            block_height: 12345u64.into(),
         }];
 
         assert_eq!(sent_tips, get_user_sent_tips(deps.as_mut(), USER_1));
@@ -1079,7 +1130,7 @@ mod tests {
             sent_tips,
             get_user_received_tips(deps.as_mut(), POST_AUTHOR)
         );
-        assert_eq!(sent_tips, get_post_tips(deps.as_mut(), 1, POST_AUTHOR));
+        assert_eq!(sent_tips, get_post_tips(deps.as_mut(), 1));
     }
 
     #[test]
@@ -1109,6 +1160,7 @@ mod tests {
             receiver: Addr::unchecked(POST_AUTHOR),
             amount: vec![Coin::new(4000, "udsm")],
             post_id: Some(Uint64::new(1)),
+            block_height: 12345u64.into(),
         }];
 
         assert_eq!(sent_tips, get_user_sent_tips(deps.as_mut(), USER_1));
@@ -1116,7 +1168,7 @@ mod tests {
             sent_tips,
             get_user_received_tips(deps.as_mut(), POST_AUTHOR)
         );
-        assert_eq!(sent_tips, get_post_tips(deps.as_mut(), 1, POST_AUTHOR));
+        assert_eq!(sent_tips, get_post_tips(deps.as_mut(), 1));
     }
 
     #[test]
@@ -1146,6 +1198,7 @@ mod tests {
             receiver: Addr::unchecked(POST_AUTHOR),
             amount: vec![Coin::new(4950, "udsm")],
             post_id: Some(Uint64::new(1)),
+            block_height: 12345u64.into(),
         }];
 
         assert_eq!(sent_tips, get_user_sent_tips(deps.as_mut(), USER_1));
@@ -1153,7 +1206,7 @@ mod tests {
             sent_tips,
             get_user_received_tips(deps.as_mut(), POST_AUTHOR)
         );
-        assert_eq!(sent_tips, get_post_tips(deps.as_mut(), 1, POST_AUTHOR));
+        assert_eq!(sent_tips, get_post_tips(deps.as_mut(), 1));
     }
 
     #[test]
@@ -1201,12 +1254,14 @@ mod tests {
                 receiver: Addr::unchecked(USER_2),
                 amount: vec![Coin::new(4000, "udsm")],
                 post_id: None,
+                block_height: 12345u64.into(),
             },
             Tip {
                 sender: Addr::unchecked(USER_1),
                 receiver: Addr::unchecked(USER_2),
                 amount: vec![Coin::new(5000, "udsm")],
                 post_id: None,
+                block_height: 12345u64.into(),
             },
         ];
 
@@ -1641,7 +1696,89 @@ mod tests {
         assert!(get_user_sent_tips(deps.as_mut(), USER_3).is_empty());
         assert!(get_user_received_tips(deps.as_mut(), USER_2).is_empty());
         assert!(get_user_received_tips(deps.as_mut(), USER_1).is_empty());
-        assert!(get_post_tips(deps.as_mut(), 1, "").is_empty());
+        assert!(get_post_tips(deps.as_mut(), 1).is_empty());
+    }
+
+    #[test]
+    fn update_tips_history_size_tips_history_shrinks_properly() {
+        let mut deps = mock_dependencies_with_custom_querier(&[]);
+
+        init_contract(deps.as_mut(), 1, None, 5).unwrap();
+
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(1000, "udsm")],
+            &[Coin::new(1000, "udsm")],
+        )
+        .unwrap();
+
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(1001, "udsm")],
+            &[Coin::new(1001, "udsm")],
+        )
+        .unwrap();
+
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(1002, "udsm")],
+            &[Coin::new(1002, "udsm")],
+        )
+        .unwrap();
+
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(1003, "udsm")],
+            &[Coin::new(1003, "udsm")],
+        )
+        .unwrap();
+
+        // Update the max allowed tips size to 2
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateSavedTipsHistorySize { new_size: 2 },
+        )
+        .unwrap();
+
+        // Send another tip to trigger the shrink
+        tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(1004, "udsm")],
+            &[Coin::new(1004, "udsm")],
+        )
+        .unwrap();
+
+        let tips = vec![
+            Tip {
+                sender: Addr::unchecked(USER_1),
+                receiver: Addr::unchecked(USER_2),
+                amount: vec![Coin::new(1003, "udsm")],
+                post_id: None,
+                block_height: 12345u64.into(),
+            },
+            Tip {
+                sender: Addr::unchecked(USER_1),
+                receiver: Addr::unchecked(USER_2),
+                amount: vec![Coin::new(1004, "udsm")],
+                post_id: None,
+                block_height: 12345u64.into(),
+            },
+        ];
+
+        assert_eq!(tips, get_user_sent_tips(deps.as_mut(), USER_1));
+        assert_eq!(tips, get_user_received_tips(deps.as_mut(), USER_2));
     }
 
     #[test]
@@ -1806,19 +1943,22 @@ mod tests {
                         sender: Addr::unchecked(USER_1),
                         receiver: Addr::unchecked(USER_3),
                         amount: vec![Coin::new(4000, "udsm")],
-                        post_id: None
+                        post_id: None,
+                        block_height: 12345u64.into(),
                     },
                     Tip {
                         sender: Addr::unchecked(USER_2),
                         receiver: Addr::unchecked(USER_3),
                         amount: vec![Coin::new(1000, "udsm")],
-                        post_id: None
+                        post_id: None,
+                        block_height: 12345u64.into(),
                     },
                     Tip {
                         sender: Addr::unchecked(USER_2),
                         receiver: Addr::unchecked(USER_3),
                         amount: vec![Coin::new(1000, "udsm")],
-                        post_id: None
+                        post_id: None,
+                        block_height: 12345u64.into(),
                     },
                 ]
             }
@@ -1898,13 +2038,15 @@ mod tests {
                         sender: Addr::unchecked(USER_1),
                         receiver: Addr::unchecked(USER_3),
                         amount: vec![Coin::new(4000, "udsm")],
-                        post_id: None
+                        post_id: None,
+                        block_height: 12345u64.into(),
                     },
                     Tip {
                         sender: Addr::unchecked(USER_1),
                         receiver: Addr::unchecked(USER_2),
                         amount: vec![Coin::new(99000, "udsm")],
-                        post_id: None
+                        post_id: None,
+                        block_height: 12345u64.into(),
                     },
                 ]
             }
@@ -2029,25 +2171,29 @@ mod tests {
                         sender: Addr::unchecked(USER_1),
                         receiver: Addr::unchecked(POST_AUTHOR),
                         amount: vec![Coin::new(4000, "udsm")],
-                        post_id: Some(Uint64::new(1))
+                        post_id: Some(Uint64::new(1)),
+                        block_height: 12345u64.into(),
                     },
                     Tip {
                         sender: Addr::unchecked(USER_2),
                         receiver: Addr::unchecked(POST_AUTHOR),
                         amount: vec![Coin::new(1000, "udsm")],
-                        post_id: Some(Uint64::new(1))
+                        post_id: Some(Uint64::new(1)),
+                        block_height: 12345u64.into(),
                     },
                     Tip {
                         sender: Addr::unchecked(USER_3),
                         receiver: Addr::unchecked(POST_AUTHOR),
                         amount: vec![Coin::new(99000, "udsm")],
-                        post_id: Some(Uint64::new(1))
+                        post_id: Some(Uint64::new(1)),
+                        block_height: 12345u64.into(),
                     },
                     Tip {
                         sender: Addr::unchecked(USER_1),
                         receiver: Addr::unchecked(POST_AUTHOR),
                         amount: vec![Coin::new(99000, "udsm")],
-                        post_id: Some(Uint64::new(1))
+                        post_id: Some(Uint64::new(1)),
+                        block_height: 12345u64.into(),
                     },
                 ]
             }

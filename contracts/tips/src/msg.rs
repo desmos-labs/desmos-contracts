@@ -1,6 +1,6 @@
 use crate::contract::MAX_TIPS_HISTORY_SIZE;
 use crate::error::ContractError;
-use crate::state::{PostTip, ReceivedTip, SentTip, StateServiceFee};
+use crate::state::{StateServiceFee, StateTip};
 use cosmwasm_std::{Addr, Coin, Decimal, Uint64};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -213,41 +213,21 @@ pub struct Tip {
     pub receiver: Addr,
     pub amount: Vec<Coin>,
     pub post_id: Option<Uint64>,
+    pub block_height: Uint64,
 }
 
 impl Tip {
-    pub fn from_sent_tip(sender: Addr, tip: SentTip) -> Self {
+    pub fn from_state_tip(state_tip: StateTip, block_height: u64) -> Self {
         Tip {
-            sender,
-            receiver: tip.0,
-            amount: tip.1,
-            post_id: if tip.2 > 0 {
-                Some(Uint64::new(tip.2))
+            sender: state_tip.sender,
+            receiver: state_tip.receiver,
+            amount: state_tip.amount,
+            post_id: if state_tip.post_id > 0 {
+                Some(state_tip.post_id.into())
             } else {
                 None
             },
-        }
-    }
-
-    pub fn from_received_tip(receiver: Addr, tip: ReceivedTip) -> Self {
-        Tip {
-            sender: tip.0,
-            receiver,
-            amount: tip.1,
-            post_id: if tip.2 > 0 {
-                Some(Uint64::new(tip.2))
-            } else {
-                None
-            },
-        }
-    }
-
-    pub fn from_post_tip(post_id: u64, post_author: Addr, tip: PostTip) -> Self {
-        Tip {
-            sender: tip.0,
-            receiver: post_author,
-            amount: tip.1,
-            post_id: Some(Uint64::new(post_id)),
+            block_height: block_height.into(),
         }
     }
 }
@@ -256,6 +236,7 @@ impl Tip {
 mod tests {
     use crate::error::ContractError;
     use crate::msg::{ServiceFee, Tip};
+    use crate::state::StateTip;
     use cosmwasm_std::{Addr, Coin, Decimal, Uint64};
 
     #[test]
@@ -325,7 +306,7 @@ mod tests {
     }
 
     #[test]
-    fn tip_from_sent_tip_properly() {
+    fn tip_from_state_tip_properly() {
         let sender = Addr::unchecked("sender");
         let receiver = Addr::unchecked("receiver");
 
@@ -334,41 +315,19 @@ mod tests {
                 sender: sender.clone(),
                 receiver: receiver.clone(),
                 amount: vec![],
-                post_id: None
+                post_id: Some(Uint64::new(32)),
+                block_height: 1234u64.into()
             },
-            Tip::from_sent_tip(sender, (receiver, vec![], 0))
-        )
-    }
-
-    #[test]
-    fn tip_from_received_tip_properly() {
-        let sender = Addr::unchecked("sender");
-        let receiver = Addr::unchecked("receiver");
-
-        assert_eq!(
-            Tip {
-                sender: sender.clone(),
-                receiver: receiver.clone(),
-                amount: vec![],
-                post_id: None
-            },
-            Tip::from_received_tip(receiver, (sender, vec![], 0))
-        )
-    }
-
-    #[test]
-    fn tip_from_post_tip_properly() {
-        let sender = Addr::unchecked("sender");
-        let receiver = Addr::unchecked("receiver");
-
-        assert_eq!(
-            Tip {
-                sender: sender.clone(),
-                receiver: receiver.clone(),
-                amount: vec![],
-                post_id: Some(Uint64::new(1))
-            },
-            Tip::from_post_tip(1, receiver, (sender, vec![]))
+            Tip::from_state_tip(
+                StateTip {
+                    receiver,
+                    sender,
+                    amount: vec![],
+                    ref_counter: 2,
+                    post_id: 32
+                },
+                1234
+            )
         )
     }
 }
