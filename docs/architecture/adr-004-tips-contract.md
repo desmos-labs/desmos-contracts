@@ -166,6 +166,7 @@ pub struct Tip {
   pub sender: Addr,
   pub receiver: Addr,
   pub amount: Vec<Coin>,
-  pub post_id: Option<Uint64>
+  pub post_id: Option<Uint64>,
+  pub block_height: u64,
 }
 ```
