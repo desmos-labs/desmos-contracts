@@ -3,9 +3,7 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema_with_title, remove_schemas, schema_for};
 
-use cw721::{
-    AllNftInfoResponse, NftInfoResponse,
-};
+use cw721::{AllNftInfoResponse, NftInfoResponse};
 use cw721_remarkables::Metadata;
 
 fn main() {

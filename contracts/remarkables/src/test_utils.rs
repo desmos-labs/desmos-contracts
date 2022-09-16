@@ -5,8 +5,8 @@ use cw721_base::{
 };
 use cw_multi_test::{Contract, ContractWrapper};
 pub struct CW721TestContract;
-use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
 use cw721_remarkables::Metadata;
+use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
 impl CW721TestContract {
     fn instantiate(
         deps: DepsMut<DesmosQuery>,

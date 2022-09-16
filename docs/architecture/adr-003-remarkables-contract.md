@@ -75,6 +75,20 @@ During the instantiation, we should:
 * Check that the `subspace_id` identifies an existent subspace
 * Check that the `admin` is the subspace admin
 
+#### Metadata
+The `Metadata` is used to store the extended information inside CW721-base.
+
+```rust
+pub struct Metadata {
+  pub rarity_level: u32
+  pub subspace_id: u64,
+  pub post_id: u64
+}
+```
+* The `rarity_level` field identifies the rarity level of the token.
+* The `subspace_id` field identifies the subspace which the token belongs to.
+* The `post_id` field identifies the post which the token is associated to.
+
 #### Execute
 ```rust
 pub enum ExecuteMsg{
