@@ -117,7 +117,7 @@ With the `UpdateSavedTipsHistorySize` message the user can update the max number
 2. Tips received by a user
 3. Tips sent towards a post
 
-The message should make sure that the user tyring to make the edit is the actual contract admin.
+The message should make sure that the user trying to make the edit is the actual contract admin.
 
 ### Query
 ```rust
