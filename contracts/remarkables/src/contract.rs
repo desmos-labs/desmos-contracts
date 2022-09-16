@@ -10,6 +10,7 @@ use cw721_base::{
     ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg, MintMsg,
     QueryMsg as Cw721QueryMsg,
 };
+use cw721_remarkables::Metadata;
 use cw_utils::parse_reply_instantiate_data;
 use desmos_bindings::{
     msg::DesmosMsg,
@@ -153,11 +154,15 @@ fn execute_mint(
     )?;
     // Create the cw721 message to send to mint the remarkables
     let token_id = convert_post_id_to_token_id(post_id, rarity_level);
-    let mint_msg = Cw721ExecuteMsg::<Empty, Empty>::Mint(MintMsg::<Empty> {
+    let mint_msg = Cw721ExecuteMsg::<Metadata, Empty>::Mint(MintMsg::<Metadata> {
         token_id: token_id.clone(),
         owner: info.sender.clone().into(),
         token_uri: Some(remarkables_uri.clone()),
-        extension: Empty {},
+        extension: Metadata {
+            rarity_level,
+            subspace_id: CONFIG.load(deps.storage)?.subspace_id.into(),
+            post_id,
+        },
     });
     let wasm_execute_mint_msg = wasm_execute(CW721_ADDRESS.load(deps.storage)?, &mint_msg, vec![])?;
     Ok(Response::new()
@@ -341,7 +346,7 @@ fn query_all_nft_info(
     deps: Deps<DesmosQuery>,
     token_id: String,
     include_expired: Option<bool>,
-) -> StdResult<AllNftInfoResponse<Empty>> {
+) -> StdResult<AllNftInfoResponse<Metadata>> {
     let cw721_address = CW721_ADDRESS.load(deps.storage)?;
     deps.querier.query_wasm_smart(
         cw721_address,

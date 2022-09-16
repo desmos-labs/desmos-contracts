@@ -2,7 +2,7 @@ use std::env::current_dir;
 use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-use cosmwasm_std::Empty;
+use cw721_remarkables::Metadata;
 
 use cw721::{AllNftInfoResponse, TokensResponse};
 use remarkables::msg::{
@@ -20,6 +20,6 @@ fn main() {
     export_schema(&schema_for!(QueryMsg), &out_dir);
     export_schema(&schema_for!(QueryConfigResponse), &out_dir);
     export_schema(&schema_for!(QueryRaritiesResponse), &out_dir);
-    export_schema(&schema_for!(AllNftInfoResponse<Empty>), &out_dir);
+    export_schema(&schema_for!(AllNftInfoResponse<Metadata>), &out_dir);
     export_schema(&schema_for!(TokensResponse), &out_dir);
 }

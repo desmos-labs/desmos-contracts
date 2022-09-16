@@ -7,6 +7,7 @@ mod tests {
     use cw721::{AllNftInfoResponse, NftInfoResponse, OwnerOfResponse, TokensResponse};
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
     use cw721_base::QueryMsg as Cw721QueryMsg;
+    use cw721_remarkables::Metadata;
     use cw_multi_test::{Contract, ContractWrapper, Executor};
     use desmos_bindings::{
         mocks::mock_apps::{
@@ -18,6 +19,7 @@ mod tests {
 
     const ADMIN: &str = "cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t";
     const RARITY_LEVEL: u32 = 1;
+    const SUBSPACE_ID: Uint64 = Uint64::new(1);
     const POST_ID: Uint64 = Uint64::new(1);
     const REMARKABLES_URI: &str = "ipfs://remarkables.com";
     const AUTHOR: &str = "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc";
@@ -58,7 +60,7 @@ mod tests {
                 name: "test".into(),
                 symbol: "test".into(),
             },
-            subspace_id: POST_ID.into(),
+            subspace_id: SUBSPACE_ID.into(),
             rarities: vec![
                 Rarity {
                     engagement_threshold: 100,
@@ -284,7 +286,7 @@ mod tests {
                 )
                 .unwrap();
             assert_eq!(1, response.tokens.len());
-            let cw721_response: AllNftInfoResponse<Empty> = querier
+            let cw721_response: AllNftInfoResponse<Metadata> = querier
                 .query_wasm_smart(
                     config.cw721_address.as_str(),
                     &Cw721QueryMsg::<Empty>::AllNftInfo {
@@ -293,7 +295,7 @@ mod tests {
                     },
                 )
                 .unwrap();
-            let response: AllNftInfoResponse<Empty> = querier
+            let response: AllNftInfoResponse<Metadata> = querier
                 .query_wasm_smart(
                     &addr,
                     &QueryMsg::AllNftInfo {
@@ -311,7 +313,11 @@ mod tests {
                     },
                     info: NftInfoResponse {
                         token_uri: Some(REMARKABLES_URI.to_string()),
-                        extension: Empty {},
+                        extension: Metadata {
+                            rarity_level: RARITY_LEVEL,
+                            subspace_id: SUBSPACE_ID.into(),
+                            post_id: POST_ID.into(),
+                        },
                     }
                 },
                 response

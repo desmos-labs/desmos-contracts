@@ -367,6 +367,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw721-remarkables"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-multi-test",
+ "cw-storage-plus 0.14.0",
+ "cw2 0.14.0",
+ "cw721",
+ "cw721-base",
+ "desmos-bindings",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "der"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -740,6 +758,7 @@ dependencies = [
  "cw-storage-plus",
  "cw2",
  "cw721-base",
+ "cw721-remarkables",
  "desmos-bindings",
  "schemars",
  "serde",
