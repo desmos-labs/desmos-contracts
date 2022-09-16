@@ -72,7 +72,7 @@ pub struct InstantiateMsg {
 
 impl InstantiateMsg {
     pub fn validate(&self) -> Result<(), ContractError> {
-        if self.subspace_id == Uint64::zero() {
+        if self.subspace_id.is_zero() {
             return Err(ContractError::InvalidSubspaceId {});
         }
 
