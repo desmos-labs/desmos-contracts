@@ -32,7 +32,7 @@ pub const CONFIG: Item<Config> = Item::new("config");
 pub const SENT_TIPS_HISTORY: Map<Addr, VecDeque<SentTip>> = Map::new("sent_tips_history");
 pub const RECEIVED_TIPS_HISTORY: Map<Addr, VecDeque<ReceivedTip>> =
     Map::new("received_tips_history");
-pub const POST_TIPS_HISTORY: Map<u64, VecDeque<PostTip>> = Map::new("received_tips_history");
+pub const POST_TIPS_HISTORY: Map<u64, VecDeque<PostTip>> = Map::new("post_tips_history");
 
 impl StateServiceFee {
     /// Computes the fees that the contract will holds and the coins that
