@@ -24,6 +24,9 @@ pub enum ContractError {
     #[error("post with id: {id} not found")]
     PostNotFound { id: u64 },
 
+    #[error("to be able to tip you must have a profile")]
+    ProfileRequired {},
+
     #[error("you can't tip yourself")]
     SenderEqReceiver {},
 

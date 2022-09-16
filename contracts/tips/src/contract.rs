@@ -16,6 +16,7 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 use cw_storage_plus::{KeyDeserialize, Map, PrimaryKey};
 use desmos_bindings::posts::querier::PostsQuerier;
+use desmos_bindings::profiles::querier::ProfilesQuerier;
 use desmos_bindings::subspaces::querier::SubspacesQuerier;
 use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
 use serde::de::DeserializeOwned;
@@ -128,6 +129,11 @@ fn execute_send_tip(
     }
 
     let config = CONFIG.load(deps.storage)?;
+
+    let profile_querier = ProfilesQuerier::new(deps.querier.deref());
+    profile_querier
+        .query_profile(info.sender.clone())
+        .map_err(|_| ContractError::ProfileRequired {})?;
 
     if let Some(service_fee) = &config.service_fee {
         service_fee.check_fees(&info.funds, &tip_amount)?;
@@ -472,6 +478,7 @@ mod tests {
     use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
     use desmos_bindings::msg::DesmosMsg;
     use desmos_bindings::posts::query::PostsQuery;
+    use desmos_bindings::profiles::mocks::mock_profiles_query_response;
     use desmos_bindings::query::DesmosQuery;
     use desmos_bindings::subspaces::mocks::mock_subspaces_query_response;
     use desmos_bindings::subspaces::query::SubspacesQuery;
@@ -782,6 +789,46 @@ mod tests {
     }
 
     #[test]
+    fn tip_without_profile() {
+        let querier =
+            MockQuerier::<DesmosQuery>::new(&[]).with_custom_handler(|query| match query {
+                DesmosQuery::Profiles(_) => SystemResult::Err(SystemError::Unknown {}),
+                DesmosQuery::Subspaces(subspaces_query) => {
+                    SystemResult::Ok(mock_subspaces_query_response(subspaces_query))
+                }
+                _ => SystemResult::Err(SystemError::Unknown {}),
+            });
+
+        let mut deps = OwnedDeps {
+            storage: MockStorage::default(),
+            querier,
+            api: MockApi::default(),
+            custom_query_type: PhantomData,
+        };
+
+        init_contract(
+            deps.as_mut(),
+            1,
+            Some(ServiceFee::Fixed {
+                amount: vec![Coin::new(100, "udsm"), Coin::new(100, "uatom")],
+            }),
+            5,
+        )
+        .unwrap();
+
+        let tip_error = tip_user(
+            deps.as_mut(),
+            USER_1,
+            USER_2,
+            &[Coin::new(5100, "udsm")],
+            &[Coin::new(5000, "udsm")],
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::ProfileRequired {}, tip_error);
+    }
+
+    #[test]
     fn tip_user_with_missing_fee_coin() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
@@ -1002,6 +1049,9 @@ mod tests {
                     }),
                     _ => SystemResult::Err(SystemError::Unknown {}),
                 },
+                DesmosQuery::Profiles(profile_query) => {
+                    SystemResult::Ok(mock_profiles_query_response(profile_query))
+                }
                 DesmosQuery::Subspaces(subspaces_query) => {
                     SystemResult::Ok(mock_subspaces_query_response(subspaces_query))
                 }
