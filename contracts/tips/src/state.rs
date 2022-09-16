@@ -24,15 +24,30 @@ pub struct Config {
     pub tips_history_size: u32,
 }
 
-pub type SentTip = (Addr, Vec<Coin>, u64);
-pub type ReceivedTip = (Addr, Vec<Coin>, u64);
-pub type PostTip = (Addr, Vec<Coin>);
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct StateTip {
+    /// Who sent this tip.
+    pub sender: Addr,
+    /// Who received this tip.
+    pub receiver: Addr,
+    /// If some means that this tip is referencing a post.
+    pub post_id: u64,
+    /// Tip amount.
+    pub amount: Vec<Coin>,
+    /// Counts how many references exist toward this tip.
+    /// With our current implementation this value can be in [0, 3]
+    /// since a tip can be inside an user sent tips history,
+    /// an user received tips history and a post received tips history.
+    pub ref_counter: u8,
+}
 
 pub const CONFIG: Item<Config> = Item::new("config");
-pub const SENT_TIPS_HISTORY: Map<Addr, VecDeque<SentTip>> = Map::new("sent_tips_history");
-pub const RECEIVED_TIPS_HISTORY: Map<Addr, VecDeque<ReceivedTip>> =
-    Map::new("received_tips_history");
-pub const POST_TIPS_HISTORY: Map<u64, VecDeque<PostTip>> = Map::new("post_tips_history");
+pub const BLOCK_INDEX: Item<(u64, u32)> = Item::new("block_index");
+pub const TIPS: Map<(u64, u32), StateTip> = Map::new("tips");
+pub type TipHistory = VecDeque<(u64, u32)>;
+pub const SENT_TIPS_HISTORY: Map<Addr, TipHistory> = Map::new("sent_tips_history");
+pub const RECEIVED_TIPS_HISTORY: Map<Addr, TipHistory> = Map::new("received_tips_history");
+pub const POST_TIPS_HISTORY: Map<u64, TipHistory> = Map::new("post_tips_history");
 
 impl StateServiceFee {
     /// Computes the fees that the contract will holds and the coins that
