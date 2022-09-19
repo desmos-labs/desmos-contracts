@@ -37,6 +37,7 @@
       "type": "object",
       "required": [
         "amount",
+        "block_height",
         "receiver",
         "sender"
       ],
@@ -46,6 +47,9 @@
           "items": {
             "$ref": "#/definitions/Coin"
           }
+        },
+        "block_height": {
+          "$ref": "#/definitions/Uint64"
         },
         "post_id": {
           "anyOf": [
