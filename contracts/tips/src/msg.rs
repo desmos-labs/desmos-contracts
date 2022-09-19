@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 /// Fees required to execute [`ExecuteMsg::SendTip`].
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+#[allow(clippy::derive_partial_eq_without_eq)]
 pub enum ServiceFee {
     /// Represents a fixed fee that the sender needs to pay in order to send the tip.
     Fixed {
@@ -208,6 +209,7 @@ pub struct TipsResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[allow(clippy::derive_partial_eq_without_eq)]
 pub struct Tip {
     pub sender: Addr,
     pub receiver: Addr,

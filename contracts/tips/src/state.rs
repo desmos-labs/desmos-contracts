@@ -11,6 +11,7 @@ use std::ops::{Div, Mul};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+#[allow(clippy::derive_partial_eq_without_eq)]
 pub enum StateServiceFee {
     Fixed { amount: Vec<Coin> },
     Percentage { value: Decimal },
@@ -25,6 +26,7 @@ pub struct Config {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[allow(clippy::derive_partial_eq_without_eq)]
 pub struct StateTip {
     /// Who sent this tip.
     pub sender: Addr,
@@ -298,7 +300,7 @@ mod tests {
     }
 
     #[test]
-    fn percentage_fee_fund_coin_not_provided_Error() {
+    fn percentage_fee_fund_coin_not_provided_error() {
         let tip_amount = 1000;
         let fund_amount = 1100;
 

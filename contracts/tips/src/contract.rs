@@ -189,13 +189,13 @@ fn execute_send_tip(
         };
 
         // Save the tip
-        TIPS.save(deps.storage, tip_key.clone(), &tip)?;
+        TIPS.save(deps.storage, tip_key, &tip)?;
         // Update sender tips history
         add_tip_to_subject_history(
             deps.storage,
             &SENT_TIPS_HISTORY,
             tip.sender,
-            tip_key.clone(),
+            tip_key,
             config.tips_history_size,
         )?;
         // Update receiver tips history
@@ -203,7 +203,7 @@ fn execute_send_tip(
             deps.storage,
             &RECEIVED_TIPS_HISTORY,
             tip.receiver,
-            tip_key.clone(),
+            tip_key,
             config.tips_history_size,
         )?;
 
@@ -232,17 +232,15 @@ fn execute_send_tip(
         .add_attribute(ATTRIBUTE_RECEIVER, receiver.as_str());
 
     if post_id > 0 {
-        response.attributes(ATTRIBUTE_TIP_POST_ID, post_id.to_string())
+        response = response.add_attribute(ATTRIBUTE_TIP_POST_ID, post_id.to_string());
     }
 
-    response
+    Ok(response
         .add_attribute(ATTRIBUTE_TIP_AMOUNT, serialized_tip_amount)
         .add_message(BankMsg::Send {
             to_address: receiver.to_string(),
             amount: tip_amount,
-        });
-
-    Ok(response)
+        }))
 }
 
 /// Adds to a subject's tips history the provided tip key removing the oldest tips if
@@ -275,7 +273,7 @@ where
         // Get the key of the oldest tip
         let removed_tip_key = subject_history.pop_front().unwrap();
         // Load the tip that may needs to be removed
-        let mut tip = TIPS.load(storage, removed_tip_key.clone())?;
+        let mut tip = TIPS.load(storage, removed_tip_key)?;
         // Decrease the reference counter
         tip.ref_counter -= 1;
         if tip.ref_counter == 0 {
