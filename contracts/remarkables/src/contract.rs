@@ -26,7 +26,7 @@ use crate::error::ContractError;
 use crate::msg::{
     ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, QueryRaritiesResponse, Rarity,
 };
-use crate::state::{ConfigState, CONFIG, CW721_ADDRESS, RARITIES};
+use crate::state::{ConfigState, CONFIG, CW721_ADDRESS, MINTED_TOKEN, RARITIES};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:remarkables";
@@ -152,8 +152,15 @@ fn execute_mint(
         post_id,
         rarity.engagement_threshold,
     )?;
-    // Create the cw721 message to send to mint the remarkables
+    // Check if token has been minted or not
     let token_id = convert_post_id_to_token_id(post_id, rarity_level);
+    if MINTED_TOKEN
+        .may_load(deps.storage, token_id.clone())?
+        .is_some()
+    {
+        return Err(ContractError::TokenHasBeenMinted { token_id: token_id });
+    }
+    // Create the cw721 message to send to mint the remarkables
     let mint_msg = Cw721ExecuteMsg::<Metadata, Empty>::Mint(MintMsg::<Metadata> {
         token_id: token_id.clone(),
         owner: info.sender.clone().into(),
@@ -780,6 +787,54 @@ mod tests {
                 execute(deps.as_mut(), env, info, msg).unwrap_err(),
                 ContractError::NoEligibilityError {},
             )
+        }
+        #[test]
+        fn mint_existing_token_error() {
+            let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
+                .with_custom_handler(|query| match query {
+                    DesmosQuery::Posts(query) => SystemResult::Ok(mock_posts_query_response(query)),
+                    DesmosQuery::Subspaces(query) => {
+                        SystemResult::Ok(mock_subspaces_query_response(query))
+                    }
+                    DesmosQuery::Reactions(query) => match query {
+                        ReactionsQuery::Reactions { user, .. } => SystemResult::Ok(
+                            ContractResult::Ok(to_binary(&get_reactions(user, true)).unwrap()),
+                        ),
+                        _ => SystemResult::Err(SystemError::Unknown {}),
+                    },
+                    #[allow(unreachable_patterns)]
+                    _ => SystemResult::Err(SystemError::Unknown {}),
+                });
+            let mut deps = OwnedDeps {
+                storage: MockStorage::default(),
+                querier,
+                api: MockApi::default(),
+                custom_query_type: PhantomData,
+            };
+            do_instantiate(deps.as_mut());
+            MINTED_TOKEN
+                .save(
+                    deps.as_mut().storage,
+                    convert_post_id_to_token_id(POST_ID, RARITY_LEVEL),
+                    &true,
+                )
+                .unwrap();
+            CW721_ADDRESS
+                .save(deps.as_mut().storage, &Addr::unchecked("cw_address"))
+                .unwrap();
+            let env = mock_env();
+            let info = mock_info(USER, &coins(MINT_FEES, DENOM));
+            let msg = ExecuteMsg::Mint {
+                post_id: POST_ID.into(),
+                remarkables_uri: "ipfs://test.com".into(),
+                rarity_level: RARITY_LEVEL,
+            };
+            assert_eq!(
+                ContractError::TokenHasBeenMinted {
+                    token_id: convert_post_id_to_token_id(POST_ID, RARITY_LEVEL)
+                },
+                execute(deps.as_mut(), env, info, msg).unwrap_err()
+            );
         }
         #[test]
         fn mint_properly() {

@@ -56,4 +56,7 @@ pub enum ContractError {
 
     #[error("Minter {minter} is not the post author {author}")]
     MinterNotPostAuthor { minter: String, author: String },
+
+    #[error("Token with id {token_id} has already been minted")]
+    TokenHasBeenMinted{ token_id: String }
 }

@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::Addr;
-use cw_storage_plus::Item;
+use cw_storage_plus::{Item, Map};
 
 use crate::msg::Rarity;
 
@@ -18,3 +18,4 @@ pub struct ConfigState {
 pub const RARITIES: Item<RaritiesState> = Item::new("rarities");
 pub const CONFIG: Item<ConfigState> = Item::new("config");
 pub const CW721_ADDRESS: Item<Addr> = Item::new("cw721_address");
+pub const MINTED_TOKEN: Map<String, bool> = Map::new("minted_token");

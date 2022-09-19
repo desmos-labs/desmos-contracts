@@ -5,8 +5,8 @@ mod tests {
     use crate::test_utils::*;
     use cosmwasm_std::{wasm_execute, Addr, Empty, Uint64};
     use cw721::{AllNftInfoResponse, NftInfoResponse, OwnerOfResponse, TokensResponse};
-    use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
     use cw721_base::QueryMsg as Cw721QueryMsg;
+    use cw721_base::{ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg};
     use cw721_remarkables::Metadata;
     use cw_multi_test::{Contract, ContractWrapper, Executor};
     use desmos_bindings::{
@@ -153,6 +153,57 @@ mod tests {
     }
     mod mint {
         use super::*;
+        #[test]
+        fn mint_burned_token_error() {
+            let (mut app, addr, _) = proper_instantiate();
+            let config: QueryConfigResponse = app
+                .wrap()
+                .query_wasm_smart(&addr, &QueryMsg::Config {})
+                .unwrap();
+            app.execute(
+                Addr::unchecked(AUTHOR),
+                wasm_execute(
+                    &addr,
+                    &ExecuteMsg::Mint {
+                        post_id: POST_ID,
+                        remarkables_uri: REMARKABLES_URI.into(),
+                        rarity_level: RARITY_LEVEL,
+                    },
+                    vec![],
+                )
+                .unwrap()
+                .into(),
+            )
+            .unwrap();
+            app.execute(
+                Addr::unchecked(AUTHOR),
+                wasm_execute(
+                    &config.cw721_address,
+                    &Cw721ExecuteMsg::<Metadata, Empty>::Burn {
+                        token_id: convert_post_id_to_token_id(POST_ID.into(), RARITY_LEVEL),
+                    },
+                    vec![],
+                )
+                .unwrap()
+                .into(),
+            )
+            .unwrap();
+            app.execute(
+                Addr::unchecked(AUTHOR),
+                wasm_execute(
+                    &addr,
+                    &ExecuteMsg::Mint {
+                        post_id: POST_ID,
+                        remarkables_uri: REMARKABLES_URI.into(),
+                        rarity_level: RARITY_LEVEL,
+                    },
+                    vec![],
+                )
+                .unwrap()
+                .into(),
+            )
+            .unwrap();
+        }
         #[test]
         fn mint_properly() {
             let (mut app, addr, _) = proper_instantiate();
