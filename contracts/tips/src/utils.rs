@@ -101,4 +101,23 @@ mod tests {
             overflow_err
         )
     }
+
+    #[test]
+    fn test_sort_coin_properly() {
+        let merged = sum_coins_sorted(vec![
+            Coin::new(100, "uosmo"),
+            Coin::new(1000, "uatom"),
+            Coin::new(1000, "udsm"),
+        ])
+        .unwrap();
+
+        assert_eq!(
+            vec![
+                Coin::new(1000, "uatom"),
+                Coin::new(1000, "udsm"),
+                Coin::new(100, "uosmo")
+            ],
+            merged
+        )
+    }
 }
