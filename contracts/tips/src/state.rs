@@ -1,7 +1,7 @@
 use crate::error::ContractError;
 use crate::msg::ServiceFee;
-use crate::utils::sum_coins_sorted;
-use cosmwasm_std::{Addr, Coin, Decimal, Uint128};
+use crate::utils::{serialize_coins, sum_coins_sorted};
+use cosmwasm_std::{Addr, Coin, Decimal};
 use cw_storage_plus::{Item, Map};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -75,24 +75,23 @@ impl StateServiceFee {
 
         // Put the tip amount inside the fees
         fee.extend(tip_amount.to_vec());
+        let fee_plus_tips = sum_coins_sorted(fee)?;
         // Check fees + tips < funds
-        for fee_plus_tip in sum_coins_sorted(fee)?.drain(0..) {
+        for fee_plus_tip in fee_plus_tips.iter() {
             // Search the fee coin inside the funds sent to the contract
             let fund_coin_amount = funds
                 .binary_search_by(|coin| coin.denom.cmp(&fee_plus_tip.denom))
                 .map(|index| funds[index].amount)
-                .map_err(|_| ContractError::InsufficientAmount {
-                    denom: fee_plus_tip.denom.clone(),
-                    requested: fee_plus_tip.amount,
-                    provided: Uint128::zero(),
+                .map_err(|_| ContractError::InsufficientFunds {
+                    requested: serialize_coins(&fee_plus_tips),
+                    provided: serialize_coins(&funds),
                 })?;
 
             // Ensure tip amount + fee <= provided funds
             if fee_plus_tip.amount > fund_coin_amount {
-                return Err(ContractError::InsufficientAmount {
-                    denom: fee_plus_tip.denom,
-                    requested: fee_plus_tip.amount,
-                    provided: fund_coin_amount,
+                return Err(ContractError::InsufficientFunds {
+                    requested: serialize_coins(&fee_plus_tips),
+                    provided: serialize_coins(&funds),
                 });
             }
         }
@@ -121,7 +120,7 @@ mod tests {
     use crate::error::ContractError;
     use crate::msg::ServiceFee;
     use crate::state::StateServiceFee;
-    use cosmwasm_std::{Coin, Decimal, Uint128};
+    use cosmwasm_std::{Coin, Decimal};
     use std::convert::TryFrom;
 
     #[test]
@@ -157,10 +156,9 @@ mod tests {
         let computed_fees = service_fees.check_fees(&funds, &tips).unwrap_err();
 
         assert_eq!(
-            ContractError::InsufficientAmount {
-                denom: "udsm".to_string(),
-                requested: Uint128::new(fixed_fee_amount + tip_amount),
-                provided: Uint128::new(fund_amount),
+            ContractError::InsufficientFunds {
+                requested: "3000udsm".to_string(),
+                provided: "2500udsm".to_string(),
             },
             computed_fees
         );
@@ -186,10 +184,9 @@ mod tests {
             .unwrap_err();
 
         assert_eq!(
-            ContractError::InsufficientAmount {
-                denom: "uatom".to_string(),
-                requested: fixed_fee_amount.into(),
-                provided: Uint128::zero()
+            ContractError::InsufficientFunds {
+                requested: "20000uatom,120000udsm".to_string(),
+                provided: "120000udsm".to_string()
             },
             computed_fees
         );
@@ -215,10 +212,9 @@ mod tests {
             .unwrap_err();
 
         assert_eq!(
-            ContractError::InsufficientAmount {
-                denom: "uatom".to_string(),
-                requested: tip_amount.into(),
-                provided: Uint128::zero(),
+            ContractError::InsufficientFunds {
+                requested: "100000uatom,120000udsm".to_string(),
+                provided: "120000udsm".to_string(),
             },
             computed_fees
         );
@@ -290,10 +286,9 @@ mod tests {
         let computed_fees = service_fees.check_fees(&funds, &tips).unwrap_err();
 
         assert_eq!(
-            ContractError::InsufficientAmount {
-                denom: "udsm".to_string(),
-                requested: Uint128::new(tip_amount + 100),
-                provided: Uint128::new(fund_amount),
+            ContractError::InsufficientFunds {
+                requested: "1100udsm".to_string(),
+                provided: "1099udsm".to_string(),
             },
             computed_fees
         );
@@ -317,10 +312,9 @@ mod tests {
         let computed_fees = service_fees.check_fees(&funds, &tips).unwrap_err();
 
         assert_eq!(
-            ContractError::InsufficientAmount {
-                denom: "uatom".to_string(),
-                requested: Uint128::new(tip_amount + 100),
-                provided: Uint128::zero(),
+            ContractError::InsufficientFunds {
+                requested: "1100uatom,1100udsm".to_string(),
+                provided: "1100udsm".to_string(),
             },
             computed_fees
         );

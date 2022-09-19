@@ -1,4 +1,4 @@
-use cosmwasm_std::{StdError, Uint128};
+use cosmwasm_std::StdError;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -39,12 +39,8 @@ pub enum ContractError {
     #[error("invalid percentage fee")]
     InvalidPercentageFee {},
 
-    #[error("insufficient {denom}, requested: {requested} provided: {provided}")]
-    InsufficientAmount {
-        denom: String,
-        requested: Uint128,
-        provided: Uint128,
-    },
+    #[error("insufficient funds, requested: {requested} provided: {provided}")]
+    InsufficientFunds { requested: String, provided: String },
 
     #[error("funds message field is empty")]
     EmptyFunds {},
