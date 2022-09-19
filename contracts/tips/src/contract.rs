@@ -48,6 +48,8 @@ const ATTRIBUTE_TIPS_HISTORY_SIZE: &str = "tips_history_size";
 const ATTRIBUTE_NEW_ADMIN: &str = "new_admin";
 const ATTRIBUTE_NEW_SIZE: &str = "new_size";
 const ATTRIBUTE_RECEIVER: &str = "receiver";
+const ATTRIBUTE_TIP_POST_ID: &str = "tip_post_id";
+const ATTRIBUTE_TIP_AMOUNT: &str = "tip_amount";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -218,14 +220,29 @@ fn execute_send_tip(
         }
     }
 
-    Ok(Response::new()
+    let serialized_tip_amount = tip_amount
+        .iter()
+        .map(Coin::to_string)
+        .collect::<Vec<_>>()
+        .join(",");
+
+    let mut response = Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_SEND_TIP)
         .add_attribute(ATTRIBUTE_SENDER, info.sender)
-        .add_attribute(ATTRIBUTE_RECEIVER, receiver.as_str())
+        .add_attribute(ATTRIBUTE_RECEIVER, receiver.as_str());
+
+    if post_id > 0 {
+        response.attributes(ATTRIBUTE_TIP_POST_ID, post_id.to_string())
+    }
+
+    response
+        .add_attribute(ATTRIBUTE_TIP_AMOUNT, serialized_tip_amount)
         .add_message(BankMsg::Send {
             to_address: receiver.to_string(),
             amount: tip_amount,
-        }))
+        });
+
+    Ok(response)
 }
 
 /// Adds to a subject's tips history the provided tip key removing the oldest tips if
