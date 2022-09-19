@@ -240,7 +240,7 @@ mod tests {
     use cosmwasm_std::{Addr, Coin, Decimal, Uint64};
 
     #[test]
-    fn fixed_service_fee_zero_fee_coin() {
+    fn fixed_service_fee_zero_fee_coin_error() {
         let service_fee = ServiceFee::Fixed {
             amount: vec![Coin::new(0, "udsm")],
         };
@@ -254,7 +254,7 @@ mod tests {
     }
 
     #[test]
-    fn fixed_service_fee_empty_amount() {
+    fn fixed_service_fee_empty_amount_error() {
         let service_fee = ServiceFee::Fixed { amount: vec![] };
 
         assert_eq!(
@@ -273,7 +273,7 @@ mod tests {
     }
 
     #[test]
-    fn percentage_service_fee_zero_percentage() {
+    fn percentage_service_fee_zero_percentage_error() {
         let service_fee = ServiceFee::Percentage {
             value: Decimal::from_atomics(0u32, 0).unwrap(),
         };
@@ -285,7 +285,7 @@ mod tests {
     }
 
     #[test]
-    fn percentage_service_fee_100_percentage() {
+    fn percentage_service_fee_100_percentage_error() {
         let service_fee = ServiceFee::Percentage {
             value: Decimal::from_atomics(100u32, 0).unwrap(),
         };

@@ -45,7 +45,7 @@ mod tests {
     use cosmwasm_std::{Coin, OverflowError, OverflowOperation, StdError};
 
     #[test]
-    fn test_coin_merge_duplicates() {
+    fn test_coin_merge_duplicates_properly() {
         let merged = sum_coins_sorted(vec![
             Coin::new(100, "uatom"),
             Coin::new(3000, "udsm"),
@@ -66,7 +66,7 @@ mod tests {
     }
 
     #[test]
-    fn test_coin_merge_no_duplicates() {
+    fn test_coin_merge_no_duplicates_properly() {
         let merged = sum_coins_sorted(vec![
             Coin::new(100, "uatom"),
             Coin::new(3000, "udsm"),
@@ -85,7 +85,7 @@ mod tests {
     }
 
     #[test]
-    fn test_coin_merge_overflow() {
+    fn test_coin_merge_overflow_error() {
         let overflow_err = sum_coins_sorted(vec![
             Coin::new(u128::MAX - 1, "uatom"),
             Coin::new(3000, "uatom"),
