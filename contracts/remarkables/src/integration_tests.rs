@@ -188,7 +188,7 @@ mod tests {
                 .into(),
             )
             .unwrap();
-            app.execute(
+            assert!(app.execute(
                 Addr::unchecked(AUTHOR),
                 wasm_execute(
                     &addr,
@@ -201,8 +201,7 @@ mod tests {
                 )
                 .unwrap()
                 .into(),
-            )
-            .unwrap();
+            ).is_err())
         }
         #[test]
         fn mint_properly() {

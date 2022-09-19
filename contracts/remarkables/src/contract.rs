@@ -160,6 +160,7 @@ fn execute_mint(
     {
         return Err(ContractError::TokenHasBeenMinted { token_id: token_id });
     }
+    MINTED_TOKEN.save(deps.storage, token_id.clone(), &true)?;
     // Create the cw721 message to send to mint the remarkables
     let mint_msg = Cw721ExecuteMsg::<Metadata, Empty>::Mint(MintMsg::<Metadata> {
         token_id: token_id.clone(),
