@@ -7,6 +7,7 @@ use crate::state::{
     Config, StateServiceFee, StateTip, TipHistory, BLOCK_INDEX, CONFIG, POST_TIPS_HISTORY,
     RECEIVED_TIPS_HISTORY, SENT_TIPS_HISTORY, TIPS,
 };
+use crate::utils;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -220,12 +221,6 @@ fn execute_send_tip(
         }
     }
 
-    let serialized_tip_amount = tip_amount
-        .iter()
-        .map(Coin::to_string)
-        .collect::<Vec<_>>()
-        .join(",");
-
     let mut response = Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_SEND_TIP)
         .add_attribute(ATTRIBUTE_SENDER, info.sender)
@@ -236,7 +231,7 @@ fn execute_send_tip(
     }
 
     Ok(response
-        .add_attribute(ATTRIBUTE_TIP_AMOUNT, serialized_tip_amount)
+        .add_attribute(ATTRIBUTE_TIP_AMOUNT, utils::serialize_coins(&tip_amount))
         .add_message(BankMsg::Send {
             to_address: receiver.to_string(),
             amount: tip_amount,
@@ -488,7 +483,7 @@ mod tests {
     };
     use cosmwasm_std::{
         from_binary, Addr, BankMsg, Coin, Decimal, DepsMut, OwnedDeps, Response, StdError, SubMsg,
-        SystemError, SystemResult, Uint128, Uint64,
+        SystemError, SystemResult, Uint64,
     };
     use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
     use desmos_bindings::msg::DesmosMsg;
@@ -867,10 +862,9 @@ mod tests {
         .unwrap_err();
 
         assert_eq!(
-            ContractError::InsufficientAmount {
-                denom: "uatom".to_string(),
-                requested: Uint128::new(100),
-                provided: Uint128::zero(),
+            ContractError::InsufficientFunds {
+                requested: "100uatom,5100udsm".to_string(),
+                provided: "5100udsm".to_string(),
             },
             tip_error
         );
@@ -900,10 +894,9 @@ mod tests {
         .unwrap_err();
 
         assert_eq!(
-            ContractError::InsufficientAmount {
-                denom: "udsm".to_string(),
-                requested: Uint128::new(6000),
-                provided: Uint128::new(5999),
+            ContractError::InsufficientFunds {
+                requested: "6000udsm".to_string(),
+                provided: "5999udsm".to_string(),
             },
             tip_error
         );
@@ -1125,10 +1118,9 @@ mod tests {
         .unwrap_err();
 
         assert_eq!(
-            ContractError::InsufficientAmount {
-                denom: "uatom".to_string(),
-                requested: Uint128::new(100),
-                provided: Uint128::zero(),
+            ContractError::InsufficientFunds {
+                requested: "100uatom,5000udsm".to_string(),
+                provided: "5000udsm".to_string(),
             },
             tip_error
         );
@@ -1158,10 +1150,9 @@ mod tests {
         .unwrap_err();
 
         assert_eq!(
-            ContractError::InsufficientAmount {
-                denom: "udsm".to_string(),
-                requested: Uint128::new(6000),
-                provided: Uint128::new(1000),
+            ContractError::InsufficientFunds {
+                requested: "6000udsm".to_string(),
+                provided: "1000udsm".to_string(),
             },
             tip_error
         );

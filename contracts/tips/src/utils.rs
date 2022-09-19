@@ -38,10 +38,20 @@ pub fn sum_coins_sorted(coins: Vec<Coin>) -> Result<Vec<Coin>, ContractError> {
     Ok(coins)
 }
 
+/// Serialize a slice of [`Coin`] into where each coin is separated by a "," (comma).
+/// * `coins` - Coins slice to serialize.
+pub fn serialize_coins(coins: &[Coin]) -> String {
+    coins
+        .iter()
+        .map(Coin::to_string)
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
 #[cfg(test)]
 mod tests {
     use crate::error::ContractError;
-    use crate::utils::sum_coins_sorted;
+    use crate::utils::{serialize_coins, sum_coins_sorted};
     use cosmwasm_std::{Coin, OverflowError, OverflowOperation, StdError};
 
     #[test]
@@ -118,6 +128,14 @@ mod tests {
                 Coin::new(100, "uosmo")
             ],
             merged
+        )
+    }
+
+    #[test]
+    fn serialize_coins_properly() {
+        assert_eq!(
+            "100uatom,100udsm",
+            serialize_coins(&[Coin::new(100, "uatom"), Coin::new(100, "udsm")])
         )
     }
 }
