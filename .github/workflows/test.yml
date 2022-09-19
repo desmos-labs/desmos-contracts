@@ -22,6 +22,10 @@ jobs:
             **/**.rs
             **/**.toml
 
+      - name: Prepare rust cache 🗄️
+        if: env.GIT_DIFF
+        uses: Swatinem/rust-cache@v2
+
       - name: Setup Rust ⚙️
         if: env.GIT_DIFF
         uses: actions-rs/toolchain@v1
