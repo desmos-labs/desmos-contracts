@@ -188,20 +188,22 @@ mod tests {
                 .into(),
             )
             .unwrap();
-            assert!(app.execute(
-                Addr::unchecked(AUTHOR),
-                wasm_execute(
-                    &addr,
-                    &ExecuteMsg::Mint {
-                        post_id: POST_ID,
-                        remarkables_uri: REMARKABLES_URI.into(),
-                        rarity_level: RARITY_LEVEL,
-                    },
-                    vec![],
+            assert!(app
+                .execute(
+                    Addr::unchecked(AUTHOR),
+                    wasm_execute(
+                        &addr,
+                        &ExecuteMsg::Mint {
+                            post_id: POST_ID,
+                            remarkables_uri: REMARKABLES_URI.into(),
+                            rarity_level: RARITY_LEVEL,
+                        },
+                        vec![],
+                    )
+                    .unwrap()
+                    .into(),
                 )
-                .unwrap()
-                .into(),
-            ).is_err())
+                .is_err())
         }
         #[test]
         fn mint_properly() {
