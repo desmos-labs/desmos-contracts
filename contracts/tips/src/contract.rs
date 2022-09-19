@@ -570,7 +570,7 @@ mod tests {
     }
 
     #[test]
-    fn init_contract_with_invalid_subspace_id() {
+    fn init_contract_with_invalid_subspace_id_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         let init_err = init_contract(
@@ -584,7 +584,7 @@ mod tests {
     }
 
     #[test]
-    fn init_contract_with_invalid_tips_history_size() {
+    fn init_contract_with_invalid_tips_history_size_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         let init_err =
@@ -600,7 +600,7 @@ mod tests {
     }
 
     #[test]
-    fn init_contract_with_non_existing_subspace() {
+    fn init_contract_with_non_existing_subspace_error() {
         let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
             .with_custom_handler(|query| match query {
                 DesmosQuery::Subspaces(subspaces_query) => match subspaces_query {
@@ -643,7 +643,7 @@ mod tests {
     }
 
     #[test]
-    fn init_contract_with_empty_fixed_service_fees() {
+    fn init_contract_with_empty_fixed_service_fees_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         // Simulate init with 100% of service fees
@@ -659,7 +659,7 @@ mod tests {
     }
 
     #[test]
-    fn init_contract_with_invalid_zero_fee_coin() {
+    fn init_contract_with_invalid_zero_fee_coin_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         // Simulate init with 100% of service fees
@@ -682,7 +682,7 @@ mod tests {
     }
 
     #[test]
-    fn init_contract_with_invalid_percentage_service_fees() {
+    fn init_contract_with_invalid_percentage_service_fees_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         // Simulate init with 100% of service fees
@@ -722,7 +722,7 @@ mod tests {
     }
 
     #[test]
-    fn tip_user_with_invalid_address() {
+    fn tip_user_with_invalid_address_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(deps.as_mut(), 1, None, 5).unwrap();
@@ -745,7 +745,7 @@ mod tests {
     }
 
     #[test]
-    fn tip_with_empty_funds() {
+    fn tip_with_empty_funds_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(deps.as_mut(), 1, None, 5).unwrap();
@@ -763,7 +763,7 @@ mod tests {
     }
 
     #[test]
-    fn tip_to_yourself() {
+    fn tip_to_yourself_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -789,7 +789,7 @@ mod tests {
     }
 
     #[test]
-    fn tip_without_profile() {
+    fn tip_without_profile_error() {
         let querier =
             MockQuerier::<DesmosQuery>::new(&[]).with_custom_handler(|query| match query {
                 DesmosQuery::Profiles(_) => SystemResult::Err(SystemError::Unknown {}),
@@ -829,7 +829,7 @@ mod tests {
     }
 
     #[test]
-    fn tip_user_with_missing_fee_coin() {
+    fn tip_user_with_missing_fee_coin_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -862,7 +862,7 @@ mod tests {
     }
 
     #[test]
-    fn tip_user_with_insufficient_amount() {
+    fn tip_user_with_insufficient_amount_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1013,7 +1013,7 @@ mod tests {
     }
 
     #[test]
-    fn tip_post_with_invalid_post_id() {
+    fn tip_post_with_invalid_post_id_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1039,7 +1039,7 @@ mod tests {
     }
 
     #[test]
-    fn tip_post_with_non_existing_post_id() {
+    fn tip_post_with_non_existing_post_id_error() {
         let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
             .with_custom_handler(|query| match query {
                 DesmosQuery::Posts(post_query) => match post_query {
@@ -1087,7 +1087,7 @@ mod tests {
     }
 
     #[test]
-    fn tip_post_with_missing_fee_coin() {
+    fn tip_post_with_missing_fee_coin_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1120,7 +1120,7 @@ mod tests {
     }
 
     #[test]
-    fn tip_post_with_insufficient_fees() {
+    fn tip_post_with_insufficient_fees_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1260,7 +1260,7 @@ mod tests {
     }
 
     #[test]
-    fn tips_reach_tips_history_size() {
+    fn tips_reach_tips_history_size_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1347,7 +1347,7 @@ mod tests {
     }
 
     #[test]
-    fn update_service_fees_with_invalid_admin_address() {
+    fn update_service_fees_with_invalid_admin_address_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1376,7 +1376,7 @@ mod tests {
     }
 
     #[test]
-    fn update_service_fee_with_empty_fixed_fee() {
+    fn update_service_fee_with_empty_fixed_fee_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1403,7 +1403,7 @@ mod tests {
     }
 
     #[test]
-    fn update_service_fee_with_zero_fee_coin() {
+    fn update_service_fee_with_zero_fee_coin_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1437,7 +1437,7 @@ mod tests {
     }
 
     #[test]
-    fn update_service_fee_with_invalid_percentage() {
+    fn update_service_fee_with_invalid_percentage_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1529,7 +1529,7 @@ mod tests {
     }
 
     #[test]
-    fn update_admin_from_non_admin_user() {
+    fn update_admin_from_non_admin_user_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1556,7 +1556,7 @@ mod tests {
     }
 
     #[test]
-    fn update_admin_with_invalid_admin_address() {
+    fn update_admin_with_invalid_admin_address_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1616,7 +1616,7 @@ mod tests {
     }
 
     #[test]
-    fn update_tips_history_size_from_non_admin() {
+    fn update_tips_history_size_from_non_admin_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1640,7 +1640,7 @@ mod tests {
     }
 
     #[test]
-    fn update_tips_history_with_invalid_size() {
+    fn update_tips_history_with_invalid_size_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -1832,7 +1832,7 @@ mod tests {
     }
 
     #[test]
-    fn claim_fee_from_non_admin() {
+    fn claim_fee_from_non_admin_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -2104,7 +2104,7 @@ mod tests {
     }
 
     #[test]
-    fn query_tips_with_invalid_post_id() {
+    fn query_tips_with_invalid_post_id_error() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(
@@ -2130,7 +2130,7 @@ mod tests {
     }
 
     #[test]
-    fn query_tips_with_not_tipped_post_id() {
+    fn query_tips_with_not_tipped_post_id_properly() {
         let mut deps = mock_dependencies_with_custom_querier(&[]);
 
         init_contract(

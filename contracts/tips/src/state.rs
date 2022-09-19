@@ -141,7 +141,7 @@ mod tests {
     }
 
     #[test]
-    fn fixed_fees_insufficient_funds() {
+    fn fixed_fees_insufficient_funds_error() {
         let fixed_fee_amount = 2000;
         let tip_amount = 1000;
         let fund_amount = 2500;
@@ -165,7 +165,7 @@ mod tests {
     }
 
     #[test]
-    fn fixed_fees_fee_coin_not_provided() {
+    fn fixed_fees_fee_coin_not_provided_error() {
         let fixed_fee_amount = 20000;
         let tip_amount = 100000;
 
@@ -194,7 +194,7 @@ mod tests {
     }
 
     #[test]
-    fn fixed_fees_fee_fund_coin_not_provided() {
+    fn fixed_fees_fee_fund_coin_not_provided_error() {
         let fixed_fee_amount = 20000;
         let tip_amount = 100000;
 
@@ -246,7 +246,7 @@ mod tests {
     }
 
     #[test]
-    fn percentage_state_service_fee_from_service_fee_invalid_percentage() {
+    fn percentage_state_service_fee_from_service_fee_invalid_percentage_error() {
         // Service fees at 100%
         let service_fee = ServiceFee::Percentage {
             value: Decimal::from_atomics(100u32, 0).unwrap(),
@@ -274,7 +274,7 @@ mod tests {
     }
 
     #[test]
-    fn percentage_fees_insufficient_funds() {
+    fn percentage_fees_insufficient_funds_error() {
         let tip_amount = 1000;
         let fund_amount = 1099;
 
@@ -298,7 +298,7 @@ mod tests {
     }
 
     #[test]
-    fn percentage_fee_fund_coin_not_provided() {
+    fn percentage_fee_fund_coin_not_provided_Error() {
         let tip_amount = 1000;
         let fund_amount = 1100;
 
