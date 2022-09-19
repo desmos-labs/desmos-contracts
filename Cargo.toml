@@ -5,6 +5,7 @@ members = [
     "contracts/poap-manager",
     "contracts/cw721-remarkables",
     "contracts/remarkables",
+    "contracts/tips",
 ]
 
 [profile.release]
