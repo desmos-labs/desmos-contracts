@@ -201,7 +201,7 @@ fn is_enough_fees(funds: Vec<Coin>, requireds: &Vec<Coin>) -> bool {
     true
 }
 
-/// Checks the post reaches the engagement threshold.
+/// Checks that the post reaches the engagement threshold.
 fn check_eligibility<'a>(
     storage: &dyn Storage,
     querier: &'a dyn Querier,
