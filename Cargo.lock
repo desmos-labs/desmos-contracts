@@ -368,6 +368,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw721-remarkables"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-multi-test",
+ "cw-storage-plus 0.14.0",
+ "cw2 0.14.0",
+ "cw721",
+ "cw721-base",
+ "desmos-bindings",
+ "schemars",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "der"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -728,6 +746,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
 dependencies = [
  "getrandom 0.2.7",
+]
+
+[[package]]
+name = "remarkables"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cosmwasm-storage",
+ "cw-multi-test",
+ "cw-storage-plus 0.13.4",
+ "cw-utils 0.14.0",
+ "cw2 0.13.4",
+ "cw721",
+ "cw721-base",
+ "cw721-remarkables",
+ "desmos-bindings",
+ "schemars",
+ "serde",
+ "thiserror",
+ "url",
 ]
 
 [[package]]

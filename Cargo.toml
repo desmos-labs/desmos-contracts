@@ -3,6 +3,8 @@ members = [
     "contracts/cw721-poap",
     "contracts/poap",
     "contracts/poap-manager",
+    "contracts/cw721-remarkables",
+    "contracts/remarkables",
     "contracts/tips",
 ]
 
