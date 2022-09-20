@@ -1,5 +1,5 @@
 [package]
-name = "poap-manager"
+name = "cw721-remarkables"
 version = "0.1.0"
 authors = ["Paul <paul@forbole.com>"]
 edition = "2018"
@@ -25,26 +25,24 @@ library = []
 optimize = """docker run --rm -v "$(pwd)"/../..:/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/workspace-optimizer:0.12.6 ./contracts/poap-manager
+  cosmwasm/workspace-optimizer:0.12.6 ./contracts/cw721-remarkables
 """
 
 [dependencies]
 cosmwasm-std = "1.0.0"
-cosmwasm-storage = "1.1.2"
-cw-storage-plus = "0.15.0"
-cw2 = "0.15.0"
+cosmwasm-storage = "1.0.0"
+cw-storage-plus = "0.14.0"
+cw2 = "0.14.0"
 schemars = "0.8.8"
 serde = { version = "1.0.137", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.35" }
-desmos-bindings = { version = "1.0.3", default-features = false, features = ["profiles", "query", "msg"]}
-poap = { path = "../poap", version = "0.1.0", features = ["library"]}
+desmos-bindings = { version = "1.0.0", default-features = false, features = ["msg", "query"] }
 cw721-base = { git = "https://github.com/desmos-labs/cw-nfts", features = ["library"], branch = "paul/update-custom-msg-query" }
-cw-utils = "0.15.0"
-cw721-poap = { path = "../cw721-poap", version = "0.1.0", features = ["library"]}
 
 [dev-dependencies]
-cosmwasm-schema = "1.1.2"
-cw-multi-test = { version = "0.13.4" }
-cw721 = { git = "https://github.com/desmos-labs/cw-nfts", branch = "paul/update-custom-msg-query" }
+cosmwasm-schema = "1.1.0"
+cw-multi-test = "0.13.2"
 desmos-bindings = { version = "1.0.3", default-features = false, features = ["mocks"]}
+cw721 = { git = "https://github.com/desmos-labs/cw-nfts", branch = "paul/update-custom-msg-query" }
+
 
