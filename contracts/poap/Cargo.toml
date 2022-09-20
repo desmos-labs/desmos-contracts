@@ -45,6 +45,6 @@ cw721 = { git = "https://github.com/desmos-labs/cw-nfts", branch = "paul/update-
 
 [dev-dependencies]
 cosmwasm-schema = "1.1.2"
-cw-multi-test = { version = "0.13.4" }
+cw-multi-test = { version = "0.15.0" }
 desmos-bindings = { version = "1.0.3", default-features = false, features = ["mocks"]}
 
