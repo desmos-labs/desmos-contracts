@@ -10,7 +10,9 @@ mod tests {
     use cw721_remarkables::Metadata;
     use cw_multi_test::{Contract, ContractWrapper, Executor};
     use desmos_bindings::{
-        mocks::mock_apps::{mock_desmos_app, mock_failing_desmos_app, DesmosApp, DesmosModule},
+        mocks::mock_apps::{
+            mock_desmos_app, mock_failing_desmos_app, DesmosApp, DesmosModule,
+        },
         msg::DesmosMsg,
         query::DesmosQuery,
     };
