@@ -195,25 +195,6 @@ dependencies = [
 
 [[package]]
 name = "cw-multi-test"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3f9a8ab7c3c29ec93cb7a39ce4b14a05e053153b4a17ef7cf2246af1b7c087e"
-dependencies = [
- "anyhow",
- "cosmwasm-std",
- "cosmwasm-storage",
- "cw-storage-plus 0.13.4",
- "cw-utils 0.13.4",
- "derivative",
- "itertools",
- "prost",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "cw-multi-test"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2519fd64b6b8c7c4e77c317e665bd19b438db3e8e4867241fa6a31cf060feda9"
@@ -375,7 +356,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-multi-test 0.13.4",
+ "cw-multi-test",
  "cw-storage-plus 0.15.0",
  "cw2 0.15.0",
  "cw721",
@@ -393,7 +374,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-multi-test 0.13.4",
+ "cw-multi-test",
  "cw-storage-plus 0.14.0",
  "cw2 0.14.0",
  "cw721",
@@ -433,7 +414,7 @@ checksum = "67ba3e792552d6960b0205994a4fca5e83daffb12b93f7ca9ac86c99d703b805"
 dependencies = [
  "anyhow",
  "cosmwasm-std",
- "cw-multi-test 0.15.0",
+ "cw-multi-test",
  "schemars",
  "serde",
  "thiserror",
@@ -673,7 +654,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-multi-test 0.13.4",
+ "cw-multi-test",
  "cw-storage-plus 0.15.0",
  "cw-utils 0.15.0",
  "cw2 0.15.0",
@@ -694,7 +675,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-multi-test 0.13.4",
+ "cw-multi-test",
  "cw-storage-plus 0.15.0",
  "cw-utils 0.15.0",
  "cw2 0.15.0",
@@ -774,10 +755,10 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-multi-test 0.13.4",
- "cw-storage-plus 0.13.4",
- "cw-utils 0.14.0",
- "cw2 0.13.4",
+ "cw-multi-test",
+ "cw-storage-plus 0.15.0",
+ "cw-utils 0.15.0",
+ "cw2 0.15.0",
  "cw721",
  "cw721-base",
  "cw721-remarkables",
@@ -1009,7 +990,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-multi-test 0.13.4",
+ "cw-multi-test",
  "cw-storage-plus 0.14.0",
  "cw-utils 0.14.0",
  "cw2 0.14.0",

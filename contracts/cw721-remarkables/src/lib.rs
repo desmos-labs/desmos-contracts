@@ -65,13 +65,13 @@ mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_env, mock_info};
     use cw721::Cw721Query;
-    use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
+    use desmos_bindings::mocks::mock_queriers::mock_desmos_dependencies;
 
     const CREATOR: &str = "creator";
 
     #[test]
     fn use_metadata_extension() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
         let contract = Cw721MetadataContract::default();
 
         let info = mock_info(CREATOR, &[]);
