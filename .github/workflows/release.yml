@@ -1,0 +1,28 @@
+name: Release contracts
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  test-contracts:
+    name: Release optimized contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v2
+
+      - name: Build optimized contracts 🔨
+        run: |
+          docker run --rm \
+          -v "$(pwd)":/code \
+          --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+          --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+          cosmwasm/workspace-optimizer:0.12.8 ./contracts/test-contract
+
+      - name: Create release 📜
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "artifacts/*.wasm"
+          token: ${{ secrets.GITHUB_TOKEN }}
