@@ -93,7 +93,7 @@ pub struct Metadata {
 ```rust
 pub enum ExecuteMsg{
   Mint{post_id: u64, remarkable_uri: String, rarity_level: u64},
-  UpdateRarityMintFee{rarity_level: u64, new_fee: Vec<Coin>},
+  UpdateRarityMintFees{rarity_level: u64, new_fee: Vec<Coin>},
   UpdateAdmin{new_admin: String}
 }
 ```
@@ -114,8 +114,8 @@ The `Mint<T>` message fields of the `CW721-base` should be filled as follows:
 
 The usage of the extention field here is not needed.
 
-##### UpdateRarityMintFee
-With the `UpdateRarityMintFee{rarity_level, new_fee}` message the `admin` of the contract can update the fees associated with
+##### UpdateRarityMintFees
+With the `UpdateRarityMintFees{rarity_level, new_fee}` message the `admin` of the contract can update the fees associated with
 a given rarity level. Here we need to check that:
 * The contract `sender` is the admin;
 * The `rarity_level` exists;

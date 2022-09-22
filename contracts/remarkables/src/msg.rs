@@ -54,7 +54,7 @@ pub enum ExecuteMsg {
         rarity_level: u32,
     },
     /// Message allowing the contract administrator to update the mint fees of the given rarity level.
-    UpdateRarityMintFee {
+    UpdateRarityMintFees {
         rarity_level: u32,
         new_fees: Vec<Coin>,
     },

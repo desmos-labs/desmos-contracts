@@ -37,10 +37,10 @@
       "description": "Message allowing the contract administrator to update the mint fees of the given rarity level.",
       "type": "object",
       "required": [
-        "update_rarity_mint_fee"
+        "update_rarity_mint_fees"
       ],
       "properties": {
-        "update_rarity_mint_fee": {
+        "update_rarity_mint_fees": {
           "type": "object",
           "required": [
             "new_fees",

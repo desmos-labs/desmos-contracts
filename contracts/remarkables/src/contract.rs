@@ -120,7 +120,7 @@ pub fn execute(
             rarity_level,
         } => execute_mint(deps, info, rarity_level, post_id.into(), remarkables_uri),
         ExecuteMsg::UpdateAdmin { new_admin } => execute_update_admin(deps, info, new_admin),
-        ExecuteMsg::UpdateRarityMintFee {
+        ExecuteMsg::UpdateRarityMintFees {
             rarity_level,
             new_fees,
         } => execute_update_rarity_mint_fees(deps, info, rarity_level, new_fees),
@@ -936,7 +936,7 @@ mod tests {
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(USER, &vec![]);
-            let msg = ExecuteMsg::UpdateRarityMintFee {
+            let msg = ExecuteMsg::UpdateRarityMintFees {
                 rarity_level: RARITY_LEVEL,
                 new_fees: coins(50, DENOM),
             };
@@ -953,7 +953,7 @@ mod tests {
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(ADMIN, &vec![]);
-            let msg = ExecuteMsg::UpdateRarityMintFee {
+            let msg = ExecuteMsg::UpdateRarityMintFees {
                 rarity_level: 2,
                 new_fees: coins(50, DENOM),
             };
@@ -968,7 +968,7 @@ mod tests {
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(ADMIN, &vec![]);
-            let msg = ExecuteMsg::UpdateRarityMintFee {
+            let msg = ExecuteMsg::UpdateRarityMintFees {
                 rarity_level: RARITY_LEVEL,
                 new_fees: coins(MINT_FEES, DENOM),
             };
@@ -983,7 +983,7 @@ mod tests {
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(ADMIN, &vec![]);
-            let msg = ExecuteMsg::UpdateRarityMintFee {
+            let msg = ExecuteMsg::UpdateRarityMintFees {
                 rarity_level: RARITY_LEVEL,
                 new_fees: coins(50, DENOM),
             };
