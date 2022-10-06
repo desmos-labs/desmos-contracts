@@ -36,7 +36,7 @@ cw2 = "0.15.0"
 schemars = "0.8.8"
 serde = { version = "1.0.145", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.35" }
-desmos-bindings = { version = "1.1.0", default-features = false, features = ["profiles", "query", "msg"]}
+desmos-bindings = { version = "1.1.1", default-features = false, features = ["profiles", "query", "msg"]}
 poap = { path = "../poap", version = "0.1.0", features = ["library"]}
 cw721-base = { git = "https://github.com/desmos-labs/cw-nfts", features = ["library"], branch = "paul/update-custom-msg-query" }
 cw-utils = "0.15.0"
@@ -46,5 +46,5 @@ cw721-poap = { path = "../cw721-poap", version = "0.1.0", features = ["library"]
 cosmwasm-schema = "1.1.2"
 cw-multi-test = "0.15.0"
 cw721 = { git = "https://github.com/desmos-labs/cw-nfts", branch = "paul/update-custom-msg-query" }
-desmos-bindings = { version = "1.1.0", default-features = false, features = ["mocks"]}
+desmos-bindings = { version = "1.1.1", default-features = false, features = ["mocks"]}
 

@@ -394,9 +394,9 @@ dependencies = [
 
 [[package]]
 name = "desmos-bindings"
-version = "1.1.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67ba3e792552d6960b0205994a4fca5e83daffb12b93f7ca9ac86c99d703b805"
+checksum = "6a1cbb24dd731c22d21b49690a6ab257e89435c124ea1d0f354295e21d3ffc49"
 dependencies = [
  "anyhow",
  "cosmwasm-std",
