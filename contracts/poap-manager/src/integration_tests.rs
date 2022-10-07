@@ -6,7 +6,7 @@ mod tests {
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
     use cw_multi_test::{Contract, ContractWrapper, Executor};
     use desmos_bindings::{
-        mocks::mock_apps::{mock_desmos_app, mock_failing_desmos_app, DesmosApp, FailingDesmosApp},
+        mocks::mock_apps::{mock_desmos_app, mock_failing_desmos_app, DesmosApp, DesmosModule},
         msg::DesmosMsg,
         query::DesmosQuery,
     };
@@ -29,14 +29,7 @@ mod tests {
         Box::new(contract)
     }
 
-    fn store_contracts(app: &mut DesmosApp) -> (u64, u64, u64) {
-        let cw721_code_id = app.store_code(CW721TestContract::success_contract());
-        let poap_code_id = app.store_code(POAPTestContract::success_contract());
-        let poap_manager_code_id = app.store_code(contract_poap_manager());
-        (cw721_code_id, poap_code_id, poap_manager_code_id)
-    }
-
-    fn store_contracts_to_failing_app(app: &mut FailingDesmosApp) -> (u64, u64, u64) {
+    fn store_contracts<M: DesmosModule>(app: &mut DesmosApp<M>) -> (u64, u64, u64) {
         let cw721_code_id = app.store_code(CW721TestContract::success_contract());
         let poap_code_id = app.store_code(POAPTestContract::success_contract());
         let poap_manager_code_id = app.store_code(contract_poap_manager());
@@ -67,13 +60,12 @@ mod tests {
         }
     }
 
-    fn proper_instantiate() -> (DesmosApp, Addr, (u64, u64, u64)) {
-        let mut app = mock_desmos_app();
+    fn proper_instantiate<M: DesmosModule>(app: &mut DesmosApp<M>) -> (Addr, (u64, u64, u64)) {
         app.update_block(|block| {
             // init the time to before the event
             block.time = Timestamp::from_seconds(0);
         });
-        let (cw721_code_id, poap_code_id, poap_manager_code_id) = store_contracts(&mut app);
+        let (cw721_code_id, poap_code_id, poap_manager_code_id) = store_contracts(app);
         let poap_manager_contract_addr = app
             .instantiate_contract(
                 poap_manager_code_id,
@@ -89,36 +81,6 @@ mod tests {
             block.time = Timestamp::from_seconds(10);
         });
         (
-            app,
-            poap_manager_contract_addr,
-            (cw721_code_id, poap_code_id, poap_manager_code_id),
-        )
-    }
-
-    fn proper_instantiate_failing_app() -> (FailingDesmosApp, Addr, (u64, u64, u64)) {
-        let mut app = mock_failing_desmos_app();
-        app.update_block(|block| {
-            // init the time to before the event
-            block.time = Timestamp::from_seconds(0);
-        });
-        let (cw721_code_id, poap_code_id, poap_manager_code_id) =
-            store_contracts_to_failing_app(&mut app);
-        let poap_manager_contract_addr = app
-            .instantiate_contract(
-                poap_manager_code_id,
-                Addr::unchecked(ADMIN),
-                &get_valid_init_msg(cw721_code_id, poap_code_id),
-                &[],
-                "poap_manager_contract",
-                None,
-            )
-            .unwrap();
-        app.update_block(|block| {
-            // update the time to start time of event
-            block.time = Timestamp::from_seconds(10);
-        });
-        (
-            app,
             poap_manager_contract_addr,
             (cw721_code_id, poap_code_id, poap_manager_code_id),
         )
@@ -181,7 +143,8 @@ mod tests {
 
     #[test]
     fn instantiate_propery() {
-        let (app, manager_addr, (_, paop_code_id, _)) = proper_instantiate();
+        let mut app = mock_desmos_app();
+        let (manager_addr, (_, paop_code_id, _)) = proper_instantiate(&mut app);
         let querier = app.wrap();
 
         // check manager config set properly
@@ -203,7 +166,8 @@ mod tests {
 
     #[test]
     fn user_claim_without_profile_error() {
-        let (mut app, manager_addr, _) = proper_instantiate_failing_app();
+        let mut app = mock_failing_desmos_app();
+        let (manager_addr, _) = proper_instantiate(&mut app);
         let result = app.execute(
             Addr::unchecked(ADMIN),
             wasm_execute(&manager_addr, &ExecuteMsg::Claim {}, vec![])
@@ -229,7 +193,8 @@ mod tests {
 
     #[test]
     fn user_claim_poap_properly() {
-        let (mut app, manager_addr, _) = proper_instantiate();
+        let mut app = mock_desmos_app();
+        let (manager_addr, _) = proper_instantiate(&mut app);
         app.execute(
             Addr::unchecked(ADMIN),
             wasm_execute(&manager_addr, &ExecuteMsg::Claim {}, vec![])
@@ -255,7 +220,8 @@ mod tests {
 
     #[test]
     fn mint_poap_to_recipient_properly() {
-        let (mut app, manager_addr, _) = proper_instantiate();
+        let mut app = mock_desmos_app();
+        let (manager_addr, _) = proper_instantiate(&mut app);
         app.execute(
             Addr::unchecked(ADMIN),
             wasm_execute(

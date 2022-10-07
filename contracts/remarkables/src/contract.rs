@@ -414,7 +414,7 @@ mod tests {
         SubMsgResult, SystemError, SystemResult,
     };
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
-    use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
+    use desmos_bindings::mocks::mock_queriers::mock_desmos_dependencies;
     use desmos_bindings::{
         posts::{mocks::mock_posts_query_response, query::PostsQuery},
         reactions::{
@@ -466,7 +466,7 @@ mod tests {
         use super::*;
         #[test]
         fn instatiate_with_invalid_admin_address_error() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             let env = mock_env();
             let info = mock_info(ADMIN, &vec![]);
             let mut invalid_msg = get_valid_instantiate_msg();
@@ -510,7 +510,7 @@ mod tests {
         }
         #[test]
         fn instatiate_without_permission_error() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             let env = mock_env();
             let info = mock_info(NEW_ADMIN, &vec![]);
             let mut invalid_msg = get_valid_instantiate_msg();
@@ -524,7 +524,7 @@ mod tests {
         }
         #[test]
         fn instatiate_properly() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             do_instantiate(deps.as_mut());
             let config = CONFIG.load(&deps.storage).unwrap();
             let expected_config = ConfigState {
@@ -543,7 +543,7 @@ mod tests {
         use super::*;
         #[test]
         fn cw721_instantiate_with_invalid_reply_id_error() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let result = reply(
@@ -561,7 +561,7 @@ mod tests {
         }
         #[test]
         fn cw721_instantiate_with_invalid_instantiate_msg_error() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let result = reply(
@@ -582,7 +582,7 @@ mod tests {
         use super::*;
         #[test]
         fn mint_with_not_existing_rarity_error() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(USER, &vec![]);
@@ -598,7 +598,7 @@ mod tests {
         }
         #[test]
         fn mint_with_empty_fees_error() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(USER, &vec![]);
@@ -614,7 +614,7 @@ mod tests {
         }
         #[test]
         fn mint_with_other_denom_fees_error() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(USER, &coins(100, "other"));
@@ -630,7 +630,7 @@ mod tests {
         }
         #[test]
         fn mint_without_enough_fees_error() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(USER, &coins(MINT_FEES - 1, DENOM));
@@ -681,7 +681,7 @@ mod tests {
         }
         #[test]
         fn mint_from_non_author_error() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(ADMIN, &coins(100, DENOM));
@@ -878,7 +878,7 @@ mod tests {
         use super::*;
         #[test]
         fn update_admin_without_permissions_error() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(USER, &vec![]);
@@ -894,7 +894,7 @@ mod tests {
         }
         #[test]
         fn update_admin_with_invalid_address_error() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(ADMIN, &vec![]);
@@ -910,7 +910,7 @@ mod tests {
         }
         #[test]
         fn update_admin_properly() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(ADMIN, &vec![]);
@@ -932,7 +932,7 @@ mod tests {
         use super::*;
         #[test]
         fn update_rarity_mint_fees_without_permissions_error() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(USER, &vec![]);
@@ -949,7 +949,7 @@ mod tests {
         }
         #[test]
         fn update_no_existing_rarity_mint_fees_error() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(ADMIN, &vec![]);
@@ -964,7 +964,7 @@ mod tests {
         }
         #[test]
         fn update_rarity_mint_fees_same_as_the_current_error() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(ADMIN, &vec![]);
@@ -979,7 +979,7 @@ mod tests {
         }
         #[test]
         fn update_rarity_mint_fees_properly() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             do_instantiate(deps.as_mut());
             let env = mock_env();
             let info = mock_info(ADMIN, &vec![]);
@@ -1000,7 +1000,7 @@ mod tests {
         use super::*;
         #[test]
         fn query_config() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             let env = mock_env();
             CONFIG
                 .save(
@@ -1029,7 +1029,7 @@ mod tests {
         }
         #[test]
         fn query_rarities() {
-            let mut deps = mock_dependencies_with_custom_querier(&[]);
+            let mut deps = mock_desmos_dependencies();
             let env = mock_env();
             RARITIES
                 .save(

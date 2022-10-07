@@ -195,7 +195,7 @@ mod tests {
     use cosmwasm_std::{StdError, SubMsgResponse, SubMsgResult, Timestamp};
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
     use cw_utils::ParseReplyError;
-    use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
+    use desmos_bindings::mocks::mock_queriers::mock_desmos_dependencies;
     use poap::msg::{EventInfo, InstantiateMsg as POAPInstantiateMsg};
 
     const CREATOR: &str = "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc";
@@ -234,7 +234,7 @@ mod tests {
 
     #[test]
     fn instatiate_with_invalid_msg_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let invalid_msg = InstantiateMsg {
@@ -266,7 +266,7 @@ mod tests {
 
     #[test]
     fn instatiate_with_invalid_admin_address_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
         let invalid_msg = InstantiateMsg {
@@ -300,7 +300,7 @@ mod tests {
 
     #[test]
     fn instatiate_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
         do_instantiate(deps.as_mut());
 
         let config = CONFIG.load(&deps.storage).unwrap();
@@ -313,7 +313,7 @@ mod tests {
 
     #[test]
     fn poap_instantiate_with_invalid_reply_id_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let result = reply(
@@ -332,7 +332,7 @@ mod tests {
 
     #[test]
     fn poap_instantiate_with_invalid_instantiate_msg_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let result = reply(
@@ -356,7 +356,7 @@ mod tests {
 
     #[test]
     fn claim_with_unsupported_desmos_deps_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
@@ -369,7 +369,7 @@ mod tests {
 
     #[test]
     fn claim_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&vec![]);
+        let mut deps = mock_desmos_dependencies();
         do_instantiate(deps.as_mut());
         POAP_CONTRACT_ADDRESS
             .save(deps.as_mut().storage, &Addr::unchecked(""))
@@ -382,7 +382,7 @@ mod tests {
 
     #[test]
     fn mint_to_with_invalid_recipient_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
         do_instantiate(deps.as_mut());
         POAP_CONTRACT_ADDRESS
             .save(deps.as_mut().storage, &Addr::unchecked(""))
@@ -402,7 +402,7 @@ mod tests {
 
     #[test]
     fn mint_to_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
         do_instantiate(deps.as_mut());
         POAP_CONTRACT_ADDRESS
             .save(deps.as_mut().storage, &Addr::unchecked(""))
@@ -417,7 +417,7 @@ mod tests {
 
     #[test]
     fn update_admin_with_invalid_new_admin_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
@@ -434,7 +434,7 @@ mod tests {
 
     #[test]
     fn update_admin_without_permission_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(NEW_ADMIN, &vec![]);
@@ -451,7 +451,7 @@ mod tests {
 
     #[test]
     fn update_admin_with_invalid_address_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);
@@ -468,7 +468,7 @@ mod tests {
 
     #[test]
     fn update_admin_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
         do_instantiate(deps.as_mut());
         let env = mock_env();
         let info = mock_info(CREATOR, &vec![]);

@@ -31,16 +31,16 @@ optimize = """docker run --rm -v "$(pwd)"/../..:/code \
 [dependencies]
 cosmwasm-std = "1.0.0"
 cosmwasm-storage = "1.1.2"
-cw-storage-plus = "0.14.0"
-cw2 = "0.14.0"
+cw-storage-plus = "0.15.0"
+cw2 = "0.15.0"
 schemars = "0.8.10"
 serde = { version = "1.0.145", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.33" }
-desmos-bindings = { version = "1.0.3", default-features = false, features = ["posts", "subspaces", "profiles", "query"]}
-cw-utils = "0.14.0"
+desmos-bindings = { version = "1.1.1", default-features = false, features = ["posts", "subspaces", "profiles", "query"]}
+cw-utils = "0.15.0"
 
 [dev-dependencies]
 cosmwasm-schema = "1.1.2"
-cw-multi-test = { version = "0.13.4" }
-desmos-bindings = { version = "1.0.3", default-features = false, features = ["mocks"]}
+cw-multi-test = "0.15.0"
+desmos-bindings = { version = "1.1.1", default-features = false, features = ["mocks"]}
 

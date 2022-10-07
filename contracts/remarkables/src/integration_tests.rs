@@ -10,9 +10,7 @@ mod tests {
     use cw721_remarkables::Metadata;
     use cw_multi_test::{Contract, ContractWrapper, Executor};
     use desmos_bindings::{
-        mocks::mock_apps::{
-            custom_desmos_app, mock_failing_desmos_app, DesmosApp, FailingDesmosApp,
-        },
+        mocks::mock_apps::{mock_desmos_app, mock_failing_desmos_app, DesmosApp, DesmosModule},
         msg::DesmosMsg,
         query::DesmosQuery,
     };
@@ -33,23 +31,10 @@ mod tests {
         .with_reply(crate::contract::reply);
         Box::new(contract)
     }
-    fn store_contracts(app: &mut DesmosApp) -> (u64, u64) {
+    fn store_contracts<M: DesmosModule>(app: &mut DesmosApp<M>) -> (u64, u64) {
         let cw721_code_id = app.store_code(CW721TestContract::success_contract());
         let remarkables_code_id = app.store_code(contract_remarkables());
         (cw721_code_id, remarkables_code_id)
-    }
-    fn store_contracts_to_failing_app(app: &mut FailingDesmosApp) -> (u64, u64) {
-        let cw721_code_id = app.store_code(CW721TestContract::success_contract());
-        let remarkables_code_id = app.store_code(contract_remarkables());
-        (cw721_code_id, remarkables_code_id)
-    }
-    fn mock_app() -> DesmosApp {
-        custom_desmos_app(|router, _, storage| {
-            router
-                .bank
-                .init_balance(storage, &Addr::unchecked(ADMIN), vec![])
-                .unwrap();
-        })
     }
     fn get_valid_init_msg(cw721_code_id: u64) -> InstantiateMsg {
         InstantiateMsg {
@@ -73,9 +58,8 @@ mod tests {
             ],
         }
     }
-    fn proper_instantiate() -> (DesmosApp, Addr, (u64, u64)) {
-        let mut app = mock_app();
-        let (cw721_code_id, remarkables_code_id) = store_contracts(&mut app);
+    fn proper_instantiate<M: DesmosModule>(app: &mut DesmosApp<M>) -> (Addr, (u64, u64)) {
+        let (cw721_code_id, remarkables_code_id) = store_contracts(app);
         let addr = app
             .instantiate_contract(
                 remarkables_code_id,
@@ -86,13 +70,13 @@ mod tests {
                 None,
             )
             .unwrap();
-        (app, addr, (cw721_code_id, remarkables_code_id))
+        (addr, (cw721_code_id, remarkables_code_id))
     }
     mod instantiate {
         use super::*;
         #[test]
         fn instantiate_with_invalid_cw721_code_id_error() {
-            let mut app = mock_app();
+            let mut app = mock_desmos_app();
             let (cw721_code_id, remarkables_code_id) = store_contracts(&mut app);
             let mut init_msg = get_valid_init_msg(cw721_code_id);
             // change code cw721_code_id to the invalid one
@@ -109,7 +93,7 @@ mod tests {
         }
         #[test]
         fn instantiate_with_failing_cw721_contract_error() {
-            let mut app = mock_app();
+            let mut app = mock_desmos_app();
             let (_, remarkables_code_id) = store_contracts(&mut app);
             let failing_cw721_code_id = app.store_code(CW721TestContract::failing_contract());
             let mut init_msg = get_valid_init_msg(failing_cw721_code_id);
@@ -128,7 +112,7 @@ mod tests {
         #[test]
         fn proper_instantiate_failing_app_error() {
             let mut app = mock_failing_desmos_app();
-            let (cw721_code_id, remarkables_code_id) = store_contracts_to_failing_app(&mut app);
+            let (cw721_code_id, remarkables_code_id) = store_contracts(&mut app);
             let result = app.instantiate_contract(
                 remarkables_code_id,
                 Addr::unchecked(ADMIN),
@@ -141,7 +125,8 @@ mod tests {
         }
         #[test]
         fn instantiate_propery() {
-            let (app, addr, (cw721_code_id, _)) = proper_instantiate();
+            let mut app = mock_desmos_app();
+            let (addr, (cw721_code_id, _)) = proper_instantiate(&mut app);
             let querier = app.wrap();
             // check config set properly
             let config: QueryConfigResponse = querier
@@ -155,7 +140,8 @@ mod tests {
         use super::*;
         #[test]
         fn mint_burned_token_error() {
-            let (mut app, addr, _) = proper_instantiate();
+            let mut app = mock_desmos_app();
+            let (addr, _) = proper_instantiate(&mut app);
             let config: QueryConfigResponse = app
                 .wrap()
                 .query_wasm_smart(&addr, &QueryMsg::Config {})
@@ -207,7 +193,8 @@ mod tests {
         }
         #[test]
         fn mint_properly() {
-            let (mut app, addr, _) = proper_instantiate();
+            let mut app = mock_desmos_app();
+            let (addr, _) = proper_instantiate(&mut app);
             app.execute(
                 Addr::unchecked(AUTHOR),
                 wasm_execute(
@@ -258,7 +245,8 @@ mod tests {
         use super::*;
         #[test]
         fn query_tokens() {
-            let (mut app, addr, _) = proper_instantiate();
+            let mut app = mock_desmos_app();
+            let (addr, _) = proper_instantiate(&mut app);
             app.execute(
                 Addr::unchecked(AUTHOR),
                 wasm_execute(
@@ -305,7 +293,8 @@ mod tests {
 
         #[test]
         fn query_nft_info() {
-            let (mut app, addr, _) = proper_instantiate();
+            let mut app = mock_desmos_app();
+            let (addr, _) = proper_instantiate(&mut app);
             app.execute(
                 Addr::unchecked(AUTHOR),
                 wasm_execute(
