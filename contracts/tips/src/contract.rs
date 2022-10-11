@@ -485,7 +485,9 @@ mod tests {
         from_binary, Addr, BankMsg, Coin, Decimal, DepsMut, OwnedDeps, Response, StdError, SubMsg,
         SystemError, SystemResult, Uint64,
     };
-    use desmos_bindings::mocks::mock_queriers::mock_dependencies_with_custom_querier;
+    use desmos_bindings::mocks::mock_queriers::{
+        mock_desmos_dependencies, mock_desmos_dependencies_with_custom_querier, MockDesmosQuerier,
+    };
     use desmos_bindings::msg::DesmosMsg;
     use desmos_bindings::posts::query::PostsQuery;
     use desmos_bindings::profiles::mocks::mock_profiles_query_response;
@@ -581,7 +583,7 @@ mod tests {
 
     #[test]
     fn init_contract_with_invalid_subspace_id_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         let init_err = init_contract(
             deps.as_mut(),
@@ -595,7 +597,7 @@ mod tests {
 
     #[test]
     fn init_contract_with_invalid_tips_history_size_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         let init_err =
             init_contract(deps.as_mut(), 1, None, MAX_TIPS_HISTORY_SIZE + 1).unwrap_err();
@@ -654,7 +656,7 @@ mod tests {
 
     #[test]
     fn init_contract_with_empty_fixed_service_fees_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         // Simulate init with 100% of service fees
         let init_err = init_contract(
@@ -670,7 +672,7 @@ mod tests {
 
     #[test]
     fn init_contract_with_invalid_zero_fee_coin_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         // Simulate init with 100% of service fees
         let init_err = init_contract(
@@ -693,7 +695,7 @@ mod tests {
 
     #[test]
     fn init_contract_with_invalid_percentage_service_fees_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         // Simulate init with 100% of service fees
         let init_err = init_contract(
@@ -711,7 +713,7 @@ mod tests {
 
     #[test]
     fn init_contract_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -726,14 +728,14 @@ mod tests {
 
     #[test]
     fn init_contract_without_service_fee_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(deps.as_mut(), 1, None, 1).unwrap();
     }
 
     #[test]
     fn tip_user_with_invalid_address_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(deps.as_mut(), 1, None, 5).unwrap();
 
@@ -756,7 +758,7 @@ mod tests {
 
     #[test]
     fn tip_with_empty_funds_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(deps.as_mut(), 1, None, 5).unwrap();
 
@@ -774,7 +776,7 @@ mod tests {
 
     #[test]
     fn tip_to_yourself_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -840,7 +842,7 @@ mod tests {
 
     #[test]
     fn tip_user_with_missing_fee_coin_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -872,7 +874,7 @@ mod tests {
 
     #[test]
     fn tip_user_with_insufficient_amount_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -904,7 +906,7 @@ mod tests {
 
     #[test]
     fn tip_user_with_zero_fees_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(deps.as_mut(), 1, None, 5).unwrap();
 
@@ -938,7 +940,7 @@ mod tests {
 
     #[test]
     fn tip_user_with_fixed_fees_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -980,7 +982,7 @@ mod tests {
 
     #[test]
     fn tip_user_with_percentage_fees_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1022,7 +1024,7 @@ mod tests {
 
     #[test]
     fn tip_post_with_invalid_post_id_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1096,7 +1098,7 @@ mod tests {
 
     #[test]
     fn tip_post_with_missing_fee_coin_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1128,7 +1130,7 @@ mod tests {
 
     #[test]
     fn tip_post_with_insufficient_fees_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1160,7 +1162,7 @@ mod tests {
 
     #[test]
     fn tip_post_with_zero_fees_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(deps.as_mut(), 1, None, 5).unwrap();
 
@@ -1191,7 +1193,7 @@ mod tests {
 
     #[test]
     fn tip_post_with_fixed_fees_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1229,7 +1231,7 @@ mod tests {
 
     #[test]
     fn tip_post_with_percentage_fees_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1267,7 +1269,7 @@ mod tests {
 
     #[test]
     fn tips_reach_tips_history_size_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1327,7 +1329,7 @@ mod tests {
 
     #[test]
     fn tip_without_tips_history_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1354,7 +1356,7 @@ mod tests {
 
     #[test]
     fn update_service_fees_with_invalid_admin_address_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1383,7 +1385,7 @@ mod tests {
 
     #[test]
     fn update_service_fee_with_empty_fixed_fee_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1410,7 +1412,7 @@ mod tests {
 
     #[test]
     fn update_service_fee_with_zero_fee_coin_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1444,7 +1446,7 @@ mod tests {
 
     #[test]
     fn update_service_fee_with_invalid_percentage_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1473,7 +1475,7 @@ mod tests {
 
     #[test]
     fn update_service_fee_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1510,7 +1512,7 @@ mod tests {
 
     #[test]
     fn clear_service_fee_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1536,7 +1538,7 @@ mod tests {
 
     #[test]
     fn update_admin_from_non_admin_user_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1563,7 +1565,7 @@ mod tests {
 
     #[test]
     fn update_admin_with_invalid_admin_address_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1595,7 +1597,7 @@ mod tests {
 
     #[test]
     fn update_admin_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1623,7 +1625,7 @@ mod tests {
 
     #[test]
     fn update_tips_history_size_from_non_admin_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1647,7 +1649,7 @@ mod tests {
 
     #[test]
     fn update_tips_history_with_invalid_size_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1680,7 +1682,7 @@ mod tests {
 
     #[test]
     fn update_tips_history_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1703,7 +1705,7 @@ mod tests {
 
     #[test]
     fn update_tips_history_size_records_wipe_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1757,7 +1759,7 @@ mod tests {
 
     #[test]
     fn update_tips_history_size_tips_history_shrinks_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(deps.as_mut(), 1, None, 5).unwrap();
 
@@ -1839,7 +1841,7 @@ mod tests {
 
     #[test]
     fn claim_fee_from_non_admin_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1866,7 +1868,10 @@ mod tests {
 
     #[test]
     fn claim_fee_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[Coin::new(2000, "udsm")]);
+        let mut deps = mock_desmos_dependencies_with_custom_querier(MockDesmosQuerier::new(&[(
+            MOCK_CONTRACT_ADDR,
+            &[Coin::new(2000, "udsm")],
+        )]));
 
         init_contract(
             deps.as_mut(),
@@ -1899,7 +1904,7 @@ mod tests {
 
     #[test]
     fn query_config_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -1927,7 +1932,7 @@ mod tests {
 
     #[test]
     fn query_user_received_tips_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -2023,7 +2028,7 @@ mod tests {
 
     #[test]
     fn query_user_sent_tips_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -2111,7 +2116,7 @@ mod tests {
 
     #[test]
     fn query_tips_with_invalid_post_id_error() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -2137,7 +2142,7 @@ mod tests {
 
     #[test]
     fn query_tips_with_not_tipped_post_id_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
@@ -2164,7 +2169,7 @@ mod tests {
 
     #[test]
     fn query_post_received_tips_properly() {
-        let mut deps = mock_dependencies_with_custom_querier(&[]);
+        let mut deps = mock_desmos_dependencies();
 
         init_contract(
             deps.as_mut(),
