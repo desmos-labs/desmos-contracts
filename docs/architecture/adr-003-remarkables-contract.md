@@ -94,7 +94,8 @@ pub struct Metadata {
 pub enum ExecuteMsg{
   Mint{post_id: u64, remarkable_uri: String, rarity_level: u64},
   UpdateRarityMintFees{rarity_level: u64, new_fee: Vec<Coin>},
-  UpdateAdmin{new_admin: String}
+  UpdateAdmin{new_admin: String},
+  ClaimFees{receiver: String}
 }
 ```
 
@@ -126,6 +127,11 @@ With the `UpdateAdmin{new_admin}` message, the current admin can choose another 
 Here we need to check that:
 * The contract `sender` is the admin;
 * The `new_admin` is the new admin of the subspace also.
+
+##### ClaimFees
+With the `ClaimFees` message the contract's admin can withdraw all the collected fees and send them to the given `recipient`.
+The `recipient` can be a user or another contract. Here we need to check that:
+* The contract `sender` is the admin.
 
 ### Query
 ```rust
