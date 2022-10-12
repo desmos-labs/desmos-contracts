@@ -31,16 +31,6 @@ Here below the specifications for the contract's messages:
 
 ### Messages
 
-#### Instantiate
-```rust
-struct InstantiateMsg {
-  pub admin: String,
-  pub subspace_id: u64,
-}
-```
-* The `admin` identifies the user that controls the contract;
-* The `subspace_id` identifies the application which is deploying the contract;
-
 #### Execute
 ```rust
 enum ExecuteMsg {
@@ -50,7 +40,6 @@ enum ExecuteMsg {
       handle: String,
   },
   ClaimTips {},
-  UpdateAdmin { new_admin: String }
 }
 ```
 
@@ -64,25 +53,10 @@ The `MessageInfo` fields contains:
 With the `ClaimTips` message the user can claim their pending tips that has been sent to him before proving that
 owns the identities to which the tips refer.
 
-##### UpdateAdmin
-With the `UpdateAdmin` message the user can update the contract's admin.
-The message should make sure that the user trying to make the edit is the actual contract admin.
-
 ### Query
 ```rust
 enum QueryMsg {
-  Config {},
   UserPendingTips { user: String }
-}
-```
-
-##### Config
-With the `Config` message the user can query the contract's configuration.
-The returned configurations are as follows:
-```rust
-struct QueryConfigResponse {
-    pub admin: String,
-    pub subspace_id: u64,
 }
 ```
 
