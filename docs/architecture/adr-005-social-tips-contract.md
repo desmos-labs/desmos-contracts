@@ -3,6 +3,7 @@
 ## Changelog
 
 - Oct 10, 2022: Initial draft;
+- Oct 12, 2022: Second review;
 
 ## Status
 DRAFT
@@ -10,7 +11,9 @@ DRAFT
 ## Abstract
 This ADR defines the architecture of the Social Tips contract. This contract allow sending tips to a user
 using their know **handle** of a centralized application.  
-The handle can be the @handle of Twitter, the user's nickname on Discord or even an e-mail address. 
+The handle can be the @handle of Twitter, the user's nickname on Discord or even an e-mail address.  
+Additionally, users may want to send tips to other users that don't have a Desmos profile this contract
+can collect those tips and allow the users to later claim it.
 
 # Context
 Desmos based applications may want to leverage on the web3 features and one of the most popular one is for sure
