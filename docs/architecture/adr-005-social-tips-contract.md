@@ -46,7 +46,7 @@ struct InstantiateMsg {
 enum ExecuteMsg {
   SendTip { 
       amount: Vec<Coin>, 
-      application: Stting,
+      application: String,
       handle: String,
   },
   ClaimTips {},
