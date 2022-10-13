@@ -50,7 +50,7 @@ Allows to send a tips to a user or to the author of a post. This message has the
 **NOTE**: In order to be able to send the tip you must provide a sufficient amount of coins through the `funds` field
 of [MsgExecuteContract](https://github.com/CosmWasm/wasmd/blob/6a471a4a16730e371863067b27858f60a3996c91/proto/cosmwasm/wasm/v1/tx.proto#L74).
 
-Here an example of message to send a tip toward a user post:
+Here an example message to send a tip toward a user post:
 ```json
 {
   "send_tip": {
@@ -82,7 +82,7 @@ Allows the contract admin to update the fees collected from the contract when a 
 This message has the following parameter:
 * `new_fee`: Fee that is collected, can be percentage, fixed or `null` to signal that the contract shouldn't collect fees.
 
-Here an example of message to update the service fees to fixed 1DSM:
+Here an example message to update the service fees to fixed 1DSM:
 ```json
 {
   "update_service_fee": {
@@ -102,7 +102,7 @@ Here an example of message to update the service fees to fixed 1DSM:
 Allows the contract admin to update the contract admin. This message has the following parameter:
 * `new_admin`: Address of the new admin.
 
-Here an example of message to update the contract admin:
+Here an example message to update the contract admin:
 ```json
 {
   "update_admin": {
@@ -116,7 +116,7 @@ Allows the contract admin to update the number of record saved in the tips histo
 This message has the following parameter:
 * `new_size`: New tips history size, can be also `0` to signal that the contract shouldn't save any tip.
 
-Here an example of message to update the contract tips history size to 10:
+Here an example message to update the contract tips history size to 10:
 
 ```json
 {
@@ -131,7 +131,7 @@ Allows the contract admin to claim the fees paid from the users to execute the c
 This message has the following parameter:
 * `receiver`: Address to which fees will be sent.
 
-Here an example of message to claim the fees:
+Here an example message to claim the fees:
 ```json
 {
   "claim_fees": {
@@ -156,7 +156,7 @@ Here the json message to query the configurations:
 Allows to query a user's received tips. This message has the following parameter:
 * `user`: Address of the user of interest.
 
-Here an example of message to query the received tips:
+Here an example message to query the received tips:
 ```json
 {
   "user_received_tips": {
@@ -169,7 +169,7 @@ Here an example of message to query the received tips:
 Allows to query the tips that a user has sent. This message has the following parameter:
 * `user`: Address of the user of interest.
 
-Here an example of message to query the tips sent from an user:
+Here an example message to query the tips sent from an user:
 ```json
 {
   "user_sent_tips": {
@@ -182,7 +182,7 @@ Here an example of message to query the tips sent from an user:
 Allows to query the tips that has been sent toward a post. This message has the following parameter:
 * `post_id`: Id of the post of interest.
 
-Here an example of message to query the tips toward the post with id 42:
+Here an example message to query the tips toward the post with id 42:
 ```json
 {
   "post_received_tips": {
