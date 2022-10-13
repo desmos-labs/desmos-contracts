@@ -162,6 +162,25 @@ Here the json message to query the configurations:
 }
 ```
 
+Response:
+```json
+{
+  "admin": "desmos1...",
+  "subspace_id": "42",
+  "service_fee": {
+    "fixed": {
+      "amount": [
+        {
+          "amount": "1000000",
+          "denom": "udsm"
+        }
+      ]
+    }
+  },
+  "tips_history_size": 10
+}
+```
+
 ### UserReceivedTips
 Allows to query a user's received tips. This message has the following parameter:
 * `user`: Address of the user of interest.
@@ -172,6 +191,38 @@ Here an example message to query the received tips:
   "user_received_tips": {
     "user": "desmos1..."
   }
+}
+```
+
+Response:
+```json
+{
+  "tips": [
+    {
+      "sender": "desmos1...",
+      "receiver": "desmos1...",
+      "amount": [
+        {
+          "amount": "1000000",
+          "denom": "udsm"
+        }
+      ],
+      "post_id": null,
+      "block_height": 123456
+    },
+    {
+      "sender": "desmos1...",
+      "receiver": "desmos1...",
+      "amount": [
+        {
+          "amount": "1000000",
+          "denom": "udsm"
+        }
+      ],
+      "post_id": "42",
+      "block_height": 123456
+    }
+  ]
 }
 ```
 
@@ -188,6 +239,38 @@ Here an example message to query the tips sent from an user:
 }
 ```
 
+Response:
+```json
+{
+  "tips": [
+    {
+      "sender": "desmos1...",
+      "receiver": "desmos1...",
+      "amount": [
+        {
+          "amount": "1000000",
+          "denom": "udsm"
+        }
+      ],
+      "post_id": null,
+      "block_height": 123456
+    },
+    {
+      "sender": "desmos1...",
+      "receiver": "desmos1...",
+      "amount": [
+        {
+          "amount": "1000000",
+          "denom": "udsm"
+        }
+      ],
+      "post_id": "42",
+      "block_height": 123456
+    }
+  ]
+}
+```
+
 ### PostReceivedTips
 Allows to query the tips that has been sent toward a post. This message has the following parameter:
 * `post_id`: Id of the post of interest.
@@ -198,5 +281,37 @@ Here an example message to query the tips toward the post with id 42:
   "post_received_tips": {
     "post_id": "42"
   }
+}
+```
+
+Response:
+```json
+{
+  "tips": [
+    {
+      "sender": "desmos1...",
+      "receiver": "desmos1...",
+      "amount": [
+        {
+          "amount": "1000000",
+          "denom": "udsm"
+        }
+      ],
+      "post_id": "42",
+      "block_height": 123456
+    },
+    {
+      "sender": "desmos1...",
+      "receiver": "desmos1...",
+      "amount": [
+        {
+          "amount": "1000000",
+          "denom": "udsm"
+        }
+      ],
+      "post_id": "42",
+      "block_height": 123456
+    }
+  ]
 }
 ```
