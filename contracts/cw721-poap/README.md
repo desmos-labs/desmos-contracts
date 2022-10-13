@@ -57,7 +57,7 @@ An example of the message to send nft having a trigger message:
 Allows to give a user an access to transfer/send the token from the owner's account. This message has the following parameters:
 * `spender`: Address who would be assigned as an access of the token;
 * `token_id`: Id of the target token;
-* `expires`: The expiration time/height of this allownce, if it is set as `null` then it has no time/height limit.
+* `expires`: The expiration time/height of this allowance, if it is set as `null` then it has no time/height limit.
 
 An example of the message to approve a user to have the sending/transferring access to a token with an expiration height:
 ```json
@@ -114,7 +114,7 @@ An example of the message to revoke an operator to a token:
 ### ApproveAll
 Allows to give all the tokens transferring/sendind tokens approval to an operator from the owner's account. This message has the following parameters:
 * `operator`: Address who is assigned to have all the tokens approvals in the owner's account;
-* `expires`: The expiration time/height of this allownce, if it is set as `null` then it has no time/height limit.
+* `expires`: The expiration time/height of this allowance, if it is set as `null` then it has no time/height limit.
 
 An example of the message to approve an operator all the tokens with an expiration height:
 ```json
