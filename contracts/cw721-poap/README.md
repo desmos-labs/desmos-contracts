@@ -48,10 +48,11 @@ An example of the message to send nft having a trigger message:
     "send_nft": {
         "contract": "desmos1......",
         "token_id": "1",
-        "msg": "eyJleGVjdXRlX2V4YW1wbGUiOnt9fQ==" // {"execute_example":{}} 
+        "msg": "eyJleGVjdXRlX2V4YW1wbGUiOnt9fQ=="
     }
 }
 ```
+**Note** the msg is base64-encoded of `{"execute_example":{}}`, which is the sample execution message on the target contract. 
 
 ### Approve
 Allows to give a user an access to transfer/send the token from the owner's account. This message has the following parameters:
