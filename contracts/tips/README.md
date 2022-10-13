@@ -87,12 +87,14 @@ Here an example message to update the service fees to fixed 1DSM:
 {
   "update_service_fee": {
     "new_fee": {
-      "fixed": [
-        {
-          "amount": "1000000",
-          "denom": "udsm"
-        }
-      ]
+      "fixed": {
+        "amount": [
+          {
+            "amount": "1000000",
+            "denom": "udsm"
+          }
+        ]
+      }
     }
   }
 }
