@@ -66,7 +66,7 @@ An example of the message to approve a user to have the sending/transferring acc
         "spender": "desmos1......",
         "token_id": "1",
         "expires": {
-            "at_height": "1000"
+            "at_height": 1000
         }
     }
 }
@@ -122,7 +122,7 @@ An example of the message to approve an operator all the tokens with an expirati
     "approve_all": {
         "spender": "desmos1......",
         "expires": {
-            "at_height": "1000"
+            "at_height": 1000
         }
     }
 }
