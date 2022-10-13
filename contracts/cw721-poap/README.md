@@ -54,12 +54,12 @@ An example of the message to send nft having a trigger message:
 ```
 
 ### Approve
-Allows to give an approval to an operator to transfer/send the token from the owner's account. This message has the following parameters:
-* `spender`: Address who would be assigned as an operator of the token;
+Allows to give a user an access to transfer/send the token from the owner's account. This message has the following parameters:
+* `spender`: Address who would be assigned as an access of the token;
 * `token_id`: Id of the target token;
 * `expires`: The expiration time/height of this allownce, if it is set as `null` then it has no time/height limit.
 
-An example of the message to approve a token to an operator with a limit height:
+An example of the message to approve a user to have the sending/transferring access to a token with an expiration height:
 ```json
 {
     "approve": {
@@ -72,7 +72,7 @@ An example of the message to approve a token to an operator with a limit height:
 }
 ```
 
-An example of the message to approve a token to an operator with a limit time:
+An example of the message to approve a token to an operator with an expiration time:
 ```json
 {
     "approve": {
@@ -98,7 +98,7 @@ An example of the message to approve a token to an operator without any expirati
 
 ### Revoke
 Allows to remove a previously granted approval. This message has the following parameters:
-* `spender`: Address who would be revoked operator permission of the given token;
+* `spender`: Address who would be revoked the permission of the given token;
 * `token_id`: Id of the target token.
 
 An example of the message to revoke an operator to a token:
@@ -116,7 +116,7 @@ Allows to give all the tokens transferring/sendind tokens approval to an operato
 * `operator`: Address who is assigned to have all the tokens approvals in the owner's account;
 * `expires`: The expiration time/height of this allownce, if it is set as `null` then it has no time/height limit.
 
-An example of the message to approve all the tokens to an operator with a limit height:
+An example of the message to approve an operator all the tokens with an expiration height:
 ```json
 {
     "approve_all": {
@@ -128,7 +128,7 @@ An example of the message to approve all the tokens to an operator with a limit 
 }
 ```
 
-An example of the message to approve all the tokens to an operator with a limit time:
+An example of the message to approve an operator all the tokens with an expiration time:
 ```json
 {
     "approve_all": {
@@ -140,7 +140,7 @@ An example of the message to approve all the tokens to an operator with a limit 
 }
 ```
 
-An example of the message to approve all the tokens to an operator without any expiration:
+An example of the message to approve an operator all the tokens without any expiration:
 ```json
 {
     "approve_all": {
@@ -242,7 +242,7 @@ Respone:
 ```
 
 ### Approval
-Returns operator that can access all of the owner's tokens. This message has the following parameters:
+Returns an access owned by the given spender to the given token. This message has the following parameters:
 * `token_id`: Id of the target token;
 * `spender`: Address who has the sending/transferring access to the given token;
 * `include_expired`: the trigger to filter out expired approvals, unset or false will exclude expired approvals.
