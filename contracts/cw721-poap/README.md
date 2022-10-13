@@ -215,7 +215,7 @@ Here an example of the message to query the owner of the given token:
 }
 ```
 
-Respone:
+Response:
 ```json
 {
     "owner": "desmos1......",
@@ -259,7 +259,7 @@ Here an example of the message to query the approval of the given token by a spe
 }
 ```
 
-Respone:
+Response:
 ```json
 {
     "approval": {
@@ -286,7 +286,7 @@ Here an example of the message to query the approvals of the given token:
 }
 ```
 
-Respone:
+Response:
 ```json
 {
     "approvals": [
@@ -331,7 +331,7 @@ Here an example of the message to query the operators of the given owner:
 }
 ```
 
-Respone:
+Response:
 ```json
 {
     "operators": [
@@ -367,7 +367,7 @@ Here an example of the message to query total number of tokens:
 }
 ```
 
-Respone:
+Response:
 ```json
 {
     "count": 1000
@@ -384,7 +384,7 @@ Here an example of the message to query the contract info of the contract:
 }
 ```
 
-Respone:
+Response:
 ```json
 {
     "name": "test_name",
@@ -521,7 +521,7 @@ Here an example of the message to query the minter of the contract:
 }
 ```
 
-Respone:
+Response:
 ```json
 {
     "minter": "desmos1......"
