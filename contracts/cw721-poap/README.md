@@ -1,6 +1,6 @@
 # CW721 POAP contract
 
-Contract that defines the cw721-base contract having custom POAP related `Metadata`, which is used by POAP contract.
+Contract that defines the cw721-base contract having custom POAP `Metadata`, which is used by POAP contract.
 To easily interact with the contract you can use the `cw721-poap` script available [here](https://github.com/desmos-labs/contract-utils/tree/main/utils), 
 otherwise you can take a look at the supported messages in the following sections.
 
@@ -112,7 +112,7 @@ An example of the message to revoke an operator to a token:
 ```
 
 ### ApproveAll
-Allows to give all the tokens transfering/sendind tokens approval to an operator from the owner's account. This message has the following parameters:
+Allows to give all the tokens transferring/sendind tokens approval to an operator from the owner's account. This message has the following parameters:
 * `operator`: Address who is assigned to have all the tokens approvals in the owner's account;
 * `expires`: The expiration time/height of this allownce, if it is set as `null` then it has no time/height limit.
 
@@ -200,24 +200,329 @@ An example of the message to burn an NFT:
 ## Query Messages
 
 ### OwnerOf
+Returns the owner of the given token, error if token does not exist. This message has the following parameters:
+* `token_id`: Id of the target token;
+* `include_expired`: the trigger to filter out expired approvals, unset or false will exclude expired approvals.
+
+Here an example of the message to query the owner of the given token:
+```json
+{
+    "owner_of": {
+        "token_id": "1",
+        "includ_expired": true,
+    }
+}
+```
+
+Respone:
+```json
+{
+    "owner": "desmos1......",
+    "approvals": [
+        {
+            "spender": "desmos1......",
+            "expiration": {
+                "at_height": 1000
+            }
+        }, 
+        {
+            "spender": "desmos1......",
+            "expiration": {
+                "at_time": "2022-01-01T00:00:00Z"
+            }
+        },
+        {
+            "spender": "desmos1......",
+            "expiration": {
+                "never": {}
+            }
+        },
+    ]
+}
+```
 
 ### Approval
+Returns operator that can access all of the owner's tokens. This message has the following parameters:
+* `token_id`: Id of the target token;
+* `spender`: Address who has the sending/transferring access to the given token;
+* `include_expired`: the trigger to filter out expired approvals, unset or false will exclude expired approvals.
+
+Here an example of the message to query the approval of the given token by a spender:
+```json
+{
+    "approval": {
+        "token_id": "1",
+        "spender": "desmos1......",
+        "includ_expired": true,
+    }
+}
+```
+
+Respone:
+```json
+{
+    "approval": {
+        "spender": "desmos1......",
+        "expiration": {
+            "at_height": 1000
+        }
+    } 
+}
+```
 
 ### Approvals
+Returns approvals that a token has. This message has the following parameters:
+* `token_id`: Id of the target token;
+* `include_expired`: the trigger to filter out expired approvals, unset or false will exclude expired approvals.
+
+Here an example of the message to query the approvals of the given token:
+```json
+{
+    "approvals": {
+        "token_id": "1",
+        "includ_expired": true,
+    }
+}
+```
+
+Respone:
+```json
+{
+    "approvals": [
+        {
+            "spender": "desmos1......",
+            "expiration": {
+                "at_height": 1000
+            }
+        }, 
+        {
+            "spender": "desmos1......",
+            "expiration": {
+                "at_time": "2022-01-01T00:00:00Z"
+            }
+        },
+        {
+            "spender": "desmos1......",
+            "expiration": {
+                "never": {}
+            }
+        },
+    ]
+}
+```
 
 ### AllOperators
+Lists all operators that can access all of the owner's tokens. This message has the following parameters:
+* `owner`: Address of the owner to be queried.
+* `include_expired`: the trigger to filter out expired approvals, unset or false will exclude expired approvals;
+* `start_after`: position in address where tokens start after;
+* `limit`: Limitation to list the number of operators, if unset would be 10 and the maximum is 100.
+
+Here an example of the message to query the operators of the given owner:
+```json
+{
+    "all_operators": {
+        "owner": "desmos1......",
+        "includ_expired": true,
+        "start_after": "desmos1......",
+        "limit": 10
+    }
+}
+```
+
+Respone:
+```json
+{
+    "operators": [
+        {
+            "spender": "desmos1......",
+            "expiration": {
+                "at_height": 1000
+            }
+        }, 
+        {
+            "spender": "desmos1......",
+            "expiration": {
+                "at_time": "2022-01-01T00:00:00Z"
+            }
+        },
+        {
+            "spender": "desmos1......",
+            "expiration": {
+                "never": {}
+            }
+        },
+    ]
+}
+```
 
 ### NumTokens
+Returns total number of tokens issued.
+
+Here an example of the message to query total number of tokens:
+```json
+{
+    "num_tokens": {}
+}
+```
+
+Respone:
+```json
+{
+    "count": 1000
+}
+```
 
 ### ContractInfo
+Returns top-level metadata about the contract.
+
+Here an example of the message to query the contract info of the contract:
+```json
+{
+    "contract_info": {}
+}
+```
+
+Respone:
+```json
+{
+    "name": "test_name",
+    "symbol": "test_symbol"
+}
+```
 
 ### NftInfo
+Returns metadata about one particular token. This message has the following parameters:
+* `token_id`: Id of the target token.
+
+Here an example of the message to query the info of the given token:
+```json
+{
+    "nft_info": {
+        "token_id": "1"
+    }
+}
+```
+
+Response:
+```json
+{
+    "token_uri": "ipfs://token.erc721.metadata",
+    "extension": {
+        "claimer": "desmos1......"
+    }
+}
+```
 
 ### AllNftInfo
+Returns the result of both `NftInfo` and `OwnerOf` as one query as an optimization. This message has the following parameters:
+* `token_id`: Id of the target token.
+* `include_expired`: the trigger to filter out expired approvals, unset or false will exclude expired approvals.
+
+Here an example of the message to query all the info of the given token:
+```json
+{
+    "all_nft_info": {
+        "token_id": "1",
+        "include_expired": true
+    }
+}
+```
+
+Response:
+```json
+{
+    "access": {
+        "owner": "desmos1......",
+        "approvals": [
+            {
+                "spender": "desmos1......",
+                "expiration": {
+                    "at_height": 1000
+                }
+            }, 
+            {
+                "spender": "desmos1......",
+                "expiration": {
+                    "at_time": "2022-01-01T00:00:00Z"
+                }
+            },
+            {
+                "spender": "desmos1......",
+                "expiration": {
+                    "never": {}
+                }
+            },
+        ],
+    },
+    "info": {
+        "token_uri": "ipfs://token.erc721.metadata",
+        "extension": {
+            "claimer": "desmos1......"
+        }
+    }
+}
+```
 
 ### Tokens
+Returns all tokens owned by the given address. This message has the following parameters:
+* `owner`: the target address owned tokens to be queried;
+* `start_after`: position in token id where tokens start after;
+* `limit`: Limitation to list the number of tokens, if unset would be 10 and the maximum is 100.
+
+Here an example of the message to query all the tokens owned by the given address:
+```json
+{
+    "tokens": {
+        "owner": "desmos1......",
+        "start_after": "1",
+        "limit": 3
+    }
+}
+```
+
+Response:
+```json
+{
+    "tokens": ["2", "3", "4"]
+}
+```
 
 ### AllTokens
+Lists all token_ids in the contract. This message has the following parameters:
+* `start_after`: position in token id where tokens start after;
+* `limit`: Limitation to list the number of tokens, if unset would be 10 and the maximum is 100.
+
+Here an example of the message to query all the tokens in the contract:
+```json
+{
+    "tokens": {
+        "start_after": "1",
+        "limit": 3
+    }
+}
+```
+
+Response:
+```json
+{
+    "tokens": ["2", "3", "4"]
+}
+```
 
 ### Minter
+Returns the minter who is the one having access to mint NFT.
 
+Here an example of the message to query the minter of the contract:
+```json
+{
+    "minter": {}
+}
+```
+
+Respone:
+```json
+{
+    "minter": "desmos1......"
+}
+```
