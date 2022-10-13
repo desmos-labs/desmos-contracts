@@ -97,6 +97,14 @@ Here an example message to update the service fees to fixed 1DSM:
   }
 }
 ```
+Here an example message to update the service fees so that the contract don't collect any fee:
+```json
+{
+  "update_service_fee": {
+    "new_fee": null
+  }
+}
+```
 
 ### UpdateAdmin
 Allows the contract admin to update the contract admin. This message has the following parameter:
