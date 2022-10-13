@@ -9,7 +9,7 @@
 DRAFT
 
 ## Abstract
-This ADR defines the architecture of the Social Tips contract. This contract allow sending tips to a user
+This ADR defines the architecture of the Social Tips contract. This contract allows sending tips to a user
 using their know **handle** of a centralized application.  
 The handle can be the @handle of Twitter, the user's nickname on Discord or even an e-mail address.  
 Additionally, users may want to send tips to other users that don't have a Desmos profile this contract
@@ -17,13 +17,13 @@ can collect those tips and allow the users to later claim it.
 
 # Context
 Desmos based applications may want to leverage on the web3 features and one of the most popular one is for sure
-the possibility to tip users. Currently, it's very easy to send token to a user knowing is address,
+the possibility to tip users. Currently, it's very easy to send tokens to a user knowing is address,
 but it's more difficult to send tokens to a user knowing only his identity on a centralized application.
 
 ## Decision
 The idea here is to write a contract called `Social Tips`, that allows to send tokens to another user 
 through their centralized application handle. Also, if the receiver haven't linked yet his 
-centralized application handle this contract allow them to claim their tips later after having
+centralized application handle to their Desmos profile, this contract allows them to claim their tips later after having
 proved that they own such identity on the centralized application.
 
 ## Specifications
@@ -71,5 +71,6 @@ struct QueryPendingTipsResponse {
 struct Tip {
     pub sender: Addr,
     pub amount: Vec<Coin>,
+    pub block_height: u64,
 }
 ```
