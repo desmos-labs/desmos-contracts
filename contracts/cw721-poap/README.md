@@ -57,7 +57,7 @@ An example of the message to send nft having a trigger message:
 Allows to give a user an access to transfer/send the token from the owner's account. This message has the following parameters:
 * `spender`: Address who would be assigned as an access of the token;
 * `token_id`: Id of the target token;
-* `expires`: The expiration time/height of this allowance, if it is set as `null` then it has no time/height limit.
+* `expires`: Expiration time/height of this allowance, if it is set as `null` then it has no time/height limit.
 
 An example of the message to approve a user to have the sending/transferring access to a token with an expiration height:
 ```json
@@ -114,7 +114,7 @@ An example of the message to revoke an operator to a token:
 ### ApproveAll
 Allows to give all the tokens transferring/sendind tokens approval to an operator from the owner's account. This message has the following parameters:
 * `operator`: Address who is assigned to have all the tokens approvals in the owner's account;
-* `expires`: The expiration time/height of this allowance, if it is set as `null` then it has no time/height limit.
+* `expires`: Expiration time/height of this allowance, if it is set as `null` then it has no time/height limit.
 
 An example of the message to approve an operator all the tokens with an expiration height:
 ```json
@@ -202,7 +202,7 @@ An example of the message to burn an NFT:
 ### OwnerOf
 Returns the owner of the given token, error if token does not exist. This message has the following parameters:
 * `token_id`: Id of the target token;
-* `include_expired`: the trigger to filter out expired approvals, unset or false will exclude expired approvals.
+* `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
 
 Here an example of the message to query the owner of the given token:
 ```json
@@ -245,7 +245,7 @@ Respone:
 Returns an access owned by the given spender to the given token. This message has the following parameters:
 * `token_id`: Id of the target token;
 * `spender`: Address who has the sending/transferring access to the given token;
-* `include_expired`: the trigger to filter out expired approvals, unset or false will exclude expired approvals.
+* `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
 
 Here an example of the message to query the approval of the given token by a spender:
 ```json
@@ -273,7 +273,7 @@ Respone:
 ### Approvals
 Returns approvals that a token has. This message has the following parameters:
 * `token_id`: Id of the target token;
-* `include_expired`: the trigger to filter out expired approvals, unset or false will exclude expired approvals.
+* `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
 
 Here an example of the message to query the approvals of the given token:
 ```json
@@ -314,8 +314,8 @@ Respone:
 ### AllOperators
 Lists all operators that can access all of the owner's tokens. This message has the following parameters:
 * `owner`: Address of the owner to be queried.
-* `include_expired`: the trigger to filter out expired approvals, unset or false will exclude expired approvals;
-* `start_after`: position in address where tokens start after;
+* `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals;
+* `start_after`: Position in address where tokens start after;
 * `limit`: Limitation to list the number of operators, if unset would be 10 and the maximum is 100.
 
 Here an example of the message to query the operators of the given owner:
@@ -417,7 +417,7 @@ Response:
 ### AllNftInfo
 Returns the result of both `NftInfo` and `OwnerOf` as one query as an optimization. This message has the following parameters:
 * `token_id`: Id of the target token.
-* `include_expired`: the trigger to filter out expired approvals, unset or false will exclude expired approvals.
+* `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
 
 Here an example of the message to query all the info of the given token:
 ```json
@@ -466,8 +466,8 @@ Response:
 
 ### Tokens
 Returns all tokens owned by the given address. This message has the following parameters:
-* `owner`: the target address owned tokens to be queried;
-* `start_after`: position in token id where tokens start after;
+* `owner`: Target address owned tokens to be queried;
+* `start_after`: Position in token id where tokens start after;
 * `limit`: Limitation to list the number of tokens, if unset would be 10 and the maximum is 100.
 
 Here an example of the message to query all the tokens owned by the given address:
@@ -490,7 +490,7 @@ Response:
 
 ### AllTokens
 Lists all token_ids in the contract. This message has the following parameters:
-* `start_after`: position in token id where tokens start after;
+* `start_after`: Position in token id where tokens start after;
 * `limit`: Limitation to list the number of tokens, if unset would be 10 and the maximum is 100.
 
 Here an example of the message to query all the tokens in the contract:
