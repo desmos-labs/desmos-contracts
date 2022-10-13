@@ -45,7 +45,7 @@ If you prefer to have a fixed fee instead you can replace the `service_fee` obje
 ### SendTip
 Allows to send a tips to a user or to the author of a post. This message has the following parameters:
 * `amount`: Tip amount;
-* `target`: Who receives the tip, can be a user address or a post id to signal appreciation for a post created from a user.  
+* `target`: Tip target: it can be either a user address or a post id to signal appreciation towards a specific content rather than a user.  
 
 **NOTE**: In order to be able to send the tip you must provide a sufficient amount of coins through the `funds` field
 of [MsgExecuteContract](https://github.com/CosmWasm/wasmd/blob/6a471a4a16730e371863067b27858f60a3996c91/proto/cosmwasm/wasm/v1/tx.proto#L74).
