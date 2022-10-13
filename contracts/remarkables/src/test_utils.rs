@@ -134,6 +134,7 @@ impl Module for DesmosKeeper {
                 }
                 _ => unimplemented!(),
             },
+            _ => unimplemented!(),
         }
     }
     fn sudo<ExecC, QueryC>(
