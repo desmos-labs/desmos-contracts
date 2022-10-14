@@ -230,7 +230,7 @@ Response:
 Allows to query the tips that a user has sent. This message has the following parameter:
 * `user`: Address of the user of interest.
 
-Here an example message to query the tips sent from an user:
+Here an example message to query the tips sent from a user:
 ```json
 {
   "user_sent_tips": {
