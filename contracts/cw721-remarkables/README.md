@@ -152,7 +152,7 @@ Here an example message to approve an operator all the tokens without any expira
 ```
 
 ### RevokeAll
-Allows to remove a previously granted approval all permission. This message has the following parameters:
+Allows to remove a previously granted `ApproveAll` permission. This message has the following parameters:
 * `operator`: Address who would be revoked operator permissions of all the tokens from the owner's account.
 
 Here an example message to revoke operator permissions to all the tokens from the owner's account:
