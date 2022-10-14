@@ -102,7 +102,7 @@ Allows to remove a previously granted approval. This message has the following p
 * `spender`: Address who would be revoked the permission of the given token;
 * `token_id`: Id of the target token.
 
-An example of the message to revoke an operator to a token:
+Here an example meesage to revoke an operator to a token:
 ```json
 {
     "revoke": {
@@ -117,7 +117,7 @@ Allows to give all the tokens transferring/sendind tokens approval to an operato
 * `operator`: Address who is assigned to have all the tokens approvals in the owner's account;
 * `expires`: Expiration time/height of this allowance, if it is set as `null` then it has no time/height limit.
 
-An example of the message to approve an operator all the tokens with an expiration height:
+Here an example meesage to approve an operator all the tokens with an expiration height:
 ```json
 {
     "approve_all": {
@@ -129,7 +129,7 @@ An example of the message to approve an operator all the tokens with an expirati
 }
 ```
 
-An example of the message to approve an operator all the tokens with an expiration time:
+Here an example meesage to approve an operator all the tokens with an expiration time:
 ```json
 {
     "approve_all": {
@@ -141,7 +141,7 @@ An example of the message to approve an operator all the tokens with an expirati
 }
 ```
 
-An example of the message to approve an operator all the tokens without any expiration:
+Here an example meesage to approve an operator all the tokens without any expiration:
 ```json
 {
     "approve_all": {
@@ -155,7 +155,7 @@ An example of the message to approve an operator all the tokens without any expi
 Allows to remove a previously granted approval all permission. This message has the following parameters:
 * `operator`: Address who would be revoked operator permissions of all the tokens from the owner's account.
 
-An example of the message to revoke operator permissions to all the tokens from the owner's account:
+Here an example meesage to revoke operator permissions to all the tokens from the owner's account:
 ```json
 {
     "revoke": {
@@ -171,7 +171,7 @@ Allows the minter to mint a new NFT to a user. This message has the following pa
 * `token_uri`: universal resource identifier for this NFT;
 * `extension`: the `POAP metadata` which includes claimer of this NFT.
 
-An example of the message to mint new NFT:
+Here an example meesage to mint new NFT:
 ```json
 {
     "mint": {
@@ -189,7 +189,7 @@ An example of the message to mint new NFT:
 Allows to burn an NFT the sender has access to. This message has the following parameters:
 * `token_id`: Id of the token that would be burned.
 
-An example of the message to burn an NFT:
+Here an example meesage to burn an NFT:
 ```json
 {
     "burn": {
@@ -205,7 +205,7 @@ Returns the owner of the given token, error if token does not exist. This messag
 * `token_id`: Id of the target token;
 * `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
 
-Here an example of the message to query the owner of the given token:
+Here Here an example meesage to query the owner of the given token:
 ```json
 {
     "owner_of": {
@@ -248,7 +248,7 @@ Returns an access owned by the given spender to the given token. This message ha
 * `spender`: Address who has the sending/transferring access to the given token;
 * `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
 
-Here an example of the message to query the approval of the given token by a spender:
+Here Here an example meesage to query the approval of the given token by a spender:
 ```json
 {
     "approval": {
@@ -276,7 +276,7 @@ Returns approvals that a token has. This message has the following parameters:
 * `token_id`: Id of the target token;
 * `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
 
-Here an example of the message to query the approvals of the given token:
+Here Here an example meesage to query the approvals of the given token:
 ```json
 {
     "approvals": {
@@ -319,7 +319,7 @@ Lists all operators that can access all of the owner's tokens. This message has 
 * `start_after`: Position in address where tokens start after;
 * `limit`: Limitation to list the number of operators, if unset would be 10 and the maximum is 100.
 
-Here an example of the message to query the operators of the given owner:
+Here Here an example meesage to query the operators of the given owner:
 ```json
 {
     "all_operators": {
@@ -360,7 +360,7 @@ Response:
 ### NumTokens
 Returns total number of tokens issued.
 
-Here an example of the message to query total number of tokens:
+Here Here an example meesage to query total number of tokens:
 ```json
 {
     "num_tokens": {}
@@ -377,7 +377,7 @@ Response:
 ### ContractInfo
 Returns top-level metadata about the contract.
 
-Here an example of the message to query the contract info of the contract:
+Here Here an example meesage to query the contract info of the contract:
 ```json
 {
     "contract_info": {}
@@ -396,7 +396,7 @@ Response:
 Returns metadata about one particular token. This message has the following parameters:
 * `token_id`: Id of the target token.
 
-Here an example of the message to query the info of the given token:
+Here Here an example meesage to query the info of the given token:
 ```json
 {
     "nft_info": {
@@ -420,7 +420,7 @@ Returns the result of both `NftInfo` and `OwnerOf` as one query as an optimizati
 * `token_id`: Id of the target token.
 * `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
 
-Here an example of the message to query all the info of the given token:
+Here Here an example meesage to query all the info of the given token:
 ```json
 {
     "all_nft_info": {
@@ -471,7 +471,7 @@ Returns all tokens owned by the given address. This message has the following pa
 * `start_after`: Position in token id where tokens start after;
 * `limit`: Limitation to list the number of tokens, if unset would be 10 and the maximum is 100.
 
-Here an example of the message to query all the tokens owned by the given address:
+Here Here an example meesage to query all the tokens owned by the given address:
 ```json
 {
     "tokens": {
@@ -494,7 +494,7 @@ Lists all token_ids in the contract. This message has the following parameters:
 * `start_after`: Position in token id where tokens start after;
 * `limit`: Limitation to list the number of tokens, if unset would be 10 and the maximum is 100.
 
-Here an example of the message to query all the tokens in the contract:
+Here Here an example meesage to query all the tokens in the contract:
 ```json
 {
     "tokens": {
@@ -514,7 +514,7 @@ Response:
 ### Minter
 Returns the minter who is the one having access to mint NFT.
 
-Here an example of the message to query the minter of the contract:
+Here Here an example meesage to query the minter of the contract:
 ```json
 {
     "minter": {}
