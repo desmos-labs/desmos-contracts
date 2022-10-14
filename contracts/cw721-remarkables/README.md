@@ -24,7 +24,7 @@ An example of the instantiate message:
 ### TransferNft
 Allows to move a token to another account without triggering actions. This message has the following parameters:
 * `recipient`: Address where the token transfer to;
-* `token_id`: Id of the token which would be transferred.
+* `token_id`: Id of the token to be transferred.
 
 An example of the message to transfer nft:
 ```json
