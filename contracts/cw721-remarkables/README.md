@@ -99,7 +99,7 @@ Here an example message to approve a token to an operator without any expiration
 
 ### Revoke
 Allows to remove a previously granted approval. This message has the following parameters:
-* `spender`: Address who would be revoked the permission of the given token;
+* `spender`: Address at which the authorization of the given token is revoked;
 * `token_id`: Id of the target token.
 
 Here an example message to revoke an operator to a token:
