@@ -416,7 +416,7 @@ Response:
 ```
 
 ### AllNftInfo
-Returns the result of both `NftInfo` and `OwnerOf` as one query as an optimization. This message has the following parameters:
+Returns the result of both `NftInfo` and `OwnerOf`. This message has the following parameters:
 * `token_id`: Id of the target token.
 * `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
 
