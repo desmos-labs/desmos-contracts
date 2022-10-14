@@ -22,7 +22,7 @@ An example of the instantiate message:
 ## Execute Messages
 
 ### TransferNft
-Allows to move a token to another account without triggering actions. This message has the following parameters:
+This message is used to send an NFT to an address and has the following parameters:
 * `recipient`: Address where the token transfer to;
 * `token_id`: Id of the token to be transferred.
 
