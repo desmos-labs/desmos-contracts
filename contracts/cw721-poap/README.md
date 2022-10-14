@@ -10,7 +10,7 @@ Allows to initialize the contract. This message has the following parameters:
 * `symbol`: Symbol of the NFT contract;
 * `minter`: Address who is the only one to be able to create new NFTs.
 
-Here an example of instantiate message:
+Here an example message to instantiate a contract:
 ```json
 {
     "name": "test_name",
