@@ -56,7 +56,7 @@ Here an example message to send nft having a trigger message:
 
 ### Approve
 Allows a user to transfer/send the token from the owner's account. This message has the following parameters:
-* `spender`: Address who would be assigned as an access of the token;
+* `spender`: Address that is granted with the access to the NFT;
 * `token_id`: Id of the target token;
 * `expires`: Expiration time/height of this allowance, if it is set as `null` then it has no time/height limit.
 
