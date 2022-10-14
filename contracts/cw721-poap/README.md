@@ -42,7 +42,7 @@ Allows to move a token to another contract then trigger an action. This message 
 * `token_id`: Id of the token which would be transferred;
 * `msg`: Base64 encoded message to trigger on the receiver contract.
 
-An example of the message to send nft having a trigger message:
+Here an example message to send nft having a trigger message:
 ```json
 {
     "send_nft": {
