@@ -37,7 +37,7 @@ An example of the message to transfer nft:
 ```
 
 ### SendNft
-Allows to move a token to another contract then trigger an action. This message has the following parameters:
+This message is used to move an NFT to another contract and trigger an action. It has the following parameters:
 * `contract`: Contract address where the token transfer to;
 * `token_id`: Id of the token which would be transferred;
 * `msg`: Base64 encoded message to trigger on the receiver contract.
