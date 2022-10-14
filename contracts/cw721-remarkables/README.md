@@ -203,7 +203,7 @@ Here an example message to burn an NFT:
 ## Query Messages
 
 ### OwnerOf
-Returns the owner of the given token, error if token does not exist. This message has the following parameters:
+Returns the owner of the given token, or an error if the token does not exist. This message has the following parameters:
 * `token_id`: Id of the target token;
 * `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
 
