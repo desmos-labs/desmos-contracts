@@ -274,7 +274,7 @@ Response:
 ```
 
 ### Approvals
-Returns approvals that a token has. This message has the following parameters:
+Returns all the approvals that a token has. This message has the following parameters:
 * `token_id`: Id of the target token;
 * `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
 
