@@ -26,7 +26,7 @@ Allows to move a token to another account without triggering actions. This messa
 * `recipient`: Address where the token transfer to;
 * `token_id`: Id of the token which would be transferred.
 
-An example of the message to transfer nft:
+Here an example message to transfer nft:
 ```json
 {
     "transfer_nft": {
