@@ -86,7 +86,7 @@ Here an example message to approve a token to an operator with an expiration tim
 }
 ```
 
-An example of the message to approve a token to an operator without any expiration:
+Here an example message to approve a token to an operator without any expiration:
 ```json
 {
     "approve": {
