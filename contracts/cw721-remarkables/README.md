@@ -245,7 +245,7 @@ Response:
 ```
 
 ### Approval
-Returns an access owned by the given spender to the given token. This message has the following parameters:
+Returns an approval owned by the given spender to the given token. This message has the following parameters:
 * `token_id`: Id of the target token;
 * `spender`: Address who has the sending/transferring access to the given token;
 * `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
