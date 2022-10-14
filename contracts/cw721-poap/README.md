@@ -205,7 +205,7 @@ Returns the owner of the given token, error if token does not exist. This messag
 * `token_id`: Id of the target token;
 * `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
 
-Here Here an example meesage to query the owner of the given token:
+Here an example meesage to query the owner of the given token:
 ```json
 {
     "owner_of": {
@@ -248,7 +248,7 @@ Returns an access owned by the given spender to the given token. This message ha
 * `spender`: Address who has the sending/transferring access to the given token;
 * `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
 
-Here Here an example meesage to query the approval of the given token by a spender:
+Here an example meesage to query the approval of the given token by a spender:
 ```json
 {
     "approval": {
@@ -276,7 +276,7 @@ Returns approvals that a token has. This message has the following parameters:
 * `token_id`: Id of the target token;
 * `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
 
-Here Here an example meesage to query the approvals of the given token:
+Here an example meesage to query the approvals of the given token:
 ```json
 {
     "approvals": {
@@ -319,7 +319,7 @@ Lists all operators that can access all of the owner's tokens. This message has 
 * `start_after`: Position in address where tokens start after;
 * `limit`: Limitation to list the number of operators, if unset would be 10 and the maximum is 100.
 
-Here Here an example meesage to query the operators of the given owner:
+Here an example meesage to query the operators of the given owner:
 ```json
 {
     "all_operators": {
@@ -360,7 +360,7 @@ Response:
 ### NumTokens
 Returns total number of tokens issued.
 
-Here Here an example meesage to query total number of tokens:
+Here an example meesage to query total number of tokens:
 ```json
 {
     "num_tokens": {}
@@ -377,7 +377,7 @@ Response:
 ### ContractInfo
 Returns top-level metadata about the contract.
 
-Here Here an example meesage to query the contract info of the contract:
+Here an example meesage to query the contract info of the contract:
 ```json
 {
     "contract_info": {}
@@ -396,7 +396,7 @@ Response:
 Returns metadata about one particular token. This message has the following parameters:
 * `token_id`: Id of the target token.
 
-Here Here an example meesage to query the info of the given token:
+Here an example meesage to query the info of the given token:
 ```json
 {
     "nft_info": {
@@ -420,7 +420,7 @@ Returns the result of both `NftInfo` and `OwnerOf`. This message has the followi
 * `token_id`: Id of the target token.
 * `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
 
-Here Here an example meesage to query all the info of the given token:
+Here an example meesage to query all the info of the given token:
 ```json
 {
     "all_nft_info": {
@@ -471,7 +471,7 @@ Returns all tokens owned by the given address. This message has the following pa
 * `start_after`: Position in token id where tokens start after;
 * `limit`: Limitation to list the number of tokens, if unset would be 10 and the maximum is 100.
 
-Here Here an example meesage to query all the tokens owned by the given address:
+Here an example meesage to query all the tokens owned by the given address:
 ```json
 {
     "tokens": {
@@ -494,7 +494,7 @@ Lists all token_ids in the contract. This message has the following parameters:
 * `start_after`: Position in token id where tokens start after;
 * `limit`: Limitation to list the number of tokens, if unset would be 10 and the maximum is 100.
 
-Here Here an example meesage to query all the tokens in the contract:
+Here an example meesage to query all the tokens in the contract:
 ```json
 {
     "tokens": {
@@ -514,7 +514,7 @@ Response:
 ### Minter
 Returns the minter who is the one having access to mint NFT.
 
-Here Here an example meesage to query the minter of the contract:
+Here an example meesage to query the minter of the contract:
 ```json
 {
     "minter": {}
