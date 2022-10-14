@@ -114,7 +114,7 @@ Here an example message to revoke an operator to a token:
 
 ### ApproveAll
 Allows to give all the tokens transferring/sendind tokens approval to an operator from the owner's account. This message has the following parameters:
-* `operator`: Address who is assigned to have all the tokens approvals in the owner's account;
+* `operator`: Address to which all token approvals are assigned in the owner account;
 * `expires`: Expiration time/height of this allowance, if it is set as `null` then it has no time/height limit.
 
 Here an example message to approve an operator all the tokens with an expiration height:
