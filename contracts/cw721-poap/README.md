@@ -60,7 +60,7 @@ Allows a user to transfer/send the token from the owner's account. This message 
 * `token_id`: Id of the target token;
 * `expires`: Expiration time/height of this allowance, if it is set as `null` then it has no time/height limit.
 
-An example of the message to approve a user to have the sending/transferring access to a token with an expiration height:
+An example message to approve a user to have the sending/transferring access to a token with an expiration height:
 ```json
 {
     "approve": {
