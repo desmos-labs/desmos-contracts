@@ -26,7 +26,7 @@ This message is used to send an NFT to an address and has the following paramete
 * `recipient`: Address where the token transfer to;
 * `token_id`: Id of the token to be transferred.
 
-An example of the message to transfer nft:
+Here an example message to transfer nft:
 ```json
 {
     "transfer_nft": {
