@@ -5,7 +5,7 @@ To easily interact with the contract you can use the `cw721-remarkables` script 
 otherwise you can take a look at the supported messages in the following sections.
 
 ## Instantiate Message
-Allows to initialize the contract. This message has the following parameters:
+This message is used to initialise the contract and has the following parameters:
 * `name`: Name of the NFT contract;
 * `symbol`: Symbol of the NFT contract;
 * `minter`: Address with the rights to mint new NFTs.
