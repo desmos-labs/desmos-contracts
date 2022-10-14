@@ -83,6 +83,27 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "description": "Message allowing the contract's admin to claim fees in this contract.",
+      "type": "object",
+      "required": [
+        "claim_fees"
+      ],
+      "properties": {
+        "claim_fees": {
+          "type": "object",
+          "required": [
+            "receiver"
+          ],
+          "properties": {
+            "receiver": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     }
   ],
   "definitions": {
