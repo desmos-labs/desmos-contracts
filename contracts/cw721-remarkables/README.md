@@ -55,7 +55,7 @@ An example of the message to send nft having a trigger message:
 **Note** the msg is base64-encoded of `{"execute_example":{}}`, which is the sample execution message on the target contract. 
 
 ### Approve
-Allows to give a user an access to transfer/send the token from the owner's account. This message has the following parameters:
+Allows a user to transfer/send the token from the owner's account. This message has the following parameters:
 * `spender`: Address who would be assigned as an access of the token;
 * `token_id`: Id of the target token;
 * `expires`: Expiration time/height of this allowance, if it is set as `null` then it has no time/height limit.
