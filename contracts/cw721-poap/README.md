@@ -73,7 +73,7 @@ An example message to approve a user to have the sending/transferring access to 
 }
 ```
 
-An example of the message to approve a token to an operator with an expiration time:
+Here an example message to approve a token to an operator with an expiration time:
 ```json
 {
     "approve": {
