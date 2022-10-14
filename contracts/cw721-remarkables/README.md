@@ -1,6 +1,6 @@
 # CW721 Remarkables contract
 
-Contract that defines the cw721-base contract having custom remarkables `Metadata`, which is used by remarkables contract.
+Contract that extends the cw721-base contract by adding a custom `Metadata` field, which is used by remarkables contract.
 To easily interact with the contract you can use the `cw721-remarkables` script available [here](https://github.com/desmos-labs/contract-utils/tree/main/utils), 
 otherwise you can take a look at the supported messages in the following sections.
 
