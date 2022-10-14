@@ -23,7 +23,7 @@ An example of instantiate message:
 
 ### TransferNft
 This message is used to send an NFT to an address and has the following parameters:
-* `recipient`: Address where the token transfer to;
+* `recipient`: The address that receives the NFT;
 * `token_id`: Id of the token to be transferred.
 
 Here an example message to transfer nft:
