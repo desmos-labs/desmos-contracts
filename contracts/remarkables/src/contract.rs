@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    has_coins, to_binary, wasm_execute, wasm_instantiate, Addr, Binary, Coin, Deps, DepsMut, Empty,
-    Env, MessageInfo, Querier, Reply, Response, StdResult, Storage, SubMsg, Uint64,
+    has_coins, to_binary, wasm_execute, wasm_instantiate, Addr, BankMsg, Binary, Coin, Deps,
+    DepsMut, Empty, Env, MessageInfo, Querier, Reply, Response, StdResult, Storage, SubMsg, Uint64,
 };
 use cw2::set_contract_version;
 use cw721::{AllNftInfoResponse, TokensResponse};
@@ -39,6 +39,7 @@ const ACTION_INSTANTIATE_CW721_REPLY: &str = "instantiate_cw721_reply";
 const ACTION_MINT: &str = "mint";
 const ACTION_UPDATE_ADMIN: &str = "update_admin";
 const ACTION_UPDATE_RARITY_MINT_FEES: &str = "update_rarity_mint_fees";
+const ACTION_CLAIM_FEES: &str = "claim_fees";
 
 // attributes for executing messages
 const ATTRIBUTE_ACTION: &str = "action";
@@ -50,6 +51,7 @@ const ATTRIBUTE_RARITY_LEVEL: &str = "rarity_level";
 const ATTRIBUTE_RECIPIENT: &str = "recipient";
 const ATTRIBUTE_TOKEN_ID: &str = "token_id";
 const ATTRIBUTE_TOKEN_URI: &str = "token_uri";
+const ATTRIBUTE_RECEIVER: &str = "receiver";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -108,7 +110,7 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut<DesmosQuery>,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response<DesmosMsg>, ContractError> {
@@ -124,6 +126,7 @@ pub fn execute(
             rarity_level,
             new_fees,
         } => execute_update_rarity_mint_fees(deps, info, rarity_level, new_fees),
+        ExecuteMsg::ClaimFees { receiver } => execute_claim_fees(deps, env, info, receiver),
     }
 }
 
@@ -307,6 +310,28 @@ fn execute_update_rarity_mint_fees(
         .add_attribute(ATTRIBUTE_RARITY_LEVEL, level.to_string()))
 }
 
+fn execute_claim_fees(
+    deps: DepsMut<DesmosQuery>,
+    env: Env,
+    info: MessageInfo,
+    receiver: String,
+) -> Result<Response<DesmosMsg>, ContractError> {
+    check_admin(deps.storage, &info)?;
+    let receiver = deps.api.addr_validate(&receiver)?;
+    let contract_balance = deps
+        .querier
+        .query_all_balances(env.contract.address.as_str())?;
+
+    Ok(Response::new()
+        .add_attribute(ATTRIBUTE_ACTION, ACTION_CLAIM_FEES)
+        .add_attribute(ATTRIBUTE_SENDER, info.sender)
+        .add_attribute(ATTRIBUTE_RECEIVER, receiver.as_str())
+        .add_message(BankMsg::Send {
+            to_address: receiver.to_string(),
+            amount: contract_balance,
+        }))
+}
+
 fn check_admin(storage: &dyn Storage, info: &MessageInfo) -> Result<(), ContractError> {
     let config = CONFIG.load(storage)?;
     if config.admin != info.sender {
@@ -414,7 +439,9 @@ mod tests {
         SubMsgResult, SystemError, SystemResult,
     };
     use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
-    use desmos_bindings::mocks::mock_queriers::mock_desmos_dependencies;
+    use desmos_bindings::mocks::mock_queriers::{
+        mock_desmos_dependencies, mock_desmos_dependencies_with_custom_querier, MockDesmosQuerier,
+    };
     use desmos_bindings::{
         posts::{mocks::mock_posts_query_response, query::PostsQuery},
         reactions::{
@@ -428,6 +455,7 @@ mod tests {
 
     const ADMIN: &str = "cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t";
     const USER: &str = "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc";
+    const RECEIVER: &str = "receiver";
     const NEW_ADMIN: &str = "new_admin";
     const SUBSPACE_ID: u64 = 1;
     const DENOM: &str = "test";
@@ -927,7 +955,6 @@ mod tests {
             assert_eq!(config, expected)
         }
     }
-
     mod update_rarity_mint_fees {
         use super::*;
         #[test]
@@ -994,6 +1021,55 @@ mod tests {
                 mint_fees: coins(50, DENOM),
             };
             assert_eq!(expected, *new_rarities.get(0).unwrap())
+        }
+    }
+    mod claim_fees {
+        use super::*;
+        #[test]
+        fn claim_fees_without_permissions_error() {
+            let mut deps = mock_desmos_dependencies();
+            do_instantiate(deps.as_mut());
+            assert_eq!(
+                execute(
+                    deps.as_mut(),
+                    mock_env(),
+                    mock_info(RECEIVER, &[]),
+                    ExecuteMsg::ClaimFees {
+                        receiver: RECEIVER.to_string(),
+                    },
+                )
+                .unwrap_err(),
+                ContractError::NotAdmin {
+                    caller: Addr::unchecked(RECEIVER)
+                }
+            )
+        }
+
+        #[test]
+        fn claim_fee_properly() {
+            let mut deps =
+                mock_desmos_dependencies_with_custom_querier(MockDesmosQuerier::new(&[(
+                    MOCK_CONTRACT_ADDR,
+                    &[Coin::new(2000, "udsm")],
+                )]));
+            do_instantiate(deps.as_mut());
+            let response = execute(
+                deps.as_mut(),
+                mock_env(),
+                mock_info(ADMIN, &[]),
+                ExecuteMsg::ClaimFees {
+                    receiver: RECEIVER.to_string(),
+                },
+            )
+            .unwrap();
+
+            assert_eq!(
+                vec![SubMsg::new(BankMsg::Send {
+                    amount: vec![Coin::new(2000, "udsm")],
+                    to_address: RECEIVER.to_string()
+                })],
+                response.messages
+            );
         }
     }
     mod query {
