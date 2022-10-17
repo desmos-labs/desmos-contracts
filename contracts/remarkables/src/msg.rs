@@ -60,6 +60,8 @@ pub enum ExecuteMsg {
     },
     /// Message allowing the contract's admin to transfer the admin rights to another user.
     UpdateAdmin { new_admin: String },
+    /// Message allowing the contract's admin to claim fees in this contract.
+    ClaimFees { receiver: String },
 }
 
 impl ExecuteMsg {

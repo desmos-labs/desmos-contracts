@@ -3,25 +3,30 @@ mod tests {
     use crate::contract::convert_post_id_to_token_id;
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, Rarity};
     use crate::test_utils::*;
-    use cosmwasm_std::{wasm_execute, Addr, Empty, Uint64};
+    use cosmwasm_std::{coins, wasm_execute, Addr, Coin, Empty};
     use cw721::{AllNftInfoResponse, NftInfoResponse, OwnerOfResponse, TokensResponse};
-    use cw721_base::QueryMsg as Cw721QueryMsg;
-    use cw721_base::{ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg};
+    use cw721_base::{
+        ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg,
+        QueryMsg as Cw721QueryMsg,
+    };
     use cw721_remarkables::Metadata;
     use cw_multi_test::{Contract, ContractWrapper, Executor};
     use desmos_bindings::{
-        mocks::mock_apps::{mock_desmos_app, mock_failing_desmos_app, DesmosApp, DesmosModule},
+        mocks::mock_apps::{custom_desmos_app, mock_failing_desmos_app, DesmosApp, DesmosModule},
         msg::DesmosMsg,
         query::DesmosQuery,
     };
-
-    const ADMIN: &str = "cosmos17qcf9sv5yk0ly5vt3ztev70nwf6c5sprkwfh8t";
-    const RARITY_LEVEL: u32 = 1;
-    const SUBSPACE_ID: Uint64 = Uint64::new(1);
-    const POST_ID: Uint64 = Uint64::new(1);
-    const REMARKABLES_URI: &str = "ipfs://remarkables.com";
-    const AUTHOR: &str = "desmos1nwp8gxrnmrsrzjdhvk47vvmthzxjtphgxp5ftc";
-
+    fn get_mint_fees() -> Vec<Coin> {
+        coins(100, "udsm")
+    }
+    fn mock_desmos_app() -> DesmosApp<DesmosKeeper> {
+        custom_desmos_app(DesmosKeeper {}, |router, _, storage| {
+            router
+                .bank
+                .init_balance(storage, &Addr::unchecked(AUTHOR), get_mint_fees())
+                .unwrap();
+        })
+    }
     fn contract_remarkables() -> Box<dyn Contract<DesmosMsg, DesmosQuery>> {
         let contract = ContractWrapper::new(
             crate::contract::execute,
@@ -48,12 +53,12 @@ mod tests {
             subspace_id: SUBSPACE_ID.into(),
             rarities: vec![
                 Rarity {
-                    engagement_threshold: 100,
-                    mint_fees: vec![],
+                    engagement_threshold: ACCEPTED_ENGAGEMENT_THRESHOLD,
+                    mint_fees: get_mint_fees(),
                 },
                 Rarity {
-                    engagement_threshold: 0,
-                    mint_fees: vec![],
+                    engagement_threshold: UNACCEPTED_ENGAGEMENT_THRESHOLD,
+                    mint_fees: get_mint_fees(),
                 },
             ],
         }
@@ -71,6 +76,23 @@ mod tests {
             )
             .unwrap();
         (addr, (cw721_code_id, remarkables_code_id))
+    }
+    fn mint_remarkables_nft_properly<M: DesmosModule>(app: &mut DesmosApp<M>, contract_addr: Addr) {
+        app.execute(
+            Addr::unchecked(AUTHOR),
+            wasm_execute(
+                &contract_addr,
+                &ExecuteMsg::Mint {
+                    post_id: POST_ID,
+                    remarkables_uri: REMARKABLES_URI.into(),
+                    rarity_level: ACCEPTED_RARITY_LEVEL,
+                },
+                get_mint_fees(),
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap();
     }
     mod instantiate {
         use super::*;
@@ -146,27 +168,18 @@ mod tests {
                 .wrap()
                 .query_wasm_smart(&addr, &QueryMsg::Config {})
                 .unwrap();
-            app.execute(
-                Addr::unchecked(AUTHOR),
-                wasm_execute(
-                    &addr,
-                    &ExecuteMsg::Mint {
-                        post_id: POST_ID,
-                        remarkables_uri: REMARKABLES_URI.into(),
-                        rarity_level: RARITY_LEVEL,
-                    },
-                    vec![],
-                )
-                .unwrap()
-                .into(),
-            )
-            .unwrap();
+            // mint remarkables nft
+            mint_remarkables_nft_properly(&mut app, Addr::unchecked(&addr));
+            // burn nft
             app.execute(
                 Addr::unchecked(AUTHOR),
                 wasm_execute(
                     &config.cw721_address,
                     &Cw721ExecuteMsg::<Metadata, Empty>::Burn {
-                        token_id: convert_post_id_to_token_id(POST_ID.into(), RARITY_LEVEL),
+                        token_id: convert_post_id_to_token_id(
+                            POST_ID.into(),
+                            ACCEPTED_RARITY_LEVEL,
+                        ),
                     },
                     vec![],
                 )
@@ -182,9 +195,9 @@ mod tests {
                         &ExecuteMsg::Mint {
                             post_id: POST_ID,
                             remarkables_uri: REMARKABLES_URI.into(),
-                            rarity_level: RARITY_LEVEL,
+                            rarity_level: ACCEPTED_RARITY_LEVEL,
                         },
-                        vec![],
+                        get_mint_fees(),
                     )
                     .unwrap()
                     .into(),
@@ -195,21 +208,7 @@ mod tests {
         fn mint_properly() {
             let mut app = mock_desmos_app();
             let (addr, _) = proper_instantiate(&mut app);
-            app.execute(
-                Addr::unchecked(AUTHOR),
-                wasm_execute(
-                    &addr,
-                    &ExecuteMsg::Mint {
-                        post_id: POST_ID,
-                        remarkables_uri: REMARKABLES_URI.into(),
-                        rarity_level: RARITY_LEVEL,
-                    },
-                    vec![],
-                )
-                .unwrap()
-                .into(),
-            )
-            .unwrap();
+            mint_remarkables_nft_properly(&mut app, Addr::unchecked(&addr));
             let querier = app.wrap();
             let config: QueryConfigResponse = querier
                 .query_wasm_smart(addr, &QueryMsg::Config {})
@@ -224,7 +223,7 @@ mod tests {
                     },
                 )
                 .unwrap();
-            let token_id = convert_post_id_to_token_id(POST_ID.into(), RARITY_LEVEL);
+            let token_id = convert_post_id_to_token_id(POST_ID.into(), ACCEPTED_RARITY_LEVEL);
             assert_eq!(vec![token_id.clone()], response.tokens);
             let minted_nft_info: NftInfoResponse<Empty> = querier
                 .query_wasm_smart(
@@ -241,20 +240,21 @@ mod tests {
             )
         }
     }
-    mod query {
+    mod claim_fees {
         use super::*;
         #[test]
-        fn query_tokens() {
+        fn claim_fees_properly() {
             let mut app = mock_desmos_app();
             let (addr, _) = proper_instantiate(&mut app);
+            // mint
+            mint_remarkables_nft_properly(&mut app, Addr::unchecked(&addr));
+            // claim fees
             app.execute(
-                Addr::unchecked(AUTHOR),
+                Addr::unchecked(ADMIN),
                 wasm_execute(
                     &addr,
-                    &ExecuteMsg::Mint {
-                        post_id: POST_ID,
-                        remarkables_uri: REMARKABLES_URI.into(),
-                        rarity_level: RARITY_LEVEL,
+                    &ExecuteMsg::ClaimFees {
+                        receiver: ADMIN.into(),
                     },
                     vec![],
                 )
@@ -262,6 +262,19 @@ mod tests {
                 .into(),
             )
             .unwrap();
+            assert_eq!(
+                get_mint_fees(),
+                app.wrap().query_all_balances(ADMIN).unwrap()
+            )
+        }
+    }
+    mod query {
+        use super::*;
+        #[test]
+        fn query_tokens() {
+            let mut app = mock_desmos_app();
+            let (addr, _) = proper_instantiate(&mut app);
+            mint_remarkables_nft_properly(&mut app, Addr::unchecked(&addr));
             let querier = app.wrap();
             let config: QueryConfigResponse = querier
                 .query_wasm_smart(&addr, &QueryMsg::Config {})
@@ -295,27 +308,11 @@ mod tests {
         fn query_nft_info() {
             let mut app = mock_desmos_app();
             let (addr, _) = proper_instantiate(&mut app);
-            app.execute(
-                Addr::unchecked(AUTHOR),
-                wasm_execute(
-                    &addr,
-                    &ExecuteMsg::Mint {
-                        post_id: POST_ID,
-                        remarkables_uri: REMARKABLES_URI.into(),
-                        rarity_level: RARITY_LEVEL,
-                    },
-                    vec![],
-                )
-                .unwrap()
-                .into(),
-            )
-            .unwrap();
+            mint_remarkables_nft_properly(&mut app, Addr::unchecked(&addr));
             let querier = app.wrap();
             let config: QueryConfigResponse = querier
                 .query_wasm_smart(&addr, &QueryMsg::Config {})
                 .unwrap();
-
-            let querier = app.wrap();
             let response: TokensResponse = querier
                 .query_wasm_smart(
                     &addr,
@@ -331,7 +328,10 @@ mod tests {
                 .query_wasm_smart(
                     config.cw721_address.as_str(),
                     &Cw721QueryMsg::<Empty>::AllNftInfo {
-                        token_id: convert_post_id_to_token_id(POST_ID.into(), RARITY_LEVEL),
+                        token_id: convert_post_id_to_token_id(
+                            POST_ID.into(),
+                            ACCEPTED_RARITY_LEVEL,
+                        ),
                         include_expired: None,
                     },
                 )
@@ -340,7 +340,10 @@ mod tests {
                 .query_wasm_smart(
                     &addr,
                     &QueryMsg::AllNftInfo {
-                        token_id: convert_post_id_to_token_id(POST_ID.into(), RARITY_LEVEL),
+                        token_id: convert_post_id_to_token_id(
+                            POST_ID.into(),
+                            ACCEPTED_RARITY_LEVEL,
+                        ),
                         include_expired: None,
                     },
                 )
@@ -355,7 +358,7 @@ mod tests {
                     info: NftInfoResponse {
                         token_uri: Some(REMARKABLES_URI.to_string()),
                         extension: Metadata {
-                            rarity_level: RARITY_LEVEL,
+                            rarity_level: ACCEPTED_RARITY_LEVEL,
                             subspace_id: SUBSPACE_ID.into(),
                             post_id: POST_ID.into(),
                         },
