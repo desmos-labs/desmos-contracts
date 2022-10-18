@@ -10,7 +10,7 @@ Allows to initialize the contract. This message has the following parameters:
 * `minter`: Address of who can mint tokens to other users;
 * `cw721_code_id`: Id of the CW721 contract to initialize together with this contract;
 * `cw721_instantiate_msg`: Initialization [message](../cw721-poap/README.md#instantiate_message) that will be sent to the CW721 contract;
-* `event_info`: Information about the event which defines [here](#EventInfo).
+* `event_info`: Information about the event which is defined [here](#EventInfo).
 
 Here an example message to instantiate the contract:
 ```json
