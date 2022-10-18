@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, wasm_execute, wasm_instantiate, Addr, Deps, DepsMut, Env, MessageInfo,
-    QueryResponse, Reply, Response, StdResult, SubMsg,
+    QueryResponse, Reply, Response, StdResult, Storage, SubMsg,
 };
 use cw2::set_contract_version;
 use cw_utils::parse_reply_instantiate_data;
@@ -139,6 +139,7 @@ fn execute_mint_to(
     info: MessageInfo,
     recipient: String,
 ) -> Result<Response<DesmosMsg>, ContractError> {
+    check_admin(deps.storage, &info)?;
     let poap_contract_address = POAP_CONTRACT_ADDRESS.load(deps.storage)?;
     deps.api.addr_validate(&recipient)?;
     Ok(Response::new()
@@ -156,13 +157,9 @@ fn execute_update_admin(
     info: MessageInfo,
     user: String,
 ) -> Result<Response<DesmosMsg>, ContractError> {
+    check_admin(deps.storage, &info)?;
     let new_admin = deps.api.addr_validate(&user)?;
     CONFIG.update(deps.storage, |mut config| -> Result<_, ContractError> {
-        if config.admin != info.sender {
-            return Err(ContractError::NotAdmin {
-                caller: info.sender.clone(),
-            });
-        }
         config.admin = new_admin.clone();
         Ok(config)
     })?;
@@ -170,6 +167,16 @@ fn execute_update_admin(
         .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_ADMIN)
         .add_attribute(ATTRIBUTE_NEW_ADMIN, new_admin)
         .add_attribute(ATTRIBUTE_SENDER, info.sender))
+}
+
+fn check_admin(storage: &dyn Storage, info: &MessageInfo) -> Result<(), ContractError> {
+    let config = CONFIG.load(storage)?;
+    if config.admin != info.sender {
+        return Err(ContractError::NotAdmin {
+            caller: info.sender.clone(),
+        });
+    }
+    Ok(())
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -378,6 +385,26 @@ mod tests {
         let info = mock_info(CREATOR, &vec![]);
         let msg = ExecuteMsg::Claim {};
         execute(deps.as_mut(), env, info, msg).unwrap();
+    }
+
+    #[test]
+    fn mint_to_without_permissions_error() {
+        let mut deps = mock_desmos_dependencies();
+        do_instantiate(deps.as_mut());
+        POAP_CONTRACT_ADDRESS
+            .save(deps.as_mut().storage, &Addr::unchecked(""))
+            .unwrap();
+        let env = mock_env();
+        let info = mock_info(NEW_ADMIN, &vec![]);
+        let msg = ExecuteMsg::MintTo {
+            recipient: CREATOR.into(),
+        };
+        assert_eq!(
+            ContractError::NotAdmin {
+                caller: Addr::unchecked(NEW_ADMIN)
+            },
+            execute(deps.as_mut(), env, info, msg).unwrap_err(),
+        )
     }
 
     #[test]
