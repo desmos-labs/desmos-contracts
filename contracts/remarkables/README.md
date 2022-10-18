@@ -48,7 +48,7 @@ Here an example message to instantiate the contract:
 ```
 
 ### Rarity
-Represents the requirement to mint a remarkables nft for a post. This structure has the folloing parameters:
+Represents the requirement to mint a remarkables NFT for a post. This structure has the folloing parameters:
 * `engagement_threshold`: Threshold of the needed reactions amount to the post;
 * `mint_fees`: Fees to mint a remarkables NFT for a post.
 
