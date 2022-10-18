@@ -37,7 +37,7 @@ schemars = "0.8.10"
 serde = { version = "1.0.145", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.33" }
 desmos-bindings = { version = "1.1.1", default-features = false, features = ["posts", "subspaces", "profiles", "query"]}
-cw-utils = "0.15.0"
+cw-utils = "0.16.0"
 
 [dev-dependencies]
 cosmwasm-schema = "1.1.5"

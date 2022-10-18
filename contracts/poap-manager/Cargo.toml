@@ -39,7 +39,7 @@ thiserror = { version = "1.0.35" }
 desmos-bindings = { version = "1.1.1", default-features = false, features = ["profiles", "query", "msg"]}
 poap = { path = "../poap", version = "0.1.0", features = ["library"]}
 cw721-base = { git = "https://github.com/desmos-labs/cw-nfts", features = ["library"], branch = "paul/update-custom-msg-query" }
-cw-utils = "0.15.0"
+cw-utils = "0.16.0"
 cw721-poap = { path = "../cw721-poap", version = "0.1.0", features = ["library"]}
 
 [dev-dependencies]
