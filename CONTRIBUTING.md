@@ -55,10 +55,10 @@ Other notes:
 ## Architecture Decision Records (ADR)
 
 When proposing an architecture decision for a smart contract, please start by opening an
-[issue](https://github.com/desmos-labs/desmos/issues/new/choose) or a
-[discussion](https://github.com/desmos-labs/desmos/discussions/new) with a summary of the proposal. Once the proposal
+[issue](https://github.com/desmos-labs/desmos-contracts/issues/new/choose) or a
+[discussion](https://github.com/desmos-labs/desmos-contracts/discussions/new) with a summary of the proposal. Once the proposal
 has been discussed and there is rough alignment on a high-level approach to the design,
-the [ADR creation process](https://github.com/desmos-labs/desmos/blob/master/docs/architecture/PROCESS.md) can begin. We
+the [ADR creation process](https://github.com/desmos-labs/desmos-contracts/blob/master/docs/architecture/PROCESS.md) can begin. We
 are following this process to ensure all involved parties are in agreement before any party begins coding the proposed
 implementation. If you would like to see examples of how these are written, please refer to the current
 [ADRs](https://github.com/desmos-labs/desmos-contracts/tree/master/docs/architecture) or to
