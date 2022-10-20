@@ -55,7 +55,7 @@ Represents the requirement to mint a Remarkable (NFT) for a post. This structure
 ## Execute Messages
 
 ### Mint
-Allows the post author to mint a remarkables NFT for his/her post reaching the requirement of the target level. This message has the following parameters:
+Allows the post author to mint a Remarkable NFT for their post that satisfies the engagement threshold requirement. This message has the following parameters:
 * `post_id`: Id of the target post;
 * `remarkables_uri`: IPFS uri where the Remarkable metadata are stored;
 * `rarity_level`: Rarity level of the post.
