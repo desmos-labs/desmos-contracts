@@ -6,11 +6,18 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
-    #[error("Unauthorized")]
-    Unauthorized {},
+    #[error("Tip amount is empty")]
+    EmptyTipAmount {},
 
-    #[error("Custom Error val: {val:?}")]
-    CustomError { val: String },
-    // Add any other custom errors you like here.
-    // Look at https://docs.rs/thiserror/1.0.21/thiserror/ for details.
+    #[error("Invalid application")]
+    InvalidApplication {},
+
+    #[error("Invalid user handler")]
+    InvalidUserHandler {},
+
+    #[error("No tips available for user with address: {user}")]
+    NoTipsAvailable { user: String },
+
+    #[error("To many owners")]
+    ToManyOwners {},
 }
