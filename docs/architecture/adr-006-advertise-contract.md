@@ -33,11 +33,13 @@ The contract will take care of:
 pub struct InstantiateMsg {
     admin: String,
     min_fee_per_day: Coin,
+    subspace_id: Uint64,
 }
 ```
 
 * The `admin` identifies the user that controls the contract;
 * The `min_fee_per_day` defines the minimum daily fee to advertise a post.
+* The `subspace_id` defines the subspace where the contract lauches.
 
 ***NOTE***
 The contract only support one type coin to the `min_fee_per_day` since it will calculate the Ads stakes by the amount of it.
