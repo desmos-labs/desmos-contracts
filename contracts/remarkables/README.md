@@ -58,7 +58,7 @@ Represents the requirement to mint a Remarkable (NFT) for a post. This structure
 Allows the post author to mint a remarkables NFT for his/her post reaching the requirement of the target level. This message has the following parameters:
 * `post_id`: Id of the target post;
 * `remarkables_uri`: IPFS uri where the Remarkable metadata are stored;
-* `rarity_level`: Level of the target rarity.
+* `rarity_level`: Rarity level of the post.
 
 Here an example message to mint a remarkable NFT for the post:
 ```json
