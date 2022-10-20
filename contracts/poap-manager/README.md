@@ -7,7 +7,7 @@ otherwise you can take a look at the supported messages in the following section
 ## Instantiate Message
 Allows to initialize the contract. This message has the following parameters:
 * `admin`: Address of who will have the right to administer the contract;
-* `poap_code_id`: Id of the POAP contract to initialize together with this contract;
+* `poap_code_id`: Id of the POAP contract to be initialized together with this contract;
 * `poap_instantiate_msg`: Initialization [message](../poap/README.md#instantiate_message) that will be sent to the POAP contract;
 
 Here an example message to instantiate the contract:
