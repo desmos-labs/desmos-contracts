@@ -1,6 +1,6 @@
 # POAP manager contract
 
-The controller contract of the [POAP contract](../poap/README.md) that allows users who has a Desmos profile to mint POAP nft.
+The controller contract of the [POAP contract](../poap/README.md) that allows users who has a Desmos profile to mint POAP NFTs.
 To easily interact with the contract you can use the `poap-manager` script available [here](https://github.com/desmos-labs/contract-utils/tree/main/utils), 
 otherwise you can take a look at the supported messages in the following sections.
 
