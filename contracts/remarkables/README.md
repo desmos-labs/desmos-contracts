@@ -60,7 +60,7 @@ Allows the post author to mint a remarkables NFT for his/her post reaching the r
 * `remarkables_uri`: IPFS uri where the Remarkable metadata are stored;
 * `rarity_level`: Rarity level of the post.
 
-Here an example message to mint a remarkable NFT for the post:
+Here an example message to mint a Remarkable NFT for the post:
 ```json
 {
     "mint": {
