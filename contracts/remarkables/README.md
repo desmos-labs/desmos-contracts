@@ -151,7 +151,7 @@ Response:
 ```
 
 ### Rarities
-Allows to query the rarities could be minted in the contract.
+Allows to query the rarities that could be minted in the contract.
 
 Here an example message to query the rarities:
 ```json
