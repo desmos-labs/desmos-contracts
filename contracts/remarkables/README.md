@@ -117,7 +117,7 @@ Here an example message to update the contract admin:
 ### ClaimFees
 Allows the contract admin to claim the fees paid from the users to execute the contract. 
 This message has the following parameter:
-* `receiver`: Address to which fees will be sent.
+* `receiver`: Address to which the fees will be sent.
 
 Here an example message to claim the fees:
 ```json
