@@ -49,7 +49,7 @@ Here an example message to claim a POAP:
 ```
 
 ### MintTo
-Allows the admin to mint a POAP token to a recipient in the event period if the POAP contract enables mint. This message has the following parameter:
+Allows the admin to mint a POAP token to a recipient during the event if mint was enabled. This message has the following parameter:
 * `recipient`: Address who will receive the minted token.
 
 Here an example message to mint a POAP to a user:
