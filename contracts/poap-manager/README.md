@@ -38,7 +38,8 @@ Here an example message to instantiate the contract:
 ## Execute Messages
 
 ### Claim
-Allows users who have Desmos profile to claim a POAP token in the event period if the POAP contract enables mint.
+Allows users who have a Desmos profile to claim a POAP token during the event if the mint 
+has been enabled.
 
 Here an example message to claim a POAP:
 ```json
