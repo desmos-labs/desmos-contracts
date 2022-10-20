@@ -1,6 +1,6 @@
 # Remarkables contract
 
-Contract that allows post authors to mint a remakable NFT for their post reaching the rarity level requirement.
+Contract that allows content creators to mint a "Remakable" (NFT) of their post that reaches the required rarity level.
 To easily interact with the contract you can use the `remarkables` script available [here](https://github.com/desmos-labs/contract-utils/tree/main/utils), 
 otherwise you can take a look at the supported messages in the following sections.
 
