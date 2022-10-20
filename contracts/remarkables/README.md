@@ -103,7 +103,7 @@ Here an example message to update mint fees of the given rarity level:
 
 ### UpdateAdmin
 Allows the contract's admin to transfer the admin rights to another user. This message has the following parameter:
-* `new_admin`: Address to be the new admin that controls this contract.
+* `new_admin`: Address of the new admin that will control this contract.
 
 Here an example message to update the contract admin:
 ```json
