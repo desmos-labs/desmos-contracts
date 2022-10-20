@@ -78,7 +78,7 @@ Here an example message to mint a remarkable NFT for the post:
 ```
 
 ### UpdateRarityMintFees
-Allows the admin to change the mint fees to the target rarity level.
+Allows the admin to change the mint fees of a target rarity level.
 * `rarity_level`: Level of the target rarity to be updated mint fees;
 * `new_fees`: Fees which replace the old mint fees.
 
