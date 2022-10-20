@@ -13,7 +13,7 @@ This ADR defines the architecture of the Advertise contract. This contract allow
 Also, to be fair to the post which is advertised more tokens, this contract provide the system to make sure that the more tokens a post is advertised, the more visibility it has.
 
 ## Context
-The Desmos based social network may want to have a advertise system to make money. Currently, building a advertise system on apps is not easy so we would like to build a tool for it.
+The Desmos based social network may want to have a advertise system to make money. Currently, building an advertise system on apps is not easy so we would like to build a tool for it.
 
 ## Decision
 The idea is to implement a smart contract that allows users to advertise a post by using tokens. The contract will maintain a advertising pool based on [`SumTree`](https://medium.com/kleros/an-efficient-data-structure-for-blockchain-sortition-15d202af3247) to provide a way to get random posts with the query rate defined by how much token advertised. Say, Tim advertises `post 1` by `10dsm` then Tom advertises `post 2` by `90dsm`, then the query rate of the `post 1` would be `10%` and the `post 2` would be `90%`. In addition, advertisement has timeliness so it needs an expiration time.
