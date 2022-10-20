@@ -10,7 +10,7 @@ Allows to initialize the contract. This message has the following parameters:
 * `cw721_code_id`: Id of the CW721 contract to initialize together with this contract;
 * `cw721_instantiate_msg`: Initialization [message](../cw721-remarkables/README.md#instantiate_message) that will be sent to the CW721 contract;
 * `subspace_id`: Id of the target subspace to perform the contract; 
-* `rarities`: List of rarity with the details which is defined [here](#Rarity).
+* `rarities`: List of the possible Remarkables rarities and their details [here](#Rarity).
 
 Here an example message to instantiate the contract:
 ```json
