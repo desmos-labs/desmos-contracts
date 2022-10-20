@@ -1,4 +1,4 @@
-# ADR 006: Advertise tips contract
+# ADR 006: Advertise contract
 
 ## Changelog
 
