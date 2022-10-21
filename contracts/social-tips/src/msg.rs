@@ -1,13 +1,11 @@
 use crate::state::PendingTips;
 use crate::ContractError;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_schema::cw_serde;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct InstantiateMsg {}
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ExecuteMsg {
     /// Message to send a tip to another user.
     SendTip {
@@ -18,15 +16,14 @@ pub enum ExecuteMsg {
     ClaimTips {},
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum QueryMsg {
     /// Query the pending tips of an user.
     UserPendingTips { user: String },
 }
 
 /// Response to [QueryMsg::UserPendingTips].
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct QueryPendingTipsResponse {
     pub tips: PendingTips,
 }
