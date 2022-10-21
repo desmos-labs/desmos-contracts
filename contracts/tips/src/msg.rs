@@ -1,8 +1,8 @@
 use crate::contract::MAX_TIPS_HISTORY_SIZE;
 use crate::error::ContractError;
 use crate::state::{StateServiceFee, StateTip};
-use cosmwasm_std::{Addr, Coin, Decimal, Uint64};
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{Addr, Coin, Decimal, Uint64};
 
 /// Fees required to execute [`ExecuteMsg::SendTip`].
 #[cw_serde]

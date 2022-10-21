@@ -1,5 +1,5 @@
-use cosmwasm_std::{Addr, Uint64};
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{Addr, Uint64};
 
 use crate::error::ContractError;
 use poap::msg::InstantiateMsg as POAPInstantiateMsg;

@@ -1,9 +1,9 @@
 use crate::error::ContractError;
 use crate::msg::ServiceFee;
 use crate::utils::{serialize_coins, sum_coins_sorted};
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Coin, Decimal};
 use cw_storage_plus::{Item, Map};
-use cosmwasm_schema::cw_serde;
 use std::collections::VecDeque;
 use std::convert::TryFrom;
 use std::ops::{Div, Mul};
