@@ -9,6 +9,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use desmos_bindings::msg::DesmosMsg;
+use desmos_bindings::profiles::models_app_links::ApplicationLinkState;
 use desmos_bindings::profiles::querier::ProfilesQuerier;
 use desmos_bindings::query::DesmosQuery;
 use std::ops::Deref;
@@ -127,18 +128,26 @@ pub fn claim_tips(
         querier.iterate_application_links(Some(info.sender.clone()), None, None, 10)
     {
         let app_link = app_link_result?;
-        let key = (app_link.data.application, app_link.data.username);
-        let pending_tips = PENDING_TIPS.may_load(deps.storage, key.clone())?;
+        if app_link.state == ApplicationLinkState::VerificationSuccess {
+            let key = (app_link.data.application, app_link.data.username);
+            let pending_tips = PENDING_TIPS.may_load(deps.storage, key.clone())?;
 
-        if let Some(mut tips) = pending_tips {
-            tips.drain(0..)
-                .for_each(|mut tip| tip.amount.drain(0..).for_each(|coin| coins.push(coin)));
+            if let Some(mut tips) = pending_tips {
+                tips.drain(0..)
+                    .for_each(|mut tip| tip.amount.drain(0..).for_each(|coin| coins.push(coin)));
 
-            PENDING_TIPS.remove(deps.storage, key);
+                PENDING_TIPS.remove(deps.storage, key);
+            }
         }
     }
 
     let merged_coins = sum_coins_sorted(coins)?;
+
+    if merged_coins.is_empty() {
+        return Err(ContractError::NoTipsAvailable {
+            user: info.sender.to_string(),
+        });
+    }
 
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_CLAIM_PENDING_TIPS)
@@ -167,11 +176,14 @@ fn query_user_pending_tips(
 
     for app_link_result in querier.iterate_application_links(Some(user_addr), None, None, 10) {
         let app_link = app_link_result?;
-        let key = (app_link.data.application, app_link.data.username);
-        let pending_tips = PENDING_TIPS.may_load(deps.storage, key.clone())?;
 
-        if let Some(mut pending_tips) = pending_tips {
-            pending_tips.drain(0..).for_each(|tip| tips.push(tip));
+        if app_link.state == ApplicationLinkState::VerificationSuccess {
+            let key = (app_link.data.application, app_link.data.username);
+            let pending_tips = PENDING_TIPS.may_load(deps.storage, key.clone())?;
+
+            if let Some(mut pending_tips) = pending_tips {
+                pending_tips.drain(0..).for_each(|tip| tips.push(tip));
+            }
         }
     }
 
