@@ -8,6 +8,7 @@ use cosmwasm_std::{
     to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
 };
 use cw2::set_contract_version;
+use desmos_bindings::msg::DesmosMsg;
 use desmos_bindings::profiles::querier::ProfilesQuerier;
 use desmos_bindings::query::DesmosQuery;
 use std::ops::Deref;
@@ -31,7 +32,7 @@ pub fn instantiate(
     _env: Env,
     _info: MessageInfo,
     _msg: InstantiateMsg,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     Ok(Response::new().add_attribute(ATTRIBUTE_ACTION, ACTION_INSTANTIATE))
@@ -43,7 +44,7 @@ pub fn execute(
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     msg.validate()?;
 
     match msg {
@@ -61,7 +62,7 @@ pub fn send_tip(
     info: MessageInfo,
     application: String,
     handler: String,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     let querier = ProfilesQuerier::new(deps.querier.deref());
     let sender = info.sender;
     let founds = sum_coins_sorted(info.funds)?;
@@ -114,7 +115,7 @@ pub fn send_tip(
 pub fn claim_tips(
     deps: DepsMut<DesmosQuery>,
     info: MessageInfo,
-) -> Result<Response, ContractError> {
+) -> Result<Response<DesmosMsg>, ContractError> {
     let mut coins = Vec::<Coin>::new();
     let querier = ProfilesQuerier::new(deps.querier.deref());
 
