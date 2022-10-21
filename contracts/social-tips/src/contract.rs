@@ -29,7 +29,7 @@ const ACTION_CLAIM_PENDING_TIPS: &str = "claim_pending_tips";
 pub fn instantiate(
     deps: DepsMut<DesmosQuery>,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
