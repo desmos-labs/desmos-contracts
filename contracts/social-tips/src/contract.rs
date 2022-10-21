@@ -65,7 +65,11 @@ pub fn send_tip(
 ) -> Result<Response<DesmosMsg>, ContractError> {
     let querier = ProfilesQuerier::new(deps.querier.deref());
     let sender = info.sender;
-    let founds = sum_coins_sorted(info.funds)?;
+    let funds = sum_coins_sorted(info.funds)?;
+
+    if funds.is_empty() {
+        return Err(ContractError::EmptyTipAmount {});
+    }
 
     // Query users that have that application linked to their accounts.
     let response = querier.query_application_link_owners(
@@ -79,7 +83,7 @@ pub fn send_tip(
         return Err(ContractError::ToManyOwners {});
     }
 
-    let serialized_coins = serialize_coins(&founds);
+    let serialized_coins = serialize_coins(&funds);
 
     return if !response.owners.is_empty() {
         let owner = response.owners.first().unwrap().user.to_string();
@@ -90,7 +94,7 @@ pub fn send_tip(
             .add_attribute(ATTRIBUTE_TIP_RECEIVER, &owner)
             .add_attribute(ATTRIBUTE_TIP_AMOUNT, serialized_coins)
             .add_message(BankMsg::Send {
-                amount: founds,
+                amount: funds,
                 to_address: owner,
             }))
     } else {
@@ -99,7 +103,7 @@ pub fn send_tip(
             let mut tips = tips.unwrap_or_default();
             tips.push(PendingTip {
                 sender,
-                amount: founds,
+                amount: funds,
                 block_height: env.block.height,
             });
             Ok(tips)

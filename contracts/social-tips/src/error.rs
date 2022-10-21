@@ -6,7 +6,7 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
-    #[error("Tip amount is empty")]
+    #[error("The fund field is empty")]
     EmptyTipAmount {},
 
     #[error("Invalid application")]
