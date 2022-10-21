@@ -1,11 +1,10 @@
 use cosmwasm_std::{Addr, Uint64};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_schema::{cw_serde, QueryResponses};
 
 use crate::error::ContractError;
 use poap::msg::InstantiateMsg as POAPInstantiateMsg;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 #[schemars(rename = "PoapManagerInstantiateMsg", title = "InstantiateMsg")]
 pub struct InstantiateMsg {
     /// Address of who will have the right to administer the contract.
@@ -25,8 +24,7 @@ impl InstantiateMsg {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ExecuteMsg {
     /// Allows users to claim a POAP token.
     Claim {},
@@ -36,14 +34,15 @@ pub enum ExecuteMsg {
     UpdateAdmin { new_admin: String },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
-    /// Return a ConfigResponse containing the configuration info of the Manager contract
+    /// Returns a ConfigResponse containing the configuration info of the Manager contract
+    #[returns(QueryConfigResponse)]
     Config {},
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct QueryConfigResponse {
     /// Address of the contract administrator.
     pub admin: Addr,

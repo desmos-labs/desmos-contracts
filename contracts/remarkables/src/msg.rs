@@ -1,11 +1,12 @@
 use crate::ContractError;
 use cosmwasm_std::{Addr, Coin, Uint64};
+use cw721_remarkables::Metadata;
 use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cw721::{TokensResponse, AllNftInfoResponse};
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use url::Url;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct InstantiateMsg {
     /// Address of who will have the right to administer the contract.
     pub admin: String,
@@ -36,7 +37,7 @@ impl InstantiateMsg {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct Rarity {
     /// Threshold of the reactions amount to mint.
     pub engagement_threshold: u32,
@@ -44,8 +45,7 @@ pub struct Rarity {
     pub mint_fees: Vec<Coin>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ExecuteMsg {
     /// Message allowing the user to mint a Remarkables for a specific post owned by the user.
     Mint {
@@ -91,19 +91,23 @@ impl ExecuteMsg {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
     /// Returns the configuration info as a [`QueryConfigResponse`].
+    #[returns(QueryConfigResponse)]
     Config {},
     // Returns all the rarities info as a [`QueryRaritiesResponse`].
+    #[returns(QueryRaritiesResponse)]
     Rarities {},
     /// Returns the nft info with approvals from cw721 contract as a [`AllNftInfoResponse`].
+    #[returns(AllNftInfoResponse<Metadata>)]
     AllNftInfo {
         token_id: String,
         include_expired: Option<bool>,
     },
     /// Returns all the tokens ids owned by the given owner from cw721 contract as a [`TokensResponse`].
+    #[returns(TokensResponse)]
     Tokens {
         owner: String,
         start_after: Option<String>,
@@ -112,7 +116,7 @@ pub enum QueryMsg {
 }
 
 /// Response to [`QueryMsg::Config`].
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct QueryConfigResponse {
     /// Address of the contract administrator.
     pub admin: Addr,
@@ -125,7 +129,7 @@ pub struct QueryConfigResponse {
 }
 
 /// Response to [`QueryMsg::Rarities`].
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct QueryRaritiesResponse {
     /// List of rarities state in this contract.
     pub rarities: Vec<Rarity>,

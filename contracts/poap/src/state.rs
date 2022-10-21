@@ -1,10 +1,9 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_schema::cw_serde;
 
 use cosmwasm_std::{Addr, Timestamp};
 use cw_storage_plus::{Item, Map};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct Config {
     pub admin: Addr,
     pub minter: Addr,
@@ -13,7 +12,7 @@ pub struct Config {
     pub cw721_code_id: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 #[schemars(rename = "StateEventInfo")]
 pub struct EventInfo {
     pub creator: Addr,
@@ -22,7 +21,7 @@ pub struct EventInfo {
     pub poap_uri: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct Metadata {
     pub claimer: Addr,
 }

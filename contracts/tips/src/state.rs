@@ -3,21 +3,19 @@ use crate::msg::ServiceFee;
 use crate::utils::{serialize_coins, sum_coins_sorted};
 use cosmwasm_std::{Addr, Coin, Decimal};
 use cw_storage_plus::{Item, Map};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_schema::cw_serde;
 use std::collections::VecDeque;
 use std::convert::TryFrom;
 use std::ops::{Div, Mul};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 #[allow(clippy::derive_partial_eq_without_eq)]
 pub enum StateServiceFee {
     Fixed { amount: Vec<Coin> },
     Percentage { value: Decimal },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct Config {
     pub admin: Addr,
     pub subspace_id: u64,
@@ -25,7 +23,7 @@ pub struct Config {
     pub tips_history_size: u32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 #[allow(clippy::derive_partial_eq_without_eq)]
 pub struct StateTip {
     /// Who sent this tip.

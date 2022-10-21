@@ -1,28 +1,11 @@
-use std::env::current_dir;
-use std::fs::create_dir_all;
-
-use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-
-use cw721::{AllNftInfoResponse, TokensResponse};
-use cw721_poap::Metadata;
-use poap::msg::{
-    ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryEventInfoResponse, QueryMsg,
-};
-use poap::state::{Config, EventInfo};
+use cosmwasm_schema::write_api;
+use poap::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 fn main() {
-    let mut out_dir = current_dir().unwrap();
-    out_dir.push("schema");
-    create_dir_all(&out_dir).unwrap();
-    remove_schemas(&out_dir).unwrap();
-
-    export_schema(&schema_for!(InstantiateMsg), &out_dir);
-    export_schema(&schema_for!(ExecuteMsg), &out_dir);
-    export_schema(&schema_for!(QueryMsg), &out_dir);
-    export_schema(&schema_for!(Config), &out_dir);
-    export_schema(&schema_for!(EventInfo), &out_dir);
-    export_schema(&schema_for!(QueryConfigResponse), &out_dir);
-    export_schema(&schema_for!(QueryEventInfoResponse), &out_dir);
-    export_schema(&schema_for!(AllNftInfoResponse<Metadata>), &out_dir);
-    export_schema(&schema_for!(TokensResponse), &out_dir);
+    write_api! {
+        instantiate: InstantiateMsg,
+        execute: ExecuteMsg,
+        query: QueryMsg,
+    }
 }
+
