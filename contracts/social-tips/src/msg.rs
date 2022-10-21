@@ -1,6 +1,6 @@
 use crate::state::PendingTips;
 use crate::ContractError;
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 
 #[cw_serde]
 pub struct InstantiateMsg {}
@@ -17,8 +17,10 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
     /// Query the pending tips of an user.
+    #[returns(QueryPendingTipsResponse)]
     UserPendingTips { user: String },
 }
 
