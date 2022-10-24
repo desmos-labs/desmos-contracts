@@ -10,19 +10,19 @@ DRAFT
 
 ## Abstract
 This ADR defines the architecture of the Advertise contract. This contract allows users to advertise a post, then social network applications can query random advertisement posts from it.
-Also, to be fair to the post which is advertised more tokens, this contract provide the system to make sure that the more tokens a post is advertised, the more visibility it has.
+Additionally, to make it fair for posts that are advertised more tokens, this contract provides a system to ensure the more tokens a post is advertised with, the more exposure it has.
 
 ## Context
-The Desmos based social network may want to have a advertise system to make money. Currently, building an advertise system on apps is not easy so we would like to build a tool for it.
+The Desmos-based social network might need a advertising system to make money. As, building an advertising system on apps is not easy so far, we suggest building a tool for it.
 
 ## Decision
-The idea is to implement a smart contract that allows users to advertise a post by using tokens. The contract will maintain a advertising pool based on [`SumTree`](https://medium.com/kleros/an-efficient-data-structure-for-blockchain-sortition-15d202af3247) to provide a way to get random posts with the query rate defined by how much token advertised. Say, Tim advertises `post 1` by `10dsm` then Tom advertises `post 2` by `90dsm`, then the query rate of the `post 1` would be `10%` and the `post 2` would be `90%`. In addition, advertisement has timeliness so it needs an expiration time.
+The idea is to implement a smart contract that allows users to advertise a post by using tokens. The contract will maintain a advertising pool based on [`SumTree`](https://medium.com/kleros/an-efficient-data-structure-for-blockchain-sortition-15d202af3247) to provide a way to get random posts with the query rate defined by how much token advertised. For instance, Tim advertises `post 1` by `10dsm` and Tom advertises `post 2` by `90dsm`, then the query rate of the `post 1` would be `10%` and the `post 2` would be `90%`. In addition, advertisement has the timeliness so it needs an expiration time.
 
-The contract will take care of:
-* allows users to advertise a post by the amount tokens larger the minimum required fees;
-* returns random advertising posts;
-* gives a way to remove expired advertising posts;
-* allows the admin to claim the collected fees.
+The contract can:
+* allow users to advertise a post by the amount tokens larger the minimum required fees;
+* return random advertising posts;
+* provide a solution to remove expired advertising posts;
+* allow the admin to claim the collected fees.
 
 ## Specifications
 
