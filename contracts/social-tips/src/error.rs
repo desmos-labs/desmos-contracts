@@ -6,6 +6,9 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
+    #[error("Unauthorized")]
+    Unauthorized {},
+
     #[error("Invalid max pending tips value: {value}, the value must be > 0 and les then {max}")]
     InvalidMaxPendingTipsValue { value: u32, max: u32 },
 

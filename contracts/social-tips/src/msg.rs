@@ -14,6 +14,8 @@ pub enum ExecuteMsg {
     SendTip { application: String, handle: String },
     /// Message that allow a user to claim their tips.
     ClaimTips {},
+    /// Message to update the max pending tips that an user can have.
+    UpdateMaxPendingTips { value: u32 },
 }
 
 #[cw_serde]
@@ -61,6 +63,16 @@ impl ExecuteMsg {
                 Ok(())
             }
             ExecuteMsg::ClaimTips {} => Ok(()),
+            ExecuteMsg::UpdateMaxPendingTips { value } => {
+                if *value == 0 || *value > MAX_CONFIGURABLE_PENDING_TIPS {
+                    Err(ContractError::InvalidMaxPendingTipsValue {
+                        value: *value,
+                        max: MAX_CONFIGURABLE_PENDING_TIPS,
+                    })
+                } else {
+                    Ok(())
+                }
+            }
         }
     }
 }
