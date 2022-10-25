@@ -1,11 +1,12 @@
 use crate::ContractError;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Timestamp, Uint64};
+use cw721::{AllNftInfoResponse, TokensResponse};
 use cw721_base::InstantiateMsg as Cw721InstantiateMsg;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cw721_poap::Metadata;
 use url::Url;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 #[schemars(rename = "PoapInstantiateMsg", title = "InstantiateMsg")]
 pub struct InstantiateMsg {
     /// Address of who will have the right to administer the contract.
@@ -20,7 +21,7 @@ pub struct InstantiateMsg {
     pub event_info: EventInfo,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct EventInfo {
     /// User that created the event.
     pub creator: String,
@@ -34,8 +35,7 @@ pub struct EventInfo {
     pub poap_uri: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ExecuteMsg {
     /// Allows the contract's admin to enable the [`ExecuteMsg::Mint`].
     EnableMint {},
@@ -59,21 +59,26 @@ pub enum ExecuteMsg {
     UpdateMinter { new_minter: String },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
     /// Returns the configuration info as a [`QueryConfigResponse`].
+    #[returns(QueryConfigResponse)]
     Config {},
     /// Returns the event info as a [`QueryEventInfoResponse`].
+    #[returns(QueryEventInfoResponse)]
     EventInfo {},
     /// Returns the amount of poaps minted from `user` as [`QueryMintedAmountResponse`].
+    #[returns(QueryMintedAmountResponse)]
     MintedAmount { user: String },
     /// Returns the nft info with approvals from cw721 contract as a [`AllNftInfoResponse`]
+    #[returns(AllNftInfoResponse<Metadata>)]
     AllNftInfo {
         token_id: String,
         include_expired: Option<bool>,
     },
     /// Returns all the tokens ids owned by the given owner from cw721 contract as a [`TokensResponse`]
+    #[returns(TokensResponse)]
     Tokens {
         owner: String,
         start_after: Option<String>,
@@ -82,7 +87,7 @@ pub enum QueryMsg {
 }
 
 /// Response to [`QueryMsg::Config`].
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct QueryConfigResponse {
     /// Address of the contract administrator.
     pub admin: Addr,
@@ -100,7 +105,7 @@ pub struct QueryConfigResponse {
 }
 
 /// Response to [`QueryMsg::EventInfo`].
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct QueryEventInfoResponse {
     /// Address of who created the event.
     pub creator: Addr,
@@ -113,7 +118,7 @@ pub struct QueryEventInfoResponse {
 }
 
 /// Response to [`QueryMsg::MintedAmount`].
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct QueryMintedAmountResponse {
     /// Address for which the request was made.
     pub user: Addr,

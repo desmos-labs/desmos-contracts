@@ -1,0 +1,763 @@
+{
+  "contract_name": "poap",
+  "contract_version": "0.1.0",
+  "idl_version": "1.0.0",
+  "instantiate": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "InstantiateMsg",
+    "type": "object",
+    "required": [
+      "admin",
+      "cw721_code_id",
+      "cw721_instantiate_msg",
+      "event_info",
+      "minter"
+    ],
+    "properties": {
+      "admin": {
+        "description": "Address of who will have the right to administer the contract.",
+        "type": "string"
+      },
+      "cw721_code_id": {
+        "description": "Id of the CW721 contract to initialize together with this contract.",
+        "allOf": [
+          {
+            "$ref": "#/definitions/Uint64"
+          }
+        ]
+      },
+      "cw721_instantiate_msg": {
+        "description": "Initialization message that will be sent to the CW721 contract.",
+        "allOf": [
+          {
+            "$ref": "#/definitions/InstantiateMsg"
+          }
+        ]
+      },
+      "event_info": {
+        "description": "Information about the event.",
+        "allOf": [
+          {
+            "$ref": "#/definitions/EventInfo"
+          }
+        ]
+      },
+      "minter": {
+        "description": "Address of who can call the [`ExecuteMsg::MintTo`] other then the admin.",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "definitions": {
+      "EventInfo": {
+        "type": "object",
+        "required": [
+          "creator",
+          "end_time",
+          "per_address_limit",
+          "poap_uri",
+          "start_time"
+        ],
+        "properties": {
+          "creator": {
+            "description": "User that created the event.",
+            "type": "string"
+          },
+          "end_time": {
+            "description": "Time at which the event ends.",
+            "allOf": [
+              {
+                "$ref": "#/definitions/Timestamp"
+              }
+            ]
+          },
+          "per_address_limit": {
+            "description": "Max amount of poap that a single user can mint.",
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          },
+          "poap_uri": {
+            "description": "Identifies a valid IPFS URI corresponding to where the assets and metadata of the POAPs are stored.",
+            "type": "string"
+          },
+          "start_time": {
+            "description": "Time at which the event begins.",
+            "allOf": [
+              {
+                "$ref": "#/definitions/Timestamp"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "InstantiateMsg": {
+        "type": "object",
+        "required": [
+          "minter",
+          "name",
+          "symbol"
+        ],
+        "properties": {
+          "minter": {
+            "description": "The minter is the only one who can create new NFTs. This is designed for a base NFT that is controlled by an external program or contract. You will likely replace this with custom logic in custom NFTs",
+            "type": "string"
+          },
+          "name": {
+            "description": "Name of the NFT contract",
+            "type": "string"
+          },
+          "symbol": {
+            "description": "Symbol of the NFT contract",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Timestamp": {
+        "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n``` # use cosmwasm_std::Timestamp; let ts = Timestamp::from_nanos(1_000_000_202); assert_eq!(ts.nanos(), 1_000_000_202); assert_eq!(ts.seconds(), 1); assert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2); assert_eq!(ts.nanos(), 3_000_000_202); assert_eq!(ts.seconds(), 3); assert_eq!(ts.subsec_nanos(), 202); ```",
+        "allOf": [
+          {
+            "$ref": "#/definitions/Uint64"
+          }
+        ]
+      },
+      "Uint64": {
+        "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
+        "type": "string"
+      }
+    }
+  },
+  "execute": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "ExecuteMsg",
+    "oneOf": [
+      {
+        "description": "Allows the contract's admin to enable the [`ExecuteMsg::Mint`].",
+        "type": "object",
+        "required": [
+          "enable_mint"
+        ],
+        "properties": {
+          "enable_mint": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Allows the contract's admin to disable the [`ExecuteMsg::Mint`].",
+        "type": "object",
+        "required": [
+          "disable_mint"
+        ],
+        "properties": {
+          "disable_mint": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "If the mint is enabled, allow the user to mint the poap by themself. It's disabled before the start of the event and after the event's end.",
+        "type": "object",
+        "required": [
+          "mint"
+        ],
+        "properties": {
+          "mint": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Allows the contract's admin or the minter to mint a POAP for a specific recipient. It's disabled before the start of the event and after the event's end.",
+        "type": "object",
+        "required": [
+          "mint_to"
+        ],
+        "properties": {
+          "mint_to": {
+            "type": "object",
+            "required": [
+              "recipient"
+            ],
+            "properties": {
+              "recipient": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Message that allows the event's creator to change the time frame of the event if it's not started or finished.",
+        "type": "object",
+        "required": [
+          "update_event_info"
+        ],
+        "properties": {
+          "update_event_info": {
+            "type": "object",
+            "required": [
+              "end_time",
+              "start_time"
+            ],
+            "properties": {
+              "end_time": {
+                "$ref": "#/definitions/Timestamp"
+              },
+              "start_time": {
+                "$ref": "#/definitions/Timestamp"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Allows the contract's admin to transfer the admin rights to another user.",
+        "type": "object",
+        "required": [
+          "update_admin"
+        ],
+        "properties": {
+          "update_admin": {
+            "type": "object",
+            "required": [
+              "new_admin"
+            ],
+            "properties": {
+              "new_admin": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Allows the contract's admin to transfer the minting rights to another user.",
+        "type": "object",
+        "required": [
+          "update_minter"
+        ],
+        "properties": {
+          "update_minter": {
+            "type": "object",
+            "required": [
+              "new_minter"
+            ],
+            "properties": {
+              "new_minter": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    ],
+    "definitions": {
+      "Timestamp": {
+        "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n``` # use cosmwasm_std::Timestamp; let ts = Timestamp::from_nanos(1_000_000_202); assert_eq!(ts.nanos(), 1_000_000_202); assert_eq!(ts.seconds(), 1); assert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2); assert_eq!(ts.nanos(), 3_000_000_202); assert_eq!(ts.seconds(), 3); assert_eq!(ts.subsec_nanos(), 202); ```",
+        "allOf": [
+          {
+            "$ref": "#/definitions/Uint64"
+          }
+        ]
+      },
+      "Uint64": {
+        "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
+        "type": "string"
+      }
+    }
+  },
+  "query": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "QueryMsg",
+    "oneOf": [
+      {
+        "description": "Returns the configuration info as a [`QueryConfigResponse`].",
+        "type": "object",
+        "required": [
+          "config"
+        ],
+        "properties": {
+          "config": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Returns the event info as a [`QueryEventInfoResponse`].",
+        "type": "object",
+        "required": [
+          "event_info"
+        ],
+        "properties": {
+          "event_info": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Returns the amount of poaps minted from `user` as [`QueryMintedAmountResponse`].",
+        "type": "object",
+        "required": [
+          "minted_amount"
+        ],
+        "properties": {
+          "minted_amount": {
+            "type": "object",
+            "required": [
+              "user"
+            ],
+            "properties": {
+              "user": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Returns the nft info with approvals from cw721 contract as a [`AllNftInfoResponse`]",
+        "type": "object",
+        "required": [
+          "all_nft_info"
+        ],
+        "properties": {
+          "all_nft_info": {
+            "type": "object",
+            "required": [
+              "token_id"
+            ],
+            "properties": {
+              "include_expired": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "token_id": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Returns all the tokens ids owned by the given owner from cw721 contract as a [`TokensResponse`]",
+        "type": "object",
+        "required": [
+          "tokens"
+        ],
+        "properties": {
+          "tokens": {
+            "type": "object",
+            "required": [
+              "owner"
+            ],
+            "properties": {
+              "limit": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "uint32",
+                "minimum": 0.0
+              },
+              "owner": {
+                "type": "string"
+              },
+              "start_after": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    ]
+  },
+  "migrate": null,
+  "sudo": null,
+  "responses": {
+    "all_nft_info": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AllNftInfoResponse_for_Metadata",
+      "type": "object",
+      "required": [
+        "access",
+        "info"
+      ],
+      "properties": {
+        "access": {
+          "description": "Who can transfer the token",
+          "allOf": [
+            {
+              "$ref": "#/definitions/OwnerOfResponse"
+            }
+          ]
+        },
+        "info": {
+          "description": "Data on the token itself,",
+          "allOf": [
+            {
+              "$ref": "#/definitions/NftInfoResponse_for_Metadata"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "Addr": {
+          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+          "type": "string"
+        },
+        "Approval": {
+          "type": "object",
+          "required": [
+            "expires",
+            "spender"
+          ],
+          "properties": {
+            "expires": {
+              "description": "When the Approval expires (maybe Expiration::never)",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Expiration"
+                }
+              ]
+            },
+            "spender": {
+              "description": "Account that can transfer/send the token",
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "Expiration": {
+          "description": "Expiration represents a point in time when some event happens. It can compare with a BlockInfo and will return is_expired() == true once the condition is hit (and for every block in the future)",
+          "oneOf": [
+            {
+              "description": "AtHeight will expire when `env.block.height` >= height",
+              "type": "object",
+              "required": [
+                "at_height"
+              ],
+              "properties": {
+                "at_height": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "description": "AtTime will expire when `env.block.time` >= time",
+              "type": "object",
+              "required": [
+                "at_time"
+              ],
+              "properties": {
+                "at_time": {
+                  "$ref": "#/definitions/Timestamp"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "description": "Never will never expire. Used to express the empty variant",
+              "type": "object",
+              "required": [
+                "never"
+              ],
+              "properties": {
+                "never": {
+                  "type": "object",
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "Metadata": {
+          "type": "object",
+          "required": [
+            "claimer"
+          ],
+          "properties": {
+            "claimer": {
+              "$ref": "#/definitions/Addr"
+            }
+          },
+          "additionalProperties": false
+        },
+        "NftInfoResponse_for_Metadata": {
+          "type": "object",
+          "required": [
+            "extension"
+          ],
+          "properties": {
+            "extension": {
+              "description": "You can add any custom metadata here when you extend cw721-base",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Metadata"
+                }
+              ]
+            },
+            "token_uri": {
+              "description": "Universal resource identifier for this NFT Should point to a JSON file that conforms to the ERC721 Metadata JSON Schema",
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "OwnerOfResponse": {
+          "type": "object",
+          "required": [
+            "approvals",
+            "owner"
+          ],
+          "properties": {
+            "approvals": {
+              "description": "If set this address is approved to transfer/send the token as well",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Approval"
+              }
+            },
+            "owner": {
+              "description": "Owner of the token",
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "Timestamp": {
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n``` # use cosmwasm_std::Timestamp; let ts = Timestamp::from_nanos(1_000_000_202); assert_eq!(ts.nanos(), 1_000_000_202); assert_eq!(ts.seconds(), 1); assert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2); assert_eq!(ts.nanos(), 3_000_000_202); assert_eq!(ts.seconds(), 3); assert_eq!(ts.subsec_nanos(), 202); ```",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Uint64"
+            }
+          ]
+        },
+        "Uint64": {
+          "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
+          "type": "string"
+        }
+      }
+    },
+    "config": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "QueryConfigResponse",
+      "description": "Response to [`QueryMsg::Config`].",
+      "type": "object",
+      "required": [
+        "admin",
+        "cw721_contract",
+        "cw721_contract_code",
+        "mint_enabled",
+        "minter",
+        "per_address_limit"
+      ],
+      "properties": {
+        "admin": {
+          "description": "Address of the contract administrator.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Addr"
+            }
+          ]
+        },
+        "cw721_contract": {
+          "description": "Address of the cw721 contract that this contract is using to mint the poaps.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Addr"
+            }
+          ]
+        },
+        "cw721_contract_code": {
+          "description": "Id of the cw721 contract that this contract has initialized.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Uint64"
+            }
+          ]
+        },
+        "mint_enabled": {
+          "description": "Tells if the users can execute the [`ExecuteMsg::Mint`].",
+          "type": "boolean"
+        },
+        "minter": {
+          "description": "Address of the entity that is allowed to use [`ExecuteMsg::MintTo`].",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Addr"
+            }
+          ]
+        },
+        "per_address_limit": {
+          "description": "The maximus number of poap that an user can request.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "Addr": {
+          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+          "type": "string"
+        },
+        "Uint64": {
+          "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
+          "type": "string"
+        }
+      }
+    },
+    "event_info": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "QueryEventInfoResponse",
+      "description": "Response to [`QueryMsg::EventInfo`].",
+      "type": "object",
+      "required": [
+        "creator",
+        "end_time",
+        "poap_uri",
+        "start_time"
+      ],
+      "properties": {
+        "creator": {
+          "description": "Address of who created the event.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Addr"
+            }
+          ]
+        },
+        "end_time": {
+          "description": "Time at which the event ends.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Timestamp"
+            }
+          ]
+        },
+        "poap_uri": {
+          "description": "IPFS uri where the event's metadata are stored",
+          "type": "string"
+        },
+        "start_time": {
+          "description": "Time at which the event starts.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Timestamp"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "Addr": {
+          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+          "type": "string"
+        },
+        "Timestamp": {
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n``` # use cosmwasm_std::Timestamp; let ts = Timestamp::from_nanos(1_000_000_202); assert_eq!(ts.nanos(), 1_000_000_202); assert_eq!(ts.seconds(), 1); assert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2); assert_eq!(ts.nanos(), 3_000_000_202); assert_eq!(ts.seconds(), 3); assert_eq!(ts.subsec_nanos(), 202); ```",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Uint64"
+            }
+          ]
+        },
+        "Uint64": {
+          "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
+          "type": "string"
+        }
+      }
+    },
+    "minted_amount": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "QueryMintedAmountResponse",
+      "description": "Response to [`QueryMsg::MintedAmount`].",
+      "type": "object",
+      "required": [
+        "amount",
+        "user"
+      ],
+      "properties": {
+        "amount": {
+          "description": "Amount of poaps minted from the user.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "user": {
+          "description": "Address for which the request was made.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Addr"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "definitions": {
+        "Addr": {
+          "description": "A human readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multi-chain smart contracts no assumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways 1. Use `Addr::unchecked(input)` 2. Use `let checked: Addr = deps.api.addr_validate(input)?` 3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?` 4. Deserialize from JSON. This must only be done from JSON that was validated before such as a contract's state. `Addr` must not be used in messages sent by the user because this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create a mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String` instance.",
+          "type": "string"
+        }
+      }
+    },
+    "tokens": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "TokensResponse",
+      "type": "object",
+      "required": [
+        "tokens"
+      ],
+      "properties": {
+        "tokens": {
+          "description": "Contains all token_ids in lexicographical ordering If there are more than `limit`, use `start_from` in future queries to achieve pagination.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
