@@ -34,7 +34,7 @@ cosmwasm-storage = "1.1.5"
 cw-storage-plus = "0.16.0"
 cw2 = "0.16.0"
 schemars = "0.8.10"
-serde = { version = "1.0.145", default-features = false, features = ["derive"] }
+serde = { version = "1.0.146", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.33" }
 desmos-bindings = { version = "1.1.1", default-features = false, features = ["posts", "subspaces", "profiles", "query"]}
 cw-utils = "0.16.0"
