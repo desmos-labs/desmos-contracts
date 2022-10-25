@@ -1,4 +1,4 @@
-# ADR 006: Advertise contract
+# ADR 006: Advertisement contract
 
 ## Changelog
 
