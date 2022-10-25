@@ -16,7 +16,7 @@ Additionally, to make it fair for posts that are advertised more tokens, this co
 The Desmos-based social network might need a advertising system to make money. As, building an advertising system on apps is not easy so far, we suggest building a tool for it.
 
 ## Decision
-The idea is to implement a smart contract that allows users to advertise a post by using tokens. The contract will maintain a advertising pool based on [`SumTree`](https://medium.com/kleros/an-efficient-data-structure-for-blockchain-sortition-15d202af3247) to provide a way to get random posts with the query rate defined by how much token advertised. For instance, Tim advertises `post 1` by `10dsm` and Tom advertises `post 2` by `90dsm`, then the query rate of the `post 1` would be `10%` and the `post 2` would be `90%`. In addition, advertisement has the timeliness so it needs an expiration time.
+The idea is to implement a smart contract that allows users to advertise a post by using tokens. The contract will maintain an advertisement pool based on [`SumTree`](https://medium.com/kleros/an-efficient-data-structure-for-blockchain-sortition-15d202af3247) to provide a way to get random posts with the query rate defined by how much tokens have been spent to advertise a post. For instance, Tim advertises `post 1` by `10dsm` and Tom advertises `post 2` by `90dsm`, then the query rate of the `post 1` would be `10%` and the `post 2` would be `90%`. In addition, advertisement has the timeliness so it needs an expiration time.
 
 The contract can:
 * allow users to advertise a post by the amount tokens larger the minimum required fees;
