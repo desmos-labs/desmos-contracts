@@ -1,17 +1,17 @@
-use crate::state::PendingTips;
+use crate::state::{PendingTips, MAX_CONFIGURABLE_PENDING_TIPS};
 use crate::ContractError;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
 #[cw_serde]
-pub struct InstantiateMsg {}
+pub struct InstantiateMsg {
+    pub admin: Option<String>,
+    pub max_pending_tips: u32,
+}
 
 #[cw_serde]
 pub enum ExecuteMsg {
     /// Message to send a tip to another user.
-    SendTip {
-        application: String,
-        handler: String,
-    },
+    SendTip { application: String, handle: String },
     /// Message that allow a user to claim their tips.
     ClaimTips {},
 }
@@ -30,12 +30,25 @@ pub struct QueryPendingTipsResponse {
     pub tips: PendingTips,
 }
 
+impl InstantiateMsg {
+    pub fn validate(&self) -> Result<(), ContractError> {
+        if self.max_pending_tips == 0 || self.max_pending_tips > MAX_CONFIGURABLE_PENDING_TIPS {
+            return Err(ContractError::InvalidMaxPendingTipsValue {
+                value: self.max_pending_tips,
+                max: MAX_CONFIGURABLE_PENDING_TIPS,
+            });
+        }
+
+        Ok(())
+    }
+}
+
 impl ExecuteMsg {
     pub fn validate(&self) -> Result<(), ContractError> {
         match self {
             ExecuteMsg::SendTip {
                 application,
-                handler,
+                handle: handler,
             } => {
                 if application.is_empty() {
                     return Err(ContractError::InvalidApplication {});

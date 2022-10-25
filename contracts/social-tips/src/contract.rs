@@ -1,6 +1,6 @@
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, QueryPendingTipsResponse};
-use crate::state::{PendingTip, PendingTips, PENDING_TIPS};
+use crate::state::{Config, PendingTip, PendingTips, CONFIG, PENDING_TIPS};
 use crate::utils::{serialize_coins, sum_coins_sorted};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -31,10 +31,25 @@ const ACTION_CLAIM_PENDING_TIPS: &str = "claim_pending_tips";
 pub fn instantiate(
     deps: DepsMut<DesmosQuery>,
     _env: Env,
-    _info: MessageInfo,
-    _msg: InstantiateMsg,
+    info: MessageInfo,
+    msg: InstantiateMsg,
 ) -> Result<Response<DesmosMsg>, ContractError> {
+    msg.validate()?;
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+    let admin = if let Some(address) = msg.admin {
+        deps.api.addr_validate(&address)?
+    } else {
+        info.sender
+    };
+
+    CONFIG.save(
+        deps.storage,
+        &Config {
+            admin,
+            max_pending_tips: msg.max_pending_tips,
+        },
+    )?;
 
     Ok(Response::new().add_attribute(ATTRIBUTE_ACTION, ACTION_INSTANTIATE))
 }
@@ -51,8 +66,8 @@ pub fn execute(
     match msg {
         ExecuteMsg::SendTip {
             application,
-            handler,
-        } => send_tip(deps, env, info, application, handler),
+            handle,
+        } => send_tip(deps, env, info, application, handle),
         ExecuteMsg::ClaimTips {} => claim_tips(deps, info),
     }
 }
@@ -62,7 +77,7 @@ pub fn send_tip(
     env: Env,
     info: MessageInfo,
     application: String,
-    handler: String,
+    handle: String,
 ) -> Result<Response<DesmosMsg>, ContractError> {
     let querier = ProfilesQuerier::new(deps.querier.deref());
     let sender = info.sender;
@@ -75,7 +90,7 @@ pub fn send_tip(
     // Query users that have that application linked to their accounts.
     let response = querier.query_application_link_owners(
         Some(application.clone()),
-        Some(handler.clone()),
+        Some(handle.clone()),
         None,
     )?;
 
@@ -99,16 +114,28 @@ pub fn send_tip(
                 to_address: owner,
             }))
     } else {
+        let config = CONFIG.load(deps.storage)?;
         // No one have linked the provided username and application.
-        PENDING_TIPS.update::<_, ContractError>(deps.storage, (application, handler), |tips| {
-            let mut tips = tips.unwrap_or_default();
-            tips.push(PendingTip {
-                sender,
-                amount: funds,
-                block_height: env.block.height,
-            });
-            Ok(tips)
-        })?;
+        PENDING_TIPS.update::<_, ContractError>(
+            deps.storage,
+            (application.clone(), handle.clone()),
+            |tips| {
+                let mut tips = tips.unwrap_or_default();
+                if config.max_pending_tips as usize == tips.len() {
+                    return Err(ContractError::ToManyPendingTips {
+                        application,
+                        handle,
+                    });
+                }
+
+                tips.push(PendingTip {
+                    sender,
+                    amount: funds,
+                    block_height: env.block.height,
+                });
+                Ok(tips)
+            },
+        )?;
 
         Ok(Response::new()
             .add_attribute(ATTRIBUTE_ACTION, ACTION_SEND_TIPS)
@@ -194,7 +221,7 @@ fn query_user_pending_tips(
 mod tests {
     use crate::contract::{execute, instantiate, query};
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, QueryPendingTipsResponse};
-    use crate::state::{PendingTip, PENDING_TIPS};
+    use crate::state::{PendingTip, MAX_CONFIGURABLE_PENDING_TIPS, PENDING_TIPS};
     use crate::ContractError;
     use cosmwasm_std::testing::{mock_env, mock_info};
     use cosmwasm_std::{
@@ -219,16 +246,50 @@ mod tests {
     const USER_1: &str = "user1";
     const USER_2: &str = "user2";
 
-    fn init_contract(deps: DepsMut<DesmosQuery>) -> Result<Response<DesmosMsg>, ContractError> {
+    fn init_contract(
+        deps: DepsMut<DesmosQuery>,
+        max_pending_tips: u32,
+    ) -> Result<Response<DesmosMsg>, ContractError> {
         let info = mock_info(ADMIN, &[]);
         let env = mock_env();
-        instantiate(deps, env, info, InstantiateMsg {})
+        instantiate(
+            deps,
+            env,
+            info,
+            InstantiateMsg {
+                admin: None,
+                max_pending_tips,
+            },
+        )
     }
 
     #[test]
     fn instantiate_properly() {
         let mut deps = mock_desmos_dependencies();
-        init_contract(deps.as_mut()).unwrap();
+        init_contract(deps.as_mut(), 10).unwrap();
+    }
+
+    #[test]
+    fn instantiate_with_invalid_max_pending_tips_error() {
+        let mut deps = mock_desmos_dependencies();
+
+        let error = init_contract(deps.as_mut(), 0).unwrap_err();
+        assert_eq!(
+            ContractError::InvalidMaxPendingTipsValue {
+                max: MAX_CONFIGURABLE_PENDING_TIPS,
+                value: 0,
+            },
+            error
+        );
+
+        let error = init_contract(deps.as_mut(), MAX_CONFIGURABLE_PENDING_TIPS + 1).unwrap_err();
+        assert_eq!(
+            ContractError::InvalidMaxPendingTipsValue {
+                max: MAX_CONFIGURABLE_PENDING_TIPS,
+                value: MAX_CONFIGURABLE_PENDING_TIPS + 1,
+            },
+            error
+        );
     }
 
     #[test]
@@ -237,7 +298,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[Coin::new(10000, "udsm")]);
 
-        init_contract(deps.as_mut()).unwrap();
+        init_contract(deps.as_mut(), 10).unwrap();
 
         let error = execute(
             deps.as_mut(),
@@ -245,7 +306,7 @@ mod tests {
             info,
             ExecuteMsg::SendTip {
                 application: "".to_string(),
-                handler: "user".to_string(),
+                handle: "user".to_string(),
             },
         )
         .unwrap_err();
@@ -259,7 +320,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[Coin::new(10000, "udsm")]);
 
-        init_contract(deps.as_mut()).unwrap();
+        init_contract(deps.as_mut(), 10).unwrap();
 
         let error = execute(
             deps.as_mut(),
@@ -267,7 +328,7 @@ mod tests {
             info,
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
-                handler: "".to_string(),
+                handle: "".to_string(),
             },
         )
         .unwrap_err();
@@ -281,7 +342,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[]);
 
-        init_contract(deps.as_mut()).unwrap();
+        init_contract(deps.as_mut(), 10).unwrap();
 
         let error = execute(
             deps.as_mut(),
@@ -289,7 +350,7 @@ mod tests {
             info,
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
-                handler: "handle".to_string(),
+                handle: "handle".to_string(),
             },
         )
         .unwrap_err();
@@ -327,7 +388,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[Coin::new(10000, "udsm")]);
 
-        init_contract(deps.as_mut()).unwrap();
+        init_contract(deps.as_mut(), 10).unwrap();
 
         let error = execute(
             deps.as_mut(),
@@ -335,7 +396,7 @@ mod tests {
             info,
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
-                handler: "handle".to_string(),
+                handle: "handle".to_string(),
             },
         )
         .unwrap_err();
@@ -362,7 +423,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[Coin::new(10000, "udsm")]);
 
-        init_contract(deps.as_mut()).unwrap();
+        init_contract(deps.as_mut(), 10).unwrap();
 
         execute(
             deps.as_mut(),
@@ -370,7 +431,7 @@ mod tests {
             info,
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
-                handler: "handle".to_string(),
+                handle: "handle".to_string(),
             },
         )
         .unwrap();
@@ -390,6 +451,58 @@ mod tests {
             }],
             pending_tips
         )
+    }
+
+    #[test]
+    fn reach_max_pending_tips_properly() {
+        let querier = MockDesmosQuerier::default().with_custom_profiles_handler(|profiler_query| {
+            match profiler_query {
+                ProfilesQuery::ApplicationLinkOwners { .. } => {
+                    let response = QueryApplicationLinkOwnersResponse {
+                        owners: vec![],
+                        pagination: None,
+                    };
+                    to_binary(&response).into()
+                }
+                _ => mock_profiles_query_response(profiler_query),
+            }
+        });
+
+        let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
+
+        init_contract(deps.as_mut(), 3).unwrap();
+
+        for _ in 0..3 {
+            execute(
+                deps.as_mut(),
+                mock_env(),
+                mock_info(USER_1, &[Coin::new(10000, "udsm")]),
+                ExecuteMsg::SendTip {
+                    application: "application".to_string(),
+                    handle: "handle".to_string(),
+                },
+            )
+            .unwrap();
+        }
+
+        let error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER_1, &[Coin::new(10000, "udsm")]),
+            ExecuteMsg::SendTip {
+                application: "application".to_string(),
+                handle: "handle".to_string(),
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(
+            ContractError::ToManyPendingTips {
+                handle: "handle".to_string(),
+                application: "application".to_string()
+            },
+            error
+        );
     }
 
     #[test]
@@ -415,7 +528,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[Coin::new(10000, "udsm")]);
 
-        init_contract(deps.as_mut()).unwrap();
+        init_contract(deps.as_mut(), 10).unwrap();
 
         let response = execute(
             deps.as_mut(),
@@ -423,7 +536,7 @@ mod tests {
             info,
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
-                handler: "handle".to_string(),
+                handle: "handle".to_string(),
             },
         )
         .unwrap();
@@ -443,7 +556,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_2, &[]);
 
-        init_contract(deps.as_mut()).unwrap();
+        init_contract(deps.as_mut(), 10).unwrap();
 
         let error = execute(deps.as_mut(), env, info, ExecuteMsg::ClaimTips {}).unwrap_err();
 
@@ -473,7 +586,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[Coin::new(10000, "udsm")]);
 
-        init_contract(deps.as_mut()).unwrap();
+        init_contract(deps.as_mut(), 10).unwrap();
 
         execute(
             deps.as_mut(),
@@ -481,7 +594,7 @@ mod tests {
             info,
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
-                handler: "handler".to_string(),
+                handle: "handler".to_string(),
             },
         )
         .unwrap();
@@ -559,7 +672,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[Coin::new(10000, "udsm")]);
 
-        init_contract(deps.as_mut()).unwrap();
+        init_contract(deps.as_mut(), 10).unwrap();
 
         execute(
             deps.as_mut(),
@@ -567,7 +680,7 @@ mod tests {
             info,
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
-                handler: "handler".to_string(),
+                handle: "handler".to_string(),
             },
         )
         .unwrap();
