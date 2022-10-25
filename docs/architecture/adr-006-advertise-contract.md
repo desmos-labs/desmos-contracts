@@ -9,7 +9,7 @@
 DRAFT
 
 ## Abstract
-This ADR defines the architecture of the Advertise contract. This contract allows users to advertise a post, then social network applications can query random advertisement posts from it.
+This ADR defines the architecture of the Advertisement contract. This contract allows users to advertise a post so that later any social network application can query random advertised posts from it.
 Additionally, to make it fair for posts that are advertised more tokens, this contract provides a system to ensure the more tokens a post is advertised with, the more exposure it has.
 
 ## Context
