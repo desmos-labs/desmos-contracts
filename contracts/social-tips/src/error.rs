@@ -28,5 +28,11 @@ pub enum ContractError {
     ToManyOwners {},
 
     #[error("To many pending tips for user with handle: {handle} on application: {application}")]
-    ToManyPendingTips { application: String, handle: String },
+    ToManyPendingTipsForUser { application: String, handle: String },
+
+    #[error("You have to many pending tips, please remove on to send a tip")]
+    ToManySentPendingTips {},
+
+    #[error("No pending tip for user with handle: {handle} on application: {application}")]
+    NoPendingTip { application: String, handle: String },
 }

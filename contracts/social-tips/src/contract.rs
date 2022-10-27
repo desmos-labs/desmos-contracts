@@ -1,11 +1,13 @@
 use crate::error::ContractError;
-use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, QueryPendingTipsResponse};
-use crate::state::{Config, PendingTip, PendingTips, CONFIG, PENDING_TIPS};
+use crate::msg::{
+    ExecuteMsg, InstantiateMsg, QueryMsg, QueryPendingTipsResponse, QueryUnclaimedSentTipsResponse,
+};
+use crate::state::{pending_tips, Config, PendingTip, CONFIG};
 use crate::utils::{serialize_coins, sum_coins_sorted};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult,
 };
 use cw2::set_contract_version;
 use desmos_bindings::msg::DesmosMsg;
@@ -23,11 +25,13 @@ const ATTRIBUTE_ACTION: &str = "action";
 const ATTRIBUTE_TIP_COLLECTED: &str = "tip_collected";
 const ATTRIBUTE_TIP_RECEIVER: &str = "tip_receiver";
 const ATTRIBUTE_TIP_AMOUNT: &str = "tip_amount";
+const ATTRIBUTE_REMOVED_TIP_AMOUNT: &str = "removed_tip_amount";
 const ATTRIBUTE_NEW_MAX_PENDING_TIPS_VALUE: &str = "new_max_pending_tips_value";
 const ACTION_INSTANTIATE: &str = "instantiate";
 const ACTION_SEND_TIPS: &str = "send_tips";
 const ACTION_CLAIM_PENDING_TIPS: &str = "claim_pending_tips";
 const ACTION_UPDATE_MAX_PENDING_TIPS: &str = "update_max_pending_tips";
+const ACTION_REMOVE_PENDING_TIP: &str = "remove_pending_tip";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -72,6 +76,10 @@ pub fn execute(
         } => send_tip(deps, env, info, application, handle),
         ExecuteMsg::ClaimTips {} => claim_tips(deps, info),
         ExecuteMsg::UpdateMaxPendingTips { value } => update_max_pending_tips(deps, info, value),
+        ExecuteMsg::RemovePendingTip {
+            application,
+            handle,
+        } => remove_pending_tip(deps, info, application, handle),
     }
 }
 
@@ -118,32 +126,61 @@ pub fn send_tip(
             }))
     } else {
         let config = CONFIG.load(deps.storage)?;
-        // No one have linked the provided username and application.
-        PENDING_TIPS.update::<_, ContractError>(
-            deps.storage,
-            (application.clone(), handle.clone()),
-            |tips| {
-                let mut tips = tips.unwrap_or_default();
-                if config.max_pending_tips as usize == tips.len() {
-                    return Err(ContractError::ToManyPendingTips {
-                        application,
-                        handle,
-                    });
-                }
+        let tips = pending_tips();
 
-                tips.push(PendingTip {
-                    sender,
-                    amount: funds,
-                    block_height: env.block.height,
-                });
-                Ok(tips)
-            },
+        let user_sent_pending_tips_count = tips
+            .idx
+            .sender
+            .prefix(sender.clone())
+            .range_raw(deps.storage, None, None, Order::Ascending)
+            .count();
+
+        // Ensure that the sender can not spam the chain with multiple tips to different users.
+        if user_sent_pending_tips_count >= config.max_pending_tips as usize {
+            return Err(ContractError::ToManySentPendingTips {});
+        }
+
+        let user_pending_tips_count = tips
+            .prefix((application.clone(), handle.clone()))
+            .range_raw(deps.storage, None, None, Order::Ascending)
+            .count();
+
+        // Ensure that the user don't have to many pending tips.
+        if user_pending_tips_count >= config.max_pending_tips as usize {
+            return Err(ContractError::ToManyPendingTipsForUser {
+                application,
+                handle,
+            });
+        }
+
+        let key = (application.clone(), handle.clone(), sender.clone());
+        let replaced = tips.may_load(deps.storage, key.clone())?;
+
+        tips.replace(
+            deps.storage,
+            key,
+            Some(&PendingTip {
+                sender,
+                amount: funds,
+                block_height: env.block.height,
+            }),
+            replaced.as_ref(),
         )?;
 
-        Ok(Response::new()
+        let mut response = Response::new()
             .add_attribute(ATTRIBUTE_ACTION, ACTION_SEND_TIPS)
             .add_attribute(ATTRIBUTE_TIP_COLLECTED, "true")
-            .add_attribute(ATTRIBUTE_TIP_AMOUNT, serialized_coins))
+            .add_attribute(ATTRIBUTE_TIP_AMOUNT, serialized_coins);
+
+        // Send back the funds of the replaced tip.
+        if let Some(replaced_tip) = replaced {
+            response = response.add_message(BankMsg::Send {
+                amount: replaced_tip.amount,
+                to_address: replaced_tip.sender.to_string(),
+            });
+        }
+
+        Ok(response)
     };
 }
 
@@ -153,20 +190,34 @@ pub fn claim_tips(
 ) -> Result<Response<DesmosMsg>, ContractError> {
     let mut coins = Vec::<Coin>::new();
     let querier = ProfilesQuerier::new(deps.querier.deref());
+    let pending_tips_map = pending_tips();
 
     for app_link_result in
         querier.iterate_application_links(Some(info.sender.clone()), None, None, 10)
     {
         let app_link = app_link_result?;
         if app_link.state == ApplicationLinkState::VerificationSuccess {
-            let key = (app_link.data.application, app_link.data.username);
-            let pending_tips = PENDING_TIPS.may_load(deps.storage, key.clone())?;
+            let mut pending_tips = pending_tips_map
+                .prefix((
+                    app_link.data.application.clone(),
+                    app_link.data.username.clone(),
+                ))
+                .range(deps.storage, None, None, Order::Ascending)
+                .collect::<StdResult<Vec<_>>>()?;
 
-            if let Some(mut tips) = pending_tips {
-                tips.drain(0..)
-                    .for_each(|mut tip| tip.amount.drain(0..).for_each(|coin| coins.push(coin)));
-
-                PENDING_TIPS.remove(deps.storage, key);
+            for (sender, mut pending_tip) in pending_tips.drain(0..) {
+                pending_tip
+                    .amount
+                    .drain(0..)
+                    .for_each(|coin| coins.push(coin));
+                pending_tips_map.remove(
+                    deps.storage,
+                    (
+                        app_link.data.application.clone(),
+                        app_link.data.username.clone(),
+                        sender,
+                    ),
+                )?;
             }
         }
     }
@@ -208,10 +259,43 @@ fn update_max_pending_tips(
         .add_attribute(ATTRIBUTE_NEW_MAX_PENDING_TIPS_VALUE, value.to_string()))
 }
 
+fn remove_pending_tip(
+    deps: DepsMut<DesmosQuery>,
+    info: MessageInfo,
+    application: String,
+    handle: String,
+) -> Result<Response<DesmosMsg>, ContractError> {
+    let pending_tips_map = pending_tips();
+    let key = (application.clone(), handle.clone(), info.sender.clone());
+    let pending_tip_option = pending_tips_map.may_load(deps.storage, key.clone())?;
+
+    if let Some(to_remove_tip) = pending_tip_option {
+        let refund_address = key.2.to_string();
+        pending_tips_map.replace(deps.storage, key, None, Some(&to_remove_tip))?;
+
+        Ok(Response::new()
+            .add_attribute(ATTRIBUTE_ACTION, ACTION_REMOVE_PENDING_TIP)
+            .add_attribute(
+                ATTRIBUTE_REMOVED_TIP_AMOUNT,
+                serialize_coins(&to_remove_tip.amount),
+            )
+            .add_message(BankMsg::Send {
+                amount: to_remove_tip.amount,
+                to_address: refund_address,
+            }))
+    } else {
+        Err(ContractError::NoPendingTip {
+            application,
+            handle,
+        })
+    }
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps<DesmosQuery>, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::UserPendingTips { user } => to_binary(&query_user_pending_tips(deps, user)?),
+        QueryMsg::UnclaimedSentTips { user } => to_binary(&query_unclaimed_sent_tips(deps, user)?),
     }
 }
 
@@ -221,33 +305,63 @@ fn query_user_pending_tips(
 ) -> StdResult<QueryPendingTipsResponse> {
     let user_addr = deps.api.addr_validate(&user)?;
     let querier = ProfilesQuerier::new(deps.querier.deref());
-    let mut tips = PendingTips::new();
+    let mut tips = Vec::<PendingTip>::new();
 
     for app_link_result in querier.iterate_application_links(Some(user_addr), None, None, 10) {
         let app_link = app_link_result?;
-
         if app_link.state == ApplicationLinkState::VerificationSuccess {
-            let key = (app_link.data.application, app_link.data.username);
-            let pending_tips = PENDING_TIPS.may_load(deps.storage, key.clone())?;
-
-            if let Some(mut pending_tips) = pending_tips {
-                pending_tips.drain(0..).for_each(|tip| tips.push(tip));
-            }
+            let key_prefix = (app_link.data.application, app_link.data.username);
+            pending_tips()
+                .prefix(key_prefix)
+                .range(deps.storage, None, None, Order::Ascending)
+                .try_for_each(|item| {
+                    if let Ok((sender, pending_tip)) = item {
+                        tips.push(PendingTip {
+                            sender,
+                            amount: pending_tip.amount,
+                            block_height: pending_tip.block_height,
+                        });
+                        Ok(())
+                    } else {
+                        Err(item.unwrap_err())
+                    }
+                })?;
         }
     }
 
     Ok(QueryPendingTipsResponse { tips })
 }
 
+fn query_unclaimed_sent_tips(
+    deps: Deps<DesmosQuery>,
+    sender: String,
+) -> StdResult<QueryUnclaimedSentTipsResponse> {
+    let sender = deps.api.addr_validate(&sender)?;
+
+    let tips = pending_tips()
+        .idx
+        .sender
+        .prefix(sender)
+        .range(deps.storage, None, None, Order::Ascending)
+        .map(|item| item.map(|item| item.1))
+        .collect::<StdResult<_>>()?;
+
+    Ok(QueryUnclaimedSentTipsResponse { tips })
+}
+
 #[cfg(test)]
 mod tests {
     use crate::contract::{execute, instantiate, query};
-    use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg, QueryPendingTipsResponse};
-    use crate::state::{PendingTip, MAX_CONFIGURABLE_PENDING_TIPS, PENDING_TIPS};
+    use crate::msg::{
+        ExecuteMsg, InstantiateMsg, QueryMsg, QueryPendingTipsResponse,
+        QueryUnclaimedSentTipsResponse,
+    };
+    use crate::state::{pending_tips, PendingTip, MAX_CONFIGURABLE_PENDING_TIPS};
     use crate::ContractError;
     use cosmwasm_std::testing::{mock_env, mock_info};
     use cosmwasm_std::{
-        from_binary, to_binary, Addr, BankMsg, Coin, DepsMut, Response, SubMsg, Uint64,
+        from_binary, to_binary, Addr, BankMsg, Coin, DepsMut, Order, Response, StdResult, SubMsg,
+        Uint64,
     };
     use desmos_bindings::mocks::mock_queriers::{
         mock_desmos_dependencies, mock_desmos_dependencies_with_custom_querier, MockDesmosQuerier,
@@ -285,6 +399,34 @@ mod tests {
         )
     }
 
+    fn querier_with_no_app_links() -> MockDesmosQuerier {
+        MockDesmosQuerier::default().with_custom_profiles_handler(|profiler_query| {
+            match profiler_query {
+                ProfilesQuery::ApplicationLinkOwners { .. } => {
+                    let response = QueryApplicationLinkOwnersResponse {
+                        owners: vec![],
+                        pagination: None,
+                    };
+                    to_binary(&response).into()
+                }
+                _ => mock_profiles_query_response(profiler_query),
+            }
+        })
+    }
+
+    fn get_pending_tips(
+        deps: DepsMut<DesmosQuery>,
+        application: &str,
+        handle: &str,
+    ) -> Vec<PendingTip> {
+        pending_tips()
+            .prefix((application.to_string(), handle.to_string()))
+            .range(deps.storage, None, None, Order::Ascending)
+            .map(|item| item.map(|(_, pending_tip)| pending_tip))
+            .collect::<StdResult<_>>()
+            .unwrap()
+    }
+
     #[test]
     fn instantiate_properly() {
         let mut deps = mock_desmos_dependencies();
@@ -318,7 +460,7 @@ mod tests {
     fn tip_with_empty_application_error() {
         let mut deps = mock_desmos_dependencies();
         let env = mock_env();
-        let info = mock_info(USER_1, &[Coin::new(10000, "udsm")]);
+        let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
 
         init_contract(deps.as_mut(), 10).unwrap();
 
@@ -340,7 +482,7 @@ mod tests {
     fn tip_with_empty_handle_error() {
         let mut deps = mock_desmos_dependencies();
         let env = mock_env();
-        let info = mock_info(USER_1, &[Coin::new(10000, "udsm")]);
+        let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
 
         init_contract(deps.as_mut(), 10).unwrap();
 
@@ -408,7 +550,7 @@ mod tests {
 
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
         let env = mock_env();
-        let info = mock_info(USER_1, &[Coin::new(10000, "udsm")]);
+        let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
 
         init_contract(deps.as_mut(), 10).unwrap();
 
@@ -428,22 +570,10 @@ mod tests {
 
     #[test]
     fn tip_collected_properly() {
-        let querier = MockDesmosQuerier::default().with_custom_profiles_handler(|profiler_query| {
-            match profiler_query {
-                ProfilesQuery::ApplicationLinkOwners { .. } => {
-                    let response = QueryApplicationLinkOwnersResponse {
-                        owners: vec![],
-                        pagination: None,
-                    };
-                    to_binary(&response).into()
-                }
-                _ => mock_profiles_query_response(profiler_query),
-            }
-        });
-
+        let querier = querier_with_no_app_links();
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
         let env = mock_env();
-        let info = mock_info(USER_1, &[Coin::new(10000, "udsm")]);
+        let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
 
         init_contract(deps.as_mut(), 10).unwrap();
 
@@ -458,17 +588,12 @@ mod tests {
         )
         .unwrap();
 
-        let pending_tips = PENDING_TIPS
-            .load(
-                &deps.storage,
-                ("application".to_string(), "handle".to_string()),
-            )
-            .unwrap();
+        let pending_tips = get_pending_tips(deps.as_mut(), "application", "handle");
 
         assert_eq!(
             vec![PendingTip {
                 sender: Addr::unchecked(USER_1),
-                amount: vec![Coin::new(10000, "udsm")],
+                amount: vec![Coin::new(10_000, "udsm")],
                 block_height: 12345
             }],
             pending_tips
@@ -476,29 +601,17 @@ mod tests {
     }
 
     #[test]
-    fn reach_max_pending_tips_properly() {
-        let querier = MockDesmosQuerier::default().with_custom_profiles_handler(|profiler_query| {
-            match profiler_query {
-                ProfilesQuery::ApplicationLinkOwners { .. } => {
-                    let response = QueryApplicationLinkOwnersResponse {
-                        owners: vec![],
-                        pagination: None,
-                    };
-                    to_binary(&response).into()
-                }
-                _ => mock_profiles_query_response(profiler_query),
-            }
-        });
-
+    fn reach_max_pending_tips_error() {
+        let querier = querier_with_no_app_links();
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
 
         init_contract(deps.as_mut(), 3).unwrap();
 
-        for _ in 0..3 {
+        for i in 0..3 {
             execute(
                 deps.as_mut(),
                 mock_env(),
-                mock_info(USER_1, &[Coin::new(10000, "udsm")]),
+                mock_info(&format!("user{}", i), &[Coin::new(10_000, "udsm")]),
                 ExecuteMsg::SendTip {
                     application: "application".to_string(),
                     handle: "handle".to_string(),
@@ -510,7 +623,7 @@ mod tests {
         let error = execute(
             deps.as_mut(),
             mock_env(),
-            mock_info(USER_1, &[Coin::new(10000, "udsm")]),
+            mock_info(USER_1, &[Coin::new(10_000, "udsm")]),
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handle".to_string(),
@@ -519,11 +632,94 @@ mod tests {
         .unwrap_err();
 
         assert_eq!(
-            ContractError::ToManyPendingTips {
+            ContractError::ToManyPendingTipsForUser {
                 handle: "handle".to_string(),
                 application: "application".to_string()
             },
             error
+        );
+    }
+
+    #[test]
+    fn reach_max_sent_pending_tips_error() {
+        let querier = querier_with_no_app_links();
+        let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
+
+        init_contract(deps.as_mut(), 3).unwrap();
+
+        for i in 0..3 {
+            execute(
+                deps.as_mut(),
+                mock_env(),
+                mock_info(USER_1, &[Coin::new(10_000, "udsm")]),
+                ExecuteMsg::SendTip {
+                    application: "application".to_string(),
+                    handle: format!("handle{}", i),
+                },
+            )
+            .unwrap();
+        }
+
+        let error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER_1, &[Coin::new(10_000, "udsm")]),
+            ExecuteMsg::SendTip {
+                application: "application".to_string(),
+                handle: "handle3".to_string(),
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::ToManySentPendingTips {}, error);
+    }
+
+    #[test]
+    fn replaced_tip_sends_refund_properly() {
+        let querier = querier_with_no_app_links();
+
+        let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
+
+        init_contract(deps.as_mut(), 10).unwrap();
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER_1, &[Coin::new(10_000, "udsm")]),
+            ExecuteMsg::SendTip {
+                application: "application".to_string(),
+                handle: "handle".to_string(),
+            },
+        )
+        .unwrap();
+
+        let response = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER_1, &[Coin::new(20_000, "udsm")]),
+            ExecuteMsg::SendTip {
+                application: "application".to_string(),
+                handle: "handle".to_string(),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            vec![SubMsg::new(BankMsg::Send {
+                amount: vec![Coin::new(10_000, "udsm")],
+                to_address: USER_1.to_string()
+            })],
+            response.messages
+        );
+
+        let pending_tips = get_pending_tips(deps.as_mut(), "application", "handle");
+        assert_eq!(
+            vec![PendingTip {
+                sender: Addr::unchecked(USER_1),
+                amount: vec![Coin::new(20_000, "udsm")],
+                block_height: 12345,
+            }],
+            pending_tips
         );
     }
 
@@ -548,7 +744,7 @@ mod tests {
 
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
         let env = mock_env();
-        let info = mock_info(USER_1, &[Coin::new(10000, "udsm")]);
+        let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
 
         init_contract(deps.as_mut(), 10).unwrap();
 
@@ -566,7 +762,7 @@ mod tests {
         assert_eq!(
             &SubMsg::<DesmosMsg>::new(BankMsg::Send {
                 to_address: USER_2.to_string(),
-                amount: vec![Coin::new(10000, "udsm")],
+                amount: vec![Coin::new(10_000, "udsm")],
             }),
             response.messages.first().unwrap()
         )
@@ -592,21 +788,10 @@ mod tests {
 
     #[test]
     fn claim_pending_tip_properly() {
-        let querier = MockDesmosQuerier::default().with_custom_profiles_handler(|profiler_query| {
-            match profiler_query {
-                ProfilesQuery::ApplicationLinkOwners { .. } => {
-                    let response = QueryApplicationLinkOwnersResponse {
-                        owners: vec![],
-                        pagination: None,
-                    };
-                    to_binary(&response).into()
-                }
-                _ => mock_profiles_query_response(profiler_query),
-            }
-        });
+        let querier = querier_with_no_app_links();
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
         let env = mock_env();
-        let info = mock_info(USER_1, &[Coin::new(10000, "udsm")]);
+        let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
 
         init_contract(deps.as_mut(), 10).unwrap();
 
@@ -655,25 +840,20 @@ mod tests {
                 }
             });
         let env = mock_env();
-        let info = mock_info(USER_2, &[Coin::new(10000, "udsm")]);
+        let info = mock_info(USER_2, &[Coin::new(10_000, "udsm")]);
 
         let response = execute(deps.as_mut(), env, info, ExecuteMsg::ClaimTips {}).unwrap();
         assert_eq!(
             &SubMsg::<DesmosMsg>::new(BankMsg::Send {
                 to_address: USER_2.to_string(),
-                amount: vec![Coin::new(10000, "udsm")],
+                amount: vec![Coin::new(10_000, "udsm")],
             }),
             response.messages.first().unwrap()
         );
 
         // Ensure that the claimed tips have been deleted from the contract state
-        let pending_tips = PENDING_TIPS
-            .may_load(
-                &deps.storage,
-                ("application".to_string(), "handle".to_string()),
-            )
-            .unwrap();
-        assert_eq!(None, pending_tips);
+        let pending_tips = get_pending_tips(deps.as_mut(), "application", "handle");
+        assert_eq!(Vec::<PendingTip>::new(), pending_tips);
     }
 
     #[test]
@@ -750,22 +930,80 @@ mod tests {
     }
 
     #[test]
-    fn query_tips_properly() {
-        let querier = MockDesmosQuerier::default().with_custom_profiles_handler(|profiler_query| {
-            match profiler_query {
-                ProfilesQuery::ApplicationLinkOwners { .. } => {
-                    let response = QueryApplicationLinkOwnersResponse {
-                        owners: vec![],
-                        pagination: None,
-                    };
-                    to_binary(&response).into()
-                }
-                _ => mock_profiles_query_response(profiler_query),
+    fn remove_not_existing_pending_tip_error() {
+        let mut deps = mock_desmos_dependencies();
+        let env = mock_env();
+        let info = mock_info(USER_1, &[]);
+
+        init_contract(deps.as_mut(), 10).unwrap();
+
+        let error = execute(
+            deps.as_mut(),
+            env,
+            info,
+            ExecuteMsg::RemovePendingTip {
+                application: "application".to_string(),
+                handle: "handle".to_string(),
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(
+            error,
+            ContractError::NoPendingTip {
+                application: "application".to_string(),
+                handle: "handle".to_string()
             }
-        });
+        )
+    }
+
+    #[test]
+    fn remove_pending_tip_properly() {
+        let querier = querier_with_no_app_links();
+        let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
+
+        init_contract(deps.as_mut(), 10).unwrap();
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER_1, &[Coin::new(10_000, "udsm")]),
+            ExecuteMsg::SendTip {
+                application: "application".to_string(),
+                handle: "handle".to_string(),
+            },
+        )
+        .unwrap();
+
+        let response = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER_1, &[]),
+            ExecuteMsg::RemovePendingTip {
+                application: "application".to_string(),
+                handle: "handle".to_string(),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            vec![SubMsg::new(BankMsg::Send {
+                amount: vec![Coin::new(10_000, "udsm")],
+                to_address: USER_1.to_string()
+            })],
+            response.messages,
+        );
+
+        let pending_tips = get_pending_tips(deps.as_mut(), "application", "handle");
+        assert_eq!(Vec::<PendingTip>::new(), pending_tips);
+    }
+
+    #[test]
+    fn query_tips_properly() {
+        let querier = querier_with_no_app_links();
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
         let env = mock_env();
-        let info = mock_info(USER_1, &[Coin::new(10000, "udsm")]);
+        let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
 
         init_contract(deps.as_mut(), 10).unwrap();
 
@@ -828,7 +1066,45 @@ mod tests {
             response.tips,
             vec![PendingTip {
                 sender: Addr::unchecked(USER_1),
-                amount: vec![Coin::new(10000, "udsm")],
+                amount: vec![Coin::new(10_000, "udsm")],
+                block_height: 12345
+            }]
+        )
+    }
+
+    #[test]
+    fn query_unclaimed_sent_tips_properly() {
+        let querier = querier_with_no_app_links();
+        let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
+
+        init_contract(deps.as_mut(), 10).unwrap();
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER_1, &[Coin::new(10_000, "udsm")]),
+            ExecuteMsg::SendTip {
+                application: "application".to_string(),
+                handle: "handler".to_string(),
+            },
+        )
+        .unwrap();
+
+        let response = query(
+            deps.as_ref(),
+            mock_env(),
+            QueryMsg::UnclaimedSentTips {
+                user: USER_1.to_string(),
+            },
+        )
+        .unwrap();
+
+        let response: QueryUnclaimedSentTipsResponse = from_binary(&response).unwrap();
+        assert_eq!(
+            response.tips,
+            vec![PendingTip {
+                sender: Addr::unchecked(USER_1),
+                amount: vec![Coin::new(10_000, "udsm")],
                 block_height: 12345
             }]
         )

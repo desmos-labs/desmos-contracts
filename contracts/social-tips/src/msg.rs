@@ -1,4 +1,4 @@
-use crate::state::{PendingTips, MAX_CONFIGURABLE_PENDING_TIPS};
+use crate::state::{PendingTip, MAX_CONFIGURABLE_PENDING_TIPS};
 use crate::ContractError;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
@@ -16,6 +16,8 @@ pub enum ExecuteMsg {
     ClaimTips {},
     /// Message to update the max pending tips that an user can have.
     UpdateMaxPendingTips { value: u32 },
+    /// Message to remove an unclaimed pending tip.
+    RemovePendingTip { application: String, handle: String },
 }
 
 #[cw_serde]
@@ -24,12 +26,21 @@ pub enum QueryMsg {
     /// Query the pending tips of an user.
     #[returns(QueryPendingTipsResponse)]
     UserPendingTips { user: String },
+    /// Message to query the unclaimed tips sent from an user.
+    #[returns(QueryUnclaimedSentTipsResponse)]
+    UnclaimedSentTips { user: String },
 }
 
 /// Response to [QueryMsg::UserPendingTips].
 #[cw_serde]
 pub struct QueryPendingTipsResponse {
-    pub tips: PendingTips,
+    pub tips: Vec<PendingTip>,
+}
+
+/// Response to [QueryMsg::UnclaimedTips].
+#[cw_serde]
+pub struct QueryUnclaimedSentTipsResponse {
+    pub tips: Vec<PendingTip>,
 }
 
 impl InstantiateMsg {
@@ -72,6 +83,20 @@ impl ExecuteMsg {
                 } else {
                     Ok(())
                 }
+            }
+            ExecuteMsg::RemovePendingTip {
+                application,
+                handle: handler,
+            } => {
+                if application.is_empty() {
+                    return Err(ContractError::InvalidApplication {});
+                }
+
+                if handler.is_empty() {
+                    return Err(ContractError::InvalidUserHandler {});
+                }
+
+                Ok(())
             }
         }
     }
