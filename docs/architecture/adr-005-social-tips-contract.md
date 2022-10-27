@@ -67,6 +67,9 @@ The `MessageInfo` fields contains:
 * the funds necessary to cover the fees plus the tip amount specified inside the `funds` field
 * the sender identified by the `sender` field
 
+**NOTE** If the user have already sent a tip to the same centralized application reference the contracts collects
+only the last one sending back to the user the previous tip amount.
+
 #### ClaimTips
 With the `ClaimTips` message the user can claim their pending tips that has been sent to him before proving that
 owns the identities to which the tips refer.
