@@ -17,8 +17,12 @@ pub enum ExecuteMsg {
     ClaimTips {},
     /// Message that allows the current admin to update the contract admin.
     UpdateAdmin { new_admin: String },
-    /// Message that allows the current admin to update the max pending tips that an user can have.
+    /// Message that allows the current admin to update the max pending tips that
+    /// can be associated to a centralize application.
     UpdateMaxPendingTips { value: u16 },
+    /// Message that allows the current admin to update the max pending tips that
+    /// can be sent from a user.
+    UpdateMaxSentPendingTips { value: u16 },
     /// Message to remove an unclaimed pending tip.
     RemovePendingTip { application: String, handle: String },
 }
@@ -92,6 +96,16 @@ impl ExecuteMsg {
                     Err(ContractError::InvalidMaxPendingTipsValue {
                         value: *value,
                         max: MAX_CONFIGURABLE_PENDING_TIPS,
+                    })
+                } else {
+                    Ok(())
+                }
+            }
+            ExecuteMsg::UpdateMaxSentPendingTips { value } => {
+                if *value == 0 || *value > MAX_CONFIGURABLE_SENT_PENDING_TIPS {
+                    Err(ContractError::InvalidMaxSentPendingTipsValue {
+                        value: *value,
+                        max: MAX_CONFIGURABLE_SENT_PENDING_TIPS,
                     })
                 } else {
                     Ok(())

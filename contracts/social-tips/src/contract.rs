@@ -27,12 +27,14 @@ const ATTRIBUTE_TIP_RECEIVER: &str = "tip_receiver";
 const ATTRIBUTE_TIP_AMOUNT: &str = "tip_amount";
 const ATTRIBUTE_REMOVED_TIP_AMOUNT: &str = "removed_tip_amount";
 const ATTRIBUTE_NEW_MAX_PENDING_TIPS_VALUE: &str = "new_max_pending_tips_value";
+const ATTRIBUTE_NEW_MAX_SENT_PENDING_TIPS_VALUE: &str = "new_max_sent_pending_tips_value";
 const ATTRIBUTE_NEW_ADMIN: &str = "new_admin";
 const ACTION_INSTANTIATE: &str = "instantiate";
 const ACTION_SEND_TIPS: &str = "send_tips";
 const ACTION_UPDATE_ADMIN: &str = "update_admin";
 const ACTION_CLAIM_PENDING_TIPS: &str = "claim_pending_tips";
 const ACTION_UPDATE_MAX_PENDING_TIPS: &str = "update_max_pending_tips";
+const ACTION_UPDATE_MAX_SENT_PENDING_TIPS: &str = "update_max_sent_pending_tips";
 const ACTION_REMOVE_PENDING_TIP: &str = "remove_pending_tip";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -80,6 +82,9 @@ pub fn execute(
         ExecuteMsg::ClaimTips {} => claim_tips(deps, info),
         ExecuteMsg::UpdateAdmin { new_admin } => update_admin(deps, new_admin),
         ExecuteMsg::UpdateMaxPendingTips { value } => update_max_pending_tips(deps, info, value),
+        ExecuteMsg::UpdateMaxSentPendingTips { value } => {
+            update_max_sent_pending_tips(deps, info, value)
+        }
         ExecuteMsg::RemovePendingTip {
             application,
             handle,
@@ -283,6 +288,25 @@ fn update_max_pending_tips(
         .add_attribute(ATTRIBUTE_NEW_MAX_PENDING_TIPS_VALUE, value.to_string()))
 }
 
+fn update_max_sent_pending_tips(
+    deps: DepsMut<DesmosQuery>,
+    info: MessageInfo,
+    value: u16,
+) -> Result<Response<DesmosMsg>, ContractError> {
+    let mut config = CONFIG.load(deps.storage)?;
+
+    if config.admin != info.sender {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    config.max_sent_pending_tips = value;
+    CONFIG.save(deps.storage, &config)?;
+
+    Ok(Response::new()
+        .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_MAX_SENT_PENDING_TIPS)
+        .add_attribute(ATTRIBUTE_NEW_MAX_SENT_PENDING_TIPS_VALUE, value.to_string()))
+}
+
 fn remove_pending_tip(
     deps: DepsMut<DesmosQuery>,
     info: MessageInfo,
@@ -381,7 +405,8 @@ mod tests {
         QueryUnclaimedSentTipsResponse,
     };
     use crate::state::{
-        pending_tips, PendingTip, MAX_CONFIGURABLE_PENDING_TIPS, MAX_CONFIGURABLE_SENT_PENDING_TIPS,
+        pending_tips, PendingTip, CONFIG, MAX_CONFIGURABLE_PENDING_TIPS,
+        MAX_CONFIGURABLE_SENT_PENDING_TIPS,
     };
     use crate::ContractError;
     use cosmwasm_std::testing::{mock_env, mock_info};
@@ -1018,6 +1043,92 @@ mod tests {
             ExecuteMsg::UpdateMaxPendingTips { value: 5 },
         )
         .unwrap();
+
+        assert_eq!(
+            5,
+            CONFIG.load(deps.as_mut().storage).unwrap().max_pending_tips
+        )
+    }
+
+    #[test]
+    fn update_max_sent_pending_tip_from_non_admin_error() {
+        let mut deps = mock_desmos_dependencies();
+
+        init_contract(deps.as_mut(), 10, 10).unwrap();
+
+        let error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER_1, &[]),
+            ExecuteMsg::UpdateMaxSentPendingTips { value: 2 },
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::Unauthorized {}, error)
+    }
+
+    #[test]
+    fn update_max_sent_pending_tip_with_invalid_value_error() {
+        let mut deps = mock_desmos_dependencies();
+
+        init_contract(deps.as_mut(), 10, 10).unwrap();
+
+        let error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateMaxSentPendingTips { value: 0 },
+        )
+        .unwrap_err();
+
+        assert_eq!(
+            ContractError::InvalidMaxSentPendingTipsValue {
+                value: 0,
+                max: MAX_CONFIGURABLE_SENT_PENDING_TIPS
+            },
+            error
+        );
+
+        let error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateMaxSentPendingTips {
+                value: MAX_CONFIGURABLE_SENT_PENDING_TIPS + 1,
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(
+            ContractError::InvalidMaxSentPendingTipsValue {
+                value: MAX_CONFIGURABLE_SENT_PENDING_TIPS + 1,
+                max: MAX_CONFIGURABLE_SENT_PENDING_TIPS
+            },
+            error
+        );
+    }
+
+    #[test]
+    fn update_max_sent_pending_tip_properly() {
+        let mut deps = mock_desmos_dependencies();
+
+        init_contract(deps.as_mut(), 10, 10).unwrap();
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateMaxSentPendingTips { value: 5 },
+        )
+        .unwrap();
+
+        assert_eq!(
+            5,
+            CONFIG
+                .load(deps.as_mut().storage)
+                .unwrap()
+                .max_sent_pending_tips
+        )
     }
 
     #[test]
