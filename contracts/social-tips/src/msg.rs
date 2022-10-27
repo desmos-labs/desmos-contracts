@@ -1,6 +1,7 @@
 use crate::state::{PendingTip, MAX_CONFIGURABLE_PENDING_TIPS, MAX_CONFIGURABLE_SENT_PENDING_TIPS};
 use crate::ContractError;
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Addr;
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -36,6 +37,9 @@ pub enum QueryMsg {
     /// Message to query the unclaimed tips sent from an user.
     #[returns(QueryUnclaimedSentTipsResponse)]
     UnclaimedSentTips { user: String },
+    /// Message to query the contract configurations.
+    #[returns(QueryConfigResponse)]
+    Config {},
 }
 
 /// Response to [QueryMsg::UserPendingTips].
@@ -48,6 +52,14 @@ pub struct QueryPendingTipsResponse {
 #[cw_serde]
 pub struct QueryUnclaimedSentTipsResponse {
     pub tips: Vec<PendingTip>,
+}
+
+/// Response to [QueryMsg::UnclaimedTips].
+#[cw_serde]
+pub struct QueryConfigResponse {
+    pub admin: Addr,
+    pub max_pending_tips: u16,
+    pub max_sent_pending_tips: u16,
 }
 
 impl InstantiateMsg {

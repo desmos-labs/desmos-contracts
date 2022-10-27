@@ -1,6 +1,7 @@
 use crate::error::ContractError;
 use crate::msg::{
-    ExecuteMsg, InstantiateMsg, QueryMsg, QueryPendingTipsResponse, QueryUnclaimedSentTipsResponse,
+    ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, QueryPendingTipsResponse,
+    QueryUnclaimedSentTipsResponse,
 };
 use crate::state::{pending_tips, Config, PendingTip, CONFIG};
 use crate::utils::{serialize_coins, sum_coins_sorted};
@@ -344,6 +345,7 @@ pub fn query(deps: Deps<DesmosQuery>, _env: Env, msg: QueryMsg) -> StdResult<Bin
     match msg {
         QueryMsg::UserPendingTips { user } => to_binary(&query_user_pending_tips(deps, user)?),
         QueryMsg::UnclaimedSentTips { user } => to_binary(&query_unclaimed_sent_tips(deps, user)?),
+        QueryMsg::Config {} => to_binary(&query_config(deps)?),
     }
 }
 
@@ -397,11 +399,21 @@ fn query_unclaimed_sent_tips(
     Ok(QueryUnclaimedSentTipsResponse { tips })
 }
 
+fn query_config(deps: Deps<DesmosQuery>) -> StdResult<QueryConfigResponse> {
+    let config = CONFIG.load(deps.storage)?;
+
+    Ok(QueryConfigResponse {
+        admin: config.admin,
+        max_pending_tips: config.max_pending_tips,
+        max_sent_pending_tips: config.max_sent_pending_tips,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use crate::contract::{execute, instantiate, query};
     use crate::msg::{
-        ExecuteMsg, InstantiateMsg, QueryMsg, QueryPendingTipsResponse,
+        ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, QueryPendingTipsResponse,
         QueryUnclaimedSentTipsResponse,
     };
     use crate::state::{
@@ -1309,6 +1321,26 @@ mod tests {
                 amount: vec![Coin::new(10_000, "udsm")],
                 block_height: 12345
             }]
+        )
+    }
+
+    #[test]
+    fn query_config_properly() {
+        let querier = querier_with_no_app_links();
+        let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
+
+        init_contract(deps.as_mut(), 5, 10).unwrap();
+
+        let response = query(deps.as_ref(), mock_env(), QueryMsg::Config {}).unwrap();
+
+        let response: QueryConfigResponse = from_binary(&response).unwrap();
+        assert_eq!(
+            response,
+            QueryConfigResponse {
+                admin: Addr::unchecked(ADMIN),
+                max_pending_tips: 5u16,
+                max_sent_pending_tips: 10u16
+            }
         )
     }
 }
