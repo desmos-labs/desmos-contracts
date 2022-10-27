@@ -1,11 +1,12 @@
-use crate::state::{PendingTip, MAX_CONFIGURABLE_PENDING_TIPS};
+use crate::state::{PendingTip, MAX_CONFIGURABLE_PENDING_TIPS, MAX_CONFIGURABLE_SENT_PENDING_TIPS};
 use crate::ContractError;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
 #[cw_serde]
 pub struct InstantiateMsg {
     pub admin: Option<String>,
-    pub max_pending_tips: u32,
+    pub max_pending_tips: u16,
+    pub max_sent_pending_tips: u16,
 }
 
 #[cw_serde]
@@ -17,7 +18,7 @@ pub enum ExecuteMsg {
     /// Message that allows the current admin to update the contract admin.
     UpdateAdmin { new_admin: String },
     /// Message that allows the current admin to update the max pending tips that an user can have.
-    UpdateMaxPendingTips { value: u32 },
+    UpdateMaxPendingTips { value: u16 },
     /// Message to remove an unclaimed pending tip.
     RemovePendingTip { application: String, handle: String },
 }
@@ -51,6 +52,15 @@ impl InstantiateMsg {
             return Err(ContractError::InvalidMaxPendingTipsValue {
                 value: self.max_pending_tips,
                 max: MAX_CONFIGURABLE_PENDING_TIPS,
+            });
+        }
+
+        if self.max_sent_pending_tips == 0
+            || self.max_sent_pending_tips > MAX_CONFIGURABLE_SENT_PENDING_TIPS
+        {
+            return Err(ContractError::InvalidMaxSentPendingTipsValue {
+                value: self.max_sent_pending_tips,
+                max: MAX_CONFIGURABLE_SENT_PENDING_TIPS,
             });
         }
 

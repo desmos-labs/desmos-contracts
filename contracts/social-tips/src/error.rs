@@ -10,7 +10,12 @@ pub enum ContractError {
     Unauthorized {},
 
     #[error("Invalid max pending tips value: {value}, the value must be > 0 and les then {max}")]
-    InvalidMaxPendingTipsValue { value: u32, max: u32 },
+    InvalidMaxPendingTipsValue { value: u16, max: u16 },
+
+    #[error(
+        "Invalid max sent pending tips value: {value}, the value must be > 0 and les then {max}"
+    )]
+    InvalidMaxSentPendingTipsValue { value: u16, max: u16 },
 
     #[error("The fund field is empty")]
     EmptyTipAmount {},

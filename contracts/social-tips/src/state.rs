@@ -17,10 +17,12 @@ pub struct PendingTipsIndexes<'a> {
 #[cw_serde]
 pub struct Config {
     pub admin: Addr,
-    pub max_pending_tips: u32,
+    pub max_pending_tips: u16,
+    pub max_sent_pending_tips: u16,
 }
 
-pub const MAX_CONFIGURABLE_PENDING_TIPS: u32 = 20u32;
+pub const MAX_CONFIGURABLE_PENDING_TIPS: u16 = 20u16;
+pub const MAX_CONFIGURABLE_SENT_PENDING_TIPS: u16 = 20u16;
 pub const CONFIG: Item<Config> = Item::new("config");
 
 pub fn pending_tips<'a>(

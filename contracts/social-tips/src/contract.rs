@@ -56,6 +56,7 @@ pub fn instantiate(
         &Config {
             admin,
             max_pending_tips: msg.max_pending_tips,
+            max_sent_pending_tips: msg.max_sent_pending_tips,
         },
     )?;
 
@@ -139,7 +140,7 @@ pub fn send_tip(
             .count();
 
         // Ensure that the sender can not spam the chain with multiple tips to different users.
-        if user_sent_pending_tips_count >= config.max_pending_tips as usize {
+        if user_sent_pending_tips_count >= config.max_sent_pending_tips as usize {
             return Err(ContractError::ToManySentPendingTips {});
         }
 
@@ -266,7 +267,7 @@ fn update_admin(
 fn update_max_pending_tips(
     deps: DepsMut<DesmosQuery>,
     info: MessageInfo,
-    value: u32,
+    value: u16,
 ) -> Result<Response<DesmosMsg>, ContractError> {
     let mut config = CONFIG.load(deps.storage)?;
 
@@ -379,7 +380,9 @@ mod tests {
         ExecuteMsg, InstantiateMsg, QueryMsg, QueryPendingTipsResponse,
         QueryUnclaimedSentTipsResponse,
     };
-    use crate::state::{pending_tips, PendingTip, MAX_CONFIGURABLE_PENDING_TIPS};
+    use crate::state::{
+        pending_tips, PendingTip, MAX_CONFIGURABLE_PENDING_TIPS, MAX_CONFIGURABLE_SENT_PENDING_TIPS,
+    };
     use crate::ContractError;
     use cosmwasm_std::testing::{mock_env, mock_info};
     use cosmwasm_std::{
@@ -407,7 +410,8 @@ mod tests {
 
     fn init_contract(
         deps: DepsMut<DesmosQuery>,
-        max_pending_tips: u32,
+        max_pending_tips: u16,
+        max_sent_pending_tips: u16,
     ) -> Result<Response<DesmosMsg>, ContractError> {
         let info = mock_info(ADMIN, &[]);
         let env = mock_env();
@@ -418,6 +422,7 @@ mod tests {
             InstantiateMsg {
                 admin: None,
                 max_pending_tips,
+                max_sent_pending_tips,
             },
         )
     }
@@ -453,14 +458,14 @@ mod tests {
     #[test]
     fn instantiate_properly() {
         let mut deps = mock_desmos_dependencies();
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
     }
 
     #[test]
     fn instantiate_with_invalid_max_pending_tips_error() {
         let mut deps = mock_desmos_dependencies();
 
-        let error = init_contract(deps.as_mut(), 0).unwrap_err();
+        let error = init_contract(deps.as_mut(), 0, 10).unwrap_err();
         assert_eq!(
             ContractError::InvalidMaxPendingTipsValue {
                 max: MAX_CONFIGURABLE_PENDING_TIPS,
@@ -469,11 +474,36 @@ mod tests {
             error
         );
 
-        let error = init_contract(deps.as_mut(), MAX_CONFIGURABLE_PENDING_TIPS + 1).unwrap_err();
+        let error =
+            init_contract(deps.as_mut(), MAX_CONFIGURABLE_PENDING_TIPS + 1, 10).unwrap_err();
         assert_eq!(
             ContractError::InvalidMaxPendingTipsValue {
                 max: MAX_CONFIGURABLE_PENDING_TIPS,
                 value: MAX_CONFIGURABLE_PENDING_TIPS + 1,
+            },
+            error
+        );
+    }
+
+    #[test]
+    fn instantiate_with_invalid_max_sent_pending_tips_error() {
+        let mut deps = mock_desmos_dependencies();
+
+        let error = init_contract(deps.as_mut(), 10, 0).unwrap_err();
+        assert_eq!(
+            ContractError::InvalidMaxSentPendingTipsValue {
+                max: MAX_CONFIGURABLE_SENT_PENDING_TIPS,
+                value: 0,
+            },
+            error
+        );
+
+        let error =
+            init_contract(deps.as_mut(), 10, MAX_CONFIGURABLE_SENT_PENDING_TIPS + 1).unwrap_err();
+        assert_eq!(
+            ContractError::InvalidMaxSentPendingTipsValue {
+                max: MAX_CONFIGURABLE_SENT_PENDING_TIPS,
+                value: MAX_CONFIGURABLE_SENT_PENDING_TIPS + 1,
             },
             error
         );
@@ -485,7 +515,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         let error = execute(
             deps.as_mut(),
@@ -507,7 +537,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         let error = execute(
             deps.as_mut(),
@@ -529,7 +559,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[]);
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         let error = execute(
             deps.as_mut(),
@@ -575,7 +605,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         let error = execute(
             deps.as_mut(),
@@ -598,7 +628,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         execute(
             deps.as_mut(),
@@ -628,7 +658,7 @@ mod tests {
         let querier = querier_with_no_app_links();
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
 
-        init_contract(deps.as_mut(), 3).unwrap();
+        init_contract(deps.as_mut(), 3, 10).unwrap();
 
         for i in 0..3 {
             execute(
@@ -668,7 +698,7 @@ mod tests {
         let querier = querier_with_no_app_links();
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
 
-        init_contract(deps.as_mut(), 3).unwrap();
+        init_contract(deps.as_mut(), 10, 3).unwrap();
 
         for i in 0..3 {
             execute(
@@ -703,7 +733,7 @@ mod tests {
 
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         execute(
             deps.as_mut(),
@@ -769,7 +799,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         let response = execute(
             deps.as_mut(),
@@ -797,7 +827,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_2, &[]);
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         let error = execute(deps.as_mut(), env, info, ExecuteMsg::ClaimTips {}).unwrap_err();
 
@@ -816,7 +846,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         execute(
             deps.as_mut(),
@@ -883,7 +913,7 @@ mod tests {
     fn update_admin_from_non_admin_error() {
         let mut deps = mock_desmos_dependencies();
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         let error = execute(
             deps.as_mut(),
@@ -902,7 +932,7 @@ mod tests {
     fn update_admin_properly() {
         let mut deps = mock_desmos_dependencies();
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         let error = execute(
             deps.as_mut(),
@@ -921,7 +951,7 @@ mod tests {
     fn update_max_pending_tip_from_non_admin_error() {
         let mut deps = mock_desmos_dependencies();
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         let error = execute(
             deps.as_mut(),
@@ -938,7 +968,7 @@ mod tests {
     fn update_max_pending_tip_with_invalid_value_error() {
         let mut deps = mock_desmos_dependencies();
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         let error = execute(
             deps.as_mut(),
@@ -979,7 +1009,7 @@ mod tests {
     fn update_max_pending_tip_properly() {
         let mut deps = mock_desmos_dependencies();
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         execute(
             deps.as_mut(),
@@ -996,7 +1026,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[]);
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         let error = execute(
             deps.as_mut(),
@@ -1023,7 +1053,7 @@ mod tests {
         let querier = querier_with_no_app_links();
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         execute(
             deps.as_mut(),
@@ -1066,7 +1096,7 @@ mod tests {
         let env = mock_env();
         let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         execute(
             deps.as_mut(),
@@ -1138,7 +1168,7 @@ mod tests {
         let querier = querier_with_no_app_links();
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
 
-        init_contract(deps.as_mut(), 10).unwrap();
+        init_contract(deps.as_mut(), 10, 10).unwrap();
 
         execute(
             deps.as_mut(),
