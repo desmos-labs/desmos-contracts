@@ -4,6 +4,7 @@
 
 - Oct 10, 2022: Initial draft;
 - Oct 12, 2022: Second review;
+- Oct 27, 2022: Third review;
 
 ## Status
 DRAFT
@@ -31,6 +32,19 @@ Here below the specifications for the contract's messages:
 
 ### Messages
 
+#### Instantiate
+```rust
+pub struct InstantiateMsg {
+    pub admin: Option<String>,
+    pub max_pending_tips: u16,
+    pub max_sent_pending_tips: u16,
+}
+```
+
+* The `admin` identifies the user that controls the contract, if is `None` the contract will pick the address of who sent the transaction;
+* The `max_pending_tips` identifies the maximum number of pending tips that a user can have associated to his centralized application;
+* The `max_sent_pending_tips` identifies the maximum allowed number of tips that the contracts can collect from a single sender.
+
 #### Execute
 ```rust
 enum ExecuteMsg {
@@ -40,6 +54,10 @@ enum ExecuteMsg {
       handle: String,
   },
   ClaimTips {},
+  UpdateAdmin { new_admin: String },
+  UpdateMaxPendingTips { value: u32 },
+  UpdateMaxSentPendingTips { value: u32 },
+  RemovePendingTip { application: String, handle: String },
 }
 ```
 
@@ -53,10 +71,26 @@ The `MessageInfo` fields contains:
 With the `ClaimTips` message the user can claim their pending tips that has been sent to him before proving that
 owns the identities to which the tips refer.
 
+##### UpdateAdmin
+With the `UpdateAdmin` message the current admin can update the contract's admin.
+
+### UpdateMaxPendingTips
+With the `UpdateMaxPendingTips` message the current admin can change the amount of pending tips that
+can be associated to a centralized application user.
+
+### UpdateMaxSentPendingTips
+With the `UpdateMaxPendingTips` message the current admin can change the amount of tips that
+the contract collects for a specific sender address.
+
+### RemovePendingTip
+With the `RemovePendingTip` message the user can cancel a tip that haven't been claimed yet.
+
 ### Query
 ```rust
 enum QueryMsg {
-  UserPendingTips { user: String }
+  UserPendingTips { user: String }, 
+  UnclaimedSentTips { user: String },
+  Config {},  
 }
 ```
 
@@ -72,5 +106,31 @@ struct Tip {
     pub sender: Addr,
     pub amount: Vec<Coin>,
     pub block_height: u64,
+}
+```
+
+##### UnclaimedSentTips
+With the `UnclaimedSentTips` message the user can query the tips that has sent that aren't claimed yet.
+The returned tips are provided as follows:
+```rust
+struct QueryUnclaimedSentTipsResponse {
+    pub tips: Vec<Tip>,
+}
+
+struct Tip {
+    pub sender: Addr,
+    pub amount: Vec<Coin>,
+    pub block_height: u64,
+}
+```
+
+### Config
+With the  `Config{}` message a user can query the current contract's configurations.
+The returned configuration are provided as follows:
+```rust
+pub struct QueryConfigResponse {
+  pub admin: Addr,
+  pub max_pending_tips: u16,
+  pub max_sent_pending_tips: u16,
 }
 ```
