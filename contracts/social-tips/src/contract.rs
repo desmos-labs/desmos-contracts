@@ -27,8 +27,10 @@ const ATTRIBUTE_TIP_RECEIVER: &str = "tip_receiver";
 const ATTRIBUTE_TIP_AMOUNT: &str = "tip_amount";
 const ATTRIBUTE_REMOVED_TIP_AMOUNT: &str = "removed_tip_amount";
 const ATTRIBUTE_NEW_MAX_PENDING_TIPS_VALUE: &str = "new_max_pending_tips_value";
+const ATTRIBUTE_NEW_ADMIN: &str = "new_admin";
 const ACTION_INSTANTIATE: &str = "instantiate";
 const ACTION_SEND_TIPS: &str = "send_tips";
+const ACTION_UPDATE_ADMIN: &str = "update_admin";
 const ACTION_CLAIM_PENDING_TIPS: &str = "claim_pending_tips";
 const ACTION_UPDATE_MAX_PENDING_TIPS: &str = "update_max_pending_tips";
 const ACTION_REMOVE_PENDING_TIP: &str = "remove_pending_tip";
@@ -75,6 +77,7 @@ pub fn execute(
             handle,
         } => send_tip(deps, env, info, application, handle),
         ExecuteMsg::ClaimTips {} => claim_tips(deps, info),
+        ExecuteMsg::UpdateAdmin { new_admin } => update_admin(deps, new_admin),
         ExecuteMsg::UpdateMaxPendingTips { value } => update_max_pending_tips(deps, info, value),
         ExecuteMsg::RemovePendingTip {
             application,
@@ -238,6 +241,26 @@ pub fn claim_tips(
             amount: merged_coins,
             to_address: info.sender.to_string(),
         }))
+}
+
+fn update_admin(
+    deps: DepsMut<DesmosQuery>,
+    new_admin: String,
+) -> Result<Response<DesmosMsg>, ContractError> {
+    let new_admin_addr = deps.api.addr_validate(&new_admin)?;
+
+    CONFIG.update(deps.storage, |mut config| {
+        if config.admin != new_admin_addr {
+            return Err(ContractError::Unauthorized {});
+        }
+
+        config.admin = new_admin_addr;
+        Ok(config)
+    })?;
+
+    Ok(Response::new()
+        .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_ADMIN)
+        .add_attribute(ATTRIBUTE_NEW_ADMIN, &new_admin))
 }
 
 fn update_max_pending_tips(
@@ -854,6 +877,44 @@ mod tests {
         // Ensure that the claimed tips have been deleted from the contract state
         let pending_tips = get_pending_tips(deps.as_mut(), "application", "handle");
         assert_eq!(Vec::<PendingTip>::new(), pending_tips);
+    }
+
+    #[test]
+    fn update_admin_from_non_admin_error() {
+        let mut deps = mock_desmos_dependencies();
+
+        init_contract(deps.as_mut(), 10).unwrap();
+
+        let error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER_1, &[]),
+            ExecuteMsg::UpdateAdmin {
+                new_admin: USER_1.to_string(),
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::Unauthorized {}, error)
+    }
+
+    #[test]
+    fn update_admin_properly() {
+        let mut deps = mock_desmos_dependencies();
+
+        init_contract(deps.as_mut(), 10).unwrap();
+
+        let error = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            ExecuteMsg::UpdateAdmin {
+                new_admin: USER_1.to_string(),
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(ContractError::Unauthorized {}, error)
     }
 
     #[test]

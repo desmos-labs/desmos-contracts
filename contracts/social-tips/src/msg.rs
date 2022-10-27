@@ -14,7 +14,9 @@ pub enum ExecuteMsg {
     SendTip { application: String, handle: String },
     /// Message that allow a user to claim their tips.
     ClaimTips {},
-    /// Message to update the max pending tips that an user can have.
+    /// Message that allows the current admin to update the contract admin.
+    UpdateAdmin { new_admin: String },
+    /// Message that allows the current admin to update the max pending tips that an user can have.
     UpdateMaxPendingTips { value: u32 },
     /// Message to remove an unclaimed pending tip.
     RemovePendingTip { application: String, handle: String },
@@ -74,6 +76,7 @@ impl ExecuteMsg {
                 Ok(())
             }
             ExecuteMsg::ClaimTips {} => Ok(()),
+            ExecuteMsg::UpdateAdmin { .. } => Ok(()),
             ExecuteMsg::UpdateMaxPendingTips { value } => {
                 if *value == 0 || *value > MAX_CONFIGURABLE_PENDING_TIPS {
                     Err(ContractError::InvalidMaxPendingTipsValue {
