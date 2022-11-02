@@ -1,13 +1,11 @@
 use crate::contract::MAX_TIPS_HISTORY_SIZE;
 use crate::error::ContractError;
 use crate::state::{StateServiceFee, StateTip};
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Coin, Decimal, Uint64};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
 /// Fees required to execute [`ExecuteMsg::SendTip`].
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 #[allow(clippy::derive_partial_eq_without_eq)]
 pub enum ServiceFee {
     /// Represents a fixed fee that the sender needs to pay in order to send the tip.
@@ -58,7 +56,7 @@ impl From<StateServiceFee> for ServiceFee {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct InstantiateMsg {
     /// Address of who will have the right to manage the contract.
     pub admin: String,
@@ -93,8 +91,7 @@ impl InstantiateMsg {
 }
 
 /// Enum that represents a tip target.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 #[allow(clippy::derive_partial_eq_without_eq)]
 pub enum Target {
     /// Tip related to an user's post to show their support towards a specific content.
@@ -109,8 +106,7 @@ pub enum Target {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum ExecuteMsg {
     /// Sends a tip to an user or to the author of post.  
     SendTip {
@@ -177,21 +173,25 @@ impl ExecuteMsg {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 #[allow(clippy::derive_partial_eq_without_eq)]
 pub enum QueryMsg {
-    /// Return a [`ConfigResponse`] containing the configuration info of the contract.
+    /// Returns a [`ConfigResponse`] containing the configuration info of the contract.
+    #[returns(QueryConfigResponse)]
     Config {},
-    /// Return a [`TipsResponse`] containing all the received tips of the user.
+    /// Returns a [`TipsResponse`] containing all the received tips of the user.
+    #[returns(TipsResponse)]
     UserReceivedTips { user: String },
-    /// Return a [`TipsResponse`] containing all the sent tips from the user.
+    /// Returns a [`TipsResponse`] containing all the sent tips from the user.
+    #[returns(TipsResponse)]
     UserSentTips { user: String },
-    ///Return a [`TipsResponse`] containing all the tips associated with a given post.
+    ///Returns a [`TipsResponse`] containing all the tips associated with a given post.
+    #[returns(TipsResponse)]
     PostReceivedTips { post_id: Uint64 },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct QueryConfigResponse {
     /// Address of the contract administrator.
     pub admin: Addr,
@@ -203,12 +203,12 @@ pub struct QueryConfigResponse {
     pub tips_history_size: u32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct TipsResponse {
     pub tips: Vec<Tip>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 #[allow(clippy::derive_partial_eq_without_eq)]
 pub struct Tip {
     pub sender: Addr,

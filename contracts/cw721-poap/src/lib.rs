@@ -1,6 +1,4 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Empty};
 use cw2::set_contract_version;
 pub use cw721_base::{ContractError, InstantiateMsg, MintMsg, MinterResponse};
@@ -10,7 +8,7 @@ use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
 const CONTRACT_NAME: &str = "crates.io:cw721-poap";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct Metadata {
     pub claimer: Addr,
 }

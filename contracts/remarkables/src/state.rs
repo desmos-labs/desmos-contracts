@@ -1,5 +1,4 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_schema::cw_serde;
 
 use cosmwasm_std::Addr;
 use cw_storage_plus::{Item, Map};
@@ -8,7 +7,7 @@ use crate::msg::Rarity;
 
 pub type RaritiesState = Vec<Rarity>;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[cw_serde]
 pub struct ConfigState {
     pub admin: Addr,
     pub subspace_id: u64,
