@@ -81,7 +81,7 @@ pub fn execute(
             handle,
         } => send_tip(deps, env, info, application, handle),
         ExecuteMsg::ClaimTips {} => claim_tips(deps, info),
-        ExecuteMsg::UpdateAdmin { new_admin } => update_admin(deps, new_admin),
+        ExecuteMsg::UpdateAdmin { new_admin } => update_admin(deps, info, new_admin),
         ExecuteMsg::UpdateMaxPendingTips { value } => update_max_pending_tips(deps, info, value),
         ExecuteMsg::UpdateMaxSentPendingTips { value } => {
             update_max_sent_pending_tips(deps, info, value)
@@ -252,12 +252,13 @@ pub fn claim_tips(
 
 fn update_admin(
     deps: DepsMut<DesmosQuery>,
+    info: MessageInfo,
     new_admin: String,
 ) -> Result<Response<DesmosMsg>, ContractError> {
     let new_admin_addr = deps.api.addr_validate(&new_admin)?;
 
     CONFIG.update(deps.storage, |mut config| {
-        if config.admin != new_admin_addr {
+        if config.admin != info.sender {
             return Err(ContractError::Unauthorized {});
         }
 
@@ -411,7 +412,7 @@ fn query_config(deps: Deps<DesmosQuery>) -> StdResult<QueryConfigResponse> {
 
 #[cfg(test)]
 mod tests {
-    use crate::contract::{execute, instantiate, query};
+    use super::*;
     use crate::msg::{
         ExecuteMsg, InstantiateMsg, QueryConfigResponse, QueryMsg, QueryPendingTipsResponse,
         QueryUnclaimedSentTipsResponse,
@@ -971,7 +972,7 @@ mod tests {
 
         init_contract(deps.as_mut(), 10, 10).unwrap();
 
-        let error = execute(
+        execute(
             deps.as_mut(),
             mock_env(),
             mock_info(ADMIN, &[]),
@@ -979,9 +980,7 @@ mod tests {
                 new_admin: USER_1.to_string(),
             },
         )
-        .unwrap_err();
-
-        assert_eq!(ContractError::Unauthorized {}, error)
+        .unwrap();
     }
 
     #[test]
