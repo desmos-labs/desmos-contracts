@@ -9,13 +9,14 @@ use crate::utils::{serialize_coins, sum_coins_sorted};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
-    StdResult, Storage,
+    StdResult, Storage, Uint64,
 };
 use cw2::set_contract_version;
 use desmos_bindings::msg::DesmosMsg;
 use desmos_bindings::profiles::models_app_links::ApplicationLinkState;
 use desmos_bindings::profiles::querier::ProfilesQuerier;
 use desmos_bindings::query::DesmosQuery;
+use desmos_bindings::types::PageRequest;
 use std::ops::Deref;
 
 // version info for migration info
@@ -80,7 +81,8 @@ pub fn execute(
         ExecuteMsg::SendTip {
             application,
             handle,
-        } => send_tip(deps, env, info, application, handle),
+            owner_index,
+        } => send_tip(deps, env, info, application, handle, owner_index),
         ExecuteMsg::ClaimTips {} => claim_tips(deps, info),
         ExecuteMsg::UpdateAdmin { new_admin } => update_admin(deps, info, new_admin),
         ExecuteMsg::UpdateMaxPendingTips { value } => update_max_pending_tips(deps, info, value),
@@ -109,6 +111,7 @@ pub fn send_tip(
     info: MessageInfo,
     application: String,
     handle: String,
+    owner_index: Option<Uint64>,
 ) -> Result<Response<DesmosMsg>, ContractError> {
     let querier = ProfilesQuerier::new(deps.querier.deref());
     let sender = info.sender;
@@ -122,13 +125,14 @@ pub fn send_tip(
     let response = querier.query_application_link_owners(
         Some(application.clone()),
         Some(handle.clone()),
-        None,
+        Some(PageRequest {
+            key: None,
+            limit: Uint64::new(1),
+            offset: owner_index,
+            reverse: false,
+            count_total: false,
+        }),
     )?;
-
-    // Fail if there are more then 1 users with the same application link.
-    if response.owners.len() > 1 {
-        return Err(ContractError::ToManyOwners {});
-    }
 
     let serialized_coins = serialize_coins(&funds);
 
@@ -427,8 +431,8 @@ mod tests {
     use crate::ContractError;
     use cosmwasm_std::testing::{mock_env, mock_info};
     use cosmwasm_std::{
-        from_binary, to_binary, Addr, BankMsg, Coin, DepsMut, Order, Response, StdResult, SubMsg,
-        Uint64,
+        from_binary, to_binary, Addr, BankMsg, Coin, ContractResult, DepsMut, Order, Response,
+        StdResult, SubMsg, Uint64,
     };
     use desmos_bindings::mocks::mock_queriers::{
         mock_desmos_dependencies, mock_desmos_dependencies_with_custom_querier, MockDesmosQuerier,
@@ -565,6 +569,7 @@ mod tests {
             ExecuteMsg::SendTip {
                 application: "".to_string(),
                 handle: "user".to_string(),
+                owner_index: None,
             },
         )
         .unwrap_err();
@@ -587,6 +592,7 @@ mod tests {
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "".to_string(),
+                owner_index: None,
             },
         )
         .unwrap_err();
@@ -609,6 +615,7 @@ mod tests {
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handle".to_string(),
+                owner_index: None,
             },
         )
         .unwrap_err();
@@ -617,23 +624,24 @@ mod tests {
     }
 
     #[test]
-    fn tip_user_linked_to_multiple_addresses_error() {
+    fn tip_user_linked_to_multiple_addresses_properly() {
+        const OWNER_INDEX: u64 = 1u64;
+
         let querier = MockDesmosQuerier::default().with_custom_profiles_handler(|profiler_query| {
             match profiler_query {
-                ProfilesQuery::ApplicationLinkOwners { .. } => {
+                ProfilesQuery::ApplicationLinkOwners { pagination, .. } => {
+                    if pagination.is_none()
+                        || pagination.as_ref().unwrap().offset.is_none()
+                        || pagination.as_ref().unwrap().offset.unwrap() != Uint64::new(OWNER_INDEX)
+                    {
+                        return ContractResult::Err("invalid pagination offset".to_string());
+                    }
                     let response = QueryApplicationLinkOwnersResponse {
-                        owners: vec![
-                            ApplicationLinkOwnerDetails {
-                                user: Addr::unchecked(USER_1),
-                                application: "mocked_app".to_string(),
-                                username: "mocked_username".to_string(),
-                            },
-                            ApplicationLinkOwnerDetails {
-                                user: Addr::unchecked(USER_2),
-                                application: "mocked_app".to_string(),
-                                username: "mocked_username".to_string(),
-                            },
-                        ],
+                        owners: vec![ApplicationLinkOwnerDetails {
+                            user: Addr::unchecked(USER_2),
+                            application: "mocked_app".to_string(),
+                            username: "mocked_username".to_string(),
+                        }],
                         pagination: None,
                     };
                     to_binary(&response).into()
@@ -648,18 +656,25 @@ mod tests {
 
         init_contract(deps.as_mut(), 10, 10).unwrap();
 
-        let error = execute(
+        let response = execute(
             deps.as_mut(),
             env,
             info,
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handle".to_string(),
+                owner_index: Some(Uint64::new(OWNER_INDEX)),
             },
         )
-        .unwrap_err();
+        .unwrap();
 
-        assert_eq!(ContractError::ToManyOwners {}, error);
+        assert_eq!(
+            vec![SubMsg::new(BankMsg::Send {
+                amount: vec![Coin::new(10_000, "udsm")],
+                to_address: USER_2.to_string()
+            })],
+            response.messages
+        );
     }
 
     #[test]
@@ -678,6 +693,7 @@ mod tests {
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handle".to_string(),
+                owner_index: None,
             },
         )
         .unwrap();
@@ -709,6 +725,7 @@ mod tests {
                 ExecuteMsg::SendTip {
                     application: "application".to_string(),
                     handle: "handle".to_string(),
+                    owner_index: None,
                 },
             )
             .unwrap();
@@ -721,6 +738,7 @@ mod tests {
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handle".to_string(),
+                owner_index: None,
             },
         )
         .unwrap_err();
@@ -749,6 +767,7 @@ mod tests {
                 ExecuteMsg::SendTip {
                     application: "application".to_string(),
                     handle: format!("handle{}", i),
+                    owner_index: None,
                 },
             )
             .unwrap();
@@ -761,6 +780,7 @@ mod tests {
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handle3".to_string(),
+                owner_index: None,
             },
         )
         .unwrap_err();
@@ -783,6 +803,7 @@ mod tests {
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handle".to_string(),
+                owner_index: None,
             },
         )
         .unwrap();
@@ -794,6 +815,7 @@ mod tests {
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handle".to_string(),
+                owner_index: None,
             },
         )
         .unwrap();
@@ -849,6 +871,7 @@ mod tests {
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handle".to_string(),
+                owner_index: None,
             },
         )
         .unwrap();
@@ -896,6 +919,7 @@ mod tests {
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handler".to_string(),
+                owner_index: None,
             },
         )
         .unwrap();
@@ -1187,6 +1211,7 @@ mod tests {
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handle".to_string(),
+                owner_index: None,
             },
         )
         .unwrap();
@@ -1230,6 +1255,7 @@ mod tests {
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handler".to_string(),
+                owner_index: None,
             },
         )
         .unwrap();
@@ -1302,6 +1328,7 @@ mod tests {
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handler".to_string(),
+                owner_index: None,
             },
         )
         .unwrap();

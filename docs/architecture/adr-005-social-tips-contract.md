@@ -48,10 +48,10 @@ pub struct InstantiateMsg {
 #### Execute
 ```rust
 enum ExecuteMsg {
-  SendTip { 
-      amount: Vec<Coin>, 
+  SendTip {
       application: String,
       handle: String,
+      owner_index: Option<Uint64>,
   },
   ClaimTips {},
   UpdateAdmin { new_admin: String },
@@ -63,6 +63,8 @@ enum ExecuteMsg {
 
 ##### SendTip
 With the `SentTip` message the user can send a tip to another user though the handle of a linked centralized application.
+In case that there are more than 1 address linked to the same application with the `owner_index` field the user
+can select the address that will receive the tip, if this is `None` will be picked the oldest linked address.
 The `MessageInfo` fields contains:
 * the funds necessary to cover the fees plus the tip amount specified inside the `funds` field
 * the sender identified by the `sender` field

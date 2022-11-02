@@ -29,9 +29,6 @@ pub enum ContractError {
     #[error("No tips available for user with address: {user}")]
     NoTipsAvailable { user: String },
 
-    #[error("To many owners")]
-    ToManyOwners {},
-
     #[error("To many pending tips for user with handle: {handle} on application: {application}")]
     ToManyPendingTipsForUser { application: String, handle: String },
 

@@ -1,7 +1,7 @@
 use crate::state::{PendingTip, MAX_CONFIGURABLE_PENDING_TIPS, MAX_CONFIGURABLE_SENT_PENDING_TIPS};
 use crate::ContractError;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Addr;
+use cosmwasm_std::{Addr, Uint64};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -13,7 +13,11 @@ pub struct InstantiateMsg {
 #[cw_serde]
 pub enum ExecuteMsg {
     /// Message to send a tip to another user by application handle.
-    SendTip { application: String, handle: String },
+    SendTip {
+        application: String,
+        handle: String,
+        owner_index: Option<Uint64>,
+    },
     /// Message that allows a user to claim their pending tips.
     ClaimTips {},
     /// Message that allows the current admin to update the contract admin.
@@ -90,6 +94,7 @@ impl ExecuteMsg {
             ExecuteMsg::SendTip {
                 application,
                 handle: handler,
+                ..
             } => {
                 if application.is_empty() {
                     return Err(ContractError::InvalidApplication {});
