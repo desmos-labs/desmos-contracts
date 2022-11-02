@@ -12,14 +12,14 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    /// Message to send a tip to another user.
+    /// Message to send a tip to another user by application handle.
     SendTip { application: String, handle: String },
-    /// Message that allow a user to claim their tips.
+    /// Message that allows a user to claim their pending tips.
     ClaimTips {},
     /// Message that allows the current admin to update the contract admin.
     UpdateAdmin { new_admin: String },
     /// Message that allows the current admin to update the max pending tips that
-    /// can be associated to a centralize application.
+    /// can be associated to a centralized application.
     UpdateMaxPendingTips { value: u16 },
     /// Message that allows the current admin to update the max pending tips that
     /// can be sent from a user.
@@ -31,10 +31,10 @@ pub enum ExecuteMsg {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum QueryMsg {
-    /// Query the pending tips of an user.
+    /// Query the pending tips of a user.
     #[returns(QueryPendingTipsResponse)]
     UserPendingTips { user: String },
-    /// Message to query the unclaimed tips sent from an user.
+    /// Message to query the unclaimed tips sent from a user.
     #[returns(QueryUnclaimedSentTipsResponse)]
     UnclaimedSentTips { user: String },
     /// Message to query the contract configurations.
