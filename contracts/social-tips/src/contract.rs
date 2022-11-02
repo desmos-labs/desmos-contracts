@@ -8,7 +8,8 @@ use crate::utils::{serialize_coins, sum_coins_sorted};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult,
+    to_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response,
+    StdResult, Storage,
 };
 use cw2::set_contract_version;
 use desmos_bindings::msg::DesmosMsg;
@@ -90,6 +91,15 @@ pub fn execute(
             application,
             handle,
         } => remove_pending_tip(deps, info, application, handle),
+    }
+}
+
+fn check_admin(store: &dyn Storage, sender: &Addr) -> Result<(), ContractError> {
+    let config = CONFIG.load(store)?;
+    if config.admin.eq(sender) {
+        Ok(())
+    } else {
+        Err(ContractError::Unauthorized {})
     }
 }
 
@@ -256,12 +266,9 @@ fn update_admin(
     new_admin: String,
 ) -> Result<Response<DesmosMsg>, ContractError> {
     let new_admin_addr = deps.api.addr_validate(&new_admin)?;
+    check_admin(deps.storage, &info.sender)?;
 
-    CONFIG.update(deps.storage, |mut config| {
-        if config.admin != info.sender {
-            return Err(ContractError::Unauthorized {});
-        }
-
+    CONFIG.update::<_, ContractError>(deps.storage, |mut config| {
         config.admin = new_admin_addr;
         Ok(config)
     })?;
@@ -276,14 +283,12 @@ fn update_max_pending_tips(
     info: MessageInfo,
     value: u16,
 ) -> Result<Response<DesmosMsg>, ContractError> {
-    let mut config = CONFIG.load(deps.storage)?;
+    check_admin(deps.storage, &info.sender)?;
 
-    if config.admin != info.sender {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    config.max_pending_tips = value;
-    CONFIG.save(deps.storage, &config)?;
+    CONFIG.update::<_, ContractError>(deps.storage, |mut config| {
+        config.max_pending_tips = value;
+        Ok(config)
+    })?;
 
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_MAX_PENDING_TIPS)
@@ -295,14 +300,12 @@ fn update_max_sent_pending_tips(
     info: MessageInfo,
     value: u16,
 ) -> Result<Response<DesmosMsg>, ContractError> {
-    let mut config = CONFIG.load(deps.storage)?;
+    check_admin(deps.storage, &info.sender)?;
 
-    if config.admin != info.sender {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    config.max_sent_pending_tips = value;
-    CONFIG.save(deps.storage, &config)?;
+    CONFIG.update::<_, ContractError>(deps.storage, |mut config| {
+        config.max_sent_pending_tips = value;
+        Ok(config)
+    })?;
 
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_UPDATE_MAX_SENT_PENDING_TIPS)
