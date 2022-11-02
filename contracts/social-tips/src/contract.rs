@@ -26,7 +26,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 // consts
 const ATTRIBUTE_ACTION: &str = "action";
 const ATTRIBUTE_TIP_COLLECTED: &str = "tip_collected";
-const ATTRIBUTE_TIP_RECEIVER: &str = "tip_receiver";
+const ATTRIBUTE_TIP_CLAIMER: &str = "tip_claimer";
 const ATTRIBUTE_TIP_AMOUNT: &str = "tip_amount";
 const ATTRIBUTE_REMOVED_TIP_AMOUNT: &str = "removed_tip_amount";
 const ATTRIBUTE_NEW_MAX_PENDING_TIPS_VALUE: &str = "new_max_pending_tips_value";
@@ -142,7 +142,7 @@ pub fn send_tip(
         Ok(Response::new()
             .add_attribute(ATTRIBUTE_ACTION, ACTION_SEND_TIPS)
             .add_attribute(ATTRIBUTE_TIP_COLLECTED, "false")
-            .add_attribute(ATTRIBUTE_TIP_RECEIVER, &owner)
+            .add_attribute(ATTRIBUTE_TIP_CLAIMER, &owner)
             .add_attribute(ATTRIBUTE_TIP_AMOUNT, serialized_coins)
             .add_message(BankMsg::Send {
                 amount: funds,
@@ -256,7 +256,7 @@ pub fn claim_tips(
 
     Ok(Response::new()
         .add_attribute(ATTRIBUTE_ACTION, ACTION_CLAIM_PENDING_TIPS)
-        .add_attribute(ATTRIBUTE_TIP_RECEIVER, &info.sender)
+        .add_attribute(ATTRIBUTE_TIP_CLAIMER, &info.sender)
         .add_attribute(ATTRIBUTE_TIP_AMOUNT, serialize_coins(&merged_coins))
         .add_message(BankMsg::Send {
             amount: merged_coins,
