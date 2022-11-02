@@ -145,3 +145,200 @@ impl ExecuteMsg {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::msg::{ExecuteMsg, InstantiateMsg};
+    use crate::state::{MAX_CONFIGURABLE_PENDING_TIPS, MAX_CONFIGURABLE_SENT_PENDING_TIPS};
+    use crate::ContractError;
+
+    #[test]
+    fn instantiate_with_zero_max_pending_tips_error() {
+        let error = InstantiateMsg {
+            max_pending_tips: 0,
+            max_sent_pending_tips: 10,
+            admin: None,
+        }
+        .validate()
+        .unwrap_err();
+
+        assert_eq!(
+            ContractError::InvalidMaxPendingTipsValue {
+                value: 0,
+                max: MAX_CONFIGURABLE_PENDING_TIPS
+            },
+            error
+        );
+    }
+
+    #[test]
+    fn instantiate_with_bigger_max_pending_tips_error() {
+        let error = InstantiateMsg {
+            max_pending_tips: MAX_CONFIGURABLE_PENDING_TIPS + 1,
+            max_sent_pending_tips: 10,
+            admin: None,
+        }
+        .validate()
+        .unwrap_err();
+
+        assert_eq!(
+            ContractError::InvalidMaxPendingTipsValue {
+                value: MAX_CONFIGURABLE_PENDING_TIPS + 1,
+                max: MAX_CONFIGURABLE_PENDING_TIPS
+            },
+            error
+        );
+    }
+
+    #[test]
+    fn instantiate_with_zero_max_sent_pending_tips_error() {
+        let error = InstantiateMsg {
+            max_pending_tips: 5,
+            max_sent_pending_tips: 0,
+            admin: None,
+        }
+        .validate()
+        .unwrap_err();
+
+        assert_eq!(
+            ContractError::InvalidMaxSentPendingTipsValue {
+                value: 0,
+                max: MAX_CONFIGURABLE_PENDING_TIPS
+            },
+            error
+        );
+    }
+
+    #[test]
+    fn instantiate_with_bigger_max_sent_pending_tips_error() {
+        let error = InstantiateMsg {
+            max_pending_tips: 10,
+            max_sent_pending_tips: MAX_CONFIGURABLE_SENT_PENDING_TIPS + 1,
+            admin: None,
+        }
+        .validate()
+        .unwrap_err();
+
+        assert_eq!(
+            ContractError::InvalidMaxSentPendingTipsValue {
+                value: MAX_CONFIGURABLE_SENT_PENDING_TIPS + 1,
+                max: MAX_CONFIGURABLE_SENT_PENDING_TIPS
+            },
+            error
+        );
+    }
+
+    #[test]
+    fn send_tip_with_empty_application_error() {
+        let error = ExecuteMsg::SendTip {
+            application: "".to_string(),
+            handle: "handle".to_string(),
+            owner_index: None,
+        }
+        .validate()
+        .unwrap_err();
+
+        assert_eq!(ContractError::InvalidApplication {}, error);
+    }
+
+    #[test]
+    fn send_tip_with_empty_handle_error() {
+        let error = ExecuteMsg::SendTip {
+            application: "application".to_string(),
+            handle: "".to_string(),
+            owner_index: None,
+        }
+        .validate()
+        .unwrap_err();
+
+        assert_eq!(ContractError::InvalidUserHandler {}, error);
+    }
+
+    #[test]
+    fn update_max_pending_tips_with_zero_error() {
+        let error = ExecuteMsg::UpdateMaxPendingTips { value: 0 }
+            .validate()
+            .unwrap_err();
+
+        assert_eq!(
+            ContractError::InvalidMaxPendingTipsValue {
+                value: 0,
+                max: MAX_CONFIGURABLE_PENDING_TIPS
+            },
+            error
+        );
+    }
+
+    #[test]
+    fn update_max_pending_tips_with_not_bigger_value_error() {
+        let error = ExecuteMsg::UpdateMaxPendingTips {
+            value: MAX_CONFIGURABLE_PENDING_TIPS + 1,
+        }
+        .validate()
+        .unwrap_err();
+
+        assert_eq!(
+            ContractError::InvalidMaxPendingTipsValue {
+                value: MAX_CONFIGURABLE_PENDING_TIPS + 1,
+                max: MAX_CONFIGURABLE_PENDING_TIPS
+            },
+            error
+        );
+    }
+
+    #[test]
+    fn update_max_sent_pending_tips_with_zero_error() {
+        let error = ExecuteMsg::UpdateMaxSentPendingTips { value: 0 }
+            .validate()
+            .unwrap_err();
+
+        assert_eq!(
+            ContractError::InvalidMaxSentPendingTipsValue {
+                value: 0,
+                max: MAX_CONFIGURABLE_PENDING_TIPS
+            },
+            error
+        );
+    }
+
+    #[test]
+    fn update_max_sent_pending_tips_with_not_bigger_value_error() {
+        let error = ExecuteMsg::UpdateMaxSentPendingTips {
+            value: MAX_CONFIGURABLE_SENT_PENDING_TIPS + 1,
+        }
+        .validate()
+        .unwrap_err();
+
+        assert_eq!(
+            ContractError::InvalidMaxSentPendingTipsValue {
+                value: MAX_CONFIGURABLE_SENT_PENDING_TIPS + 1,
+                max: MAX_CONFIGURABLE_SENT_PENDING_TIPS
+            },
+            error
+        );
+    }
+
+    #[test]
+    fn remove_pending_tip_with_empty_application_error() {
+        let error = ExecuteMsg::RemovePendingTip {
+            application: "".to_string(),
+            handle: "handle".to_string(),
+        }
+        .validate()
+        .unwrap_err();
+
+        assert_eq!(ContractError::InvalidApplication {}, error);
+    }
+
+    #[test]
+    fn remove_pending_tip_with_empty_handle_error() {
+        let error = ExecuteMsg::RemovePendingTip {
+            application: "application".to_string(),
+            handle: "".to_string(),
+        }
+        .validate()
+        .unwrap_err();
+
+        assert_eq!(ContractError::InvalidUserHandler {}, error);
+    }
+}
