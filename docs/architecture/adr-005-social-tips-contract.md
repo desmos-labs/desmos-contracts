@@ -41,7 +41,7 @@ pub struct InstantiateMsg {
 }
 ```
 
-* The `admin` identifies the user that controls the contract, if is `None` the contract will pick the address of who sent the transaction;
+* The `admin` identifies the user that controls the contract, if it is `None` the contract will pick the address of who sent the transaction;
 * The `max_pending_tips` identifies the maximum number of pending tips that a user can have associated to his centralized application;
 * The `max_sent_pending_tips` identifies the maximum allowed number of tips that the contracts can collect from a single sender.
 
@@ -67,26 +67,26 @@ The `MessageInfo` fields contains:
 * the funds necessary to cover the fees plus the tip amount specified inside the `funds` field
 * the sender identified by the `sender` field
 
-**NOTE** If the user have already sent a tip to the same centralized application reference the contracts collects
-only the last one sending back to the user the previous tip amount.
+**NOTE** If the user has already sent a tip to the same centralized application reference, the contracts collects
+only the last one then sending the previous tip amount back to the user.
 
 #### ClaimTips
 With the `ClaimTips` message the user can claim their pending tips that has been sent to him before proving that
 owns the identities to which the tips refer.
 
 ##### UpdateAdmin
-With the `UpdateAdmin` message the current admin can update the contract's admin.
+With the `UpdateAdmin` message, the current admin can update the contract's admin.
 
 ### UpdateMaxPendingTips
-With the `UpdateMaxPendingTips` message the current admin can change the amount of pending tips that
+With the `UpdateMaxPendingTips` message, the current admin can change the amount of pending tips that
 can be associated to a centralized application user.
 
 ### UpdateMaxSentPendingTips
-With the `UpdateMaxPendingTips` message the current admin can change the amount of tips that
+With the `UpdateMaxPendingTips` message, the current admin can change the amount of tips that
 the contract collects for a specific sender address.
 
 ### RemovePendingTip
-With the `RemovePendingTip` message the user can cancel a tip that haven't been claimed yet.
+With the `RemovePendingTip` message, the user can cancel a tip that haven't been claimed yet.
 
 ### Query
 ```rust
@@ -113,7 +113,7 @@ struct Tip {
 ```
 
 ##### UnclaimedSentTips
-With the `UnclaimedSentTips` message the user can query the tips that has sent that aren't claimed yet.
+With the `UnclaimedSentTips` message, the user can query the unclaimed tips that has been sent.
 The returned tips are provided as follows:
 ```rust
 struct QueryUnclaimedSentTipsResponse {
@@ -128,7 +128,7 @@ struct Tip {
 ```
 
 ### Config
-With the  `Config{}` message a user can query the current contract's configurations.
+With the  `Config{}` message, a user can query the current contract's configurations.
 The returned configuration are provided as follows:
 ```rust
 pub struct QueryConfigResponse {
