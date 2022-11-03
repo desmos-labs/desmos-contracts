@@ -450,8 +450,8 @@ mod tests {
     use desmos_bindings::query::DesmosQuery;
 
     const ADMIN: &str = "admin";
-    const USER_1: &str = "user1";
-    const USER_2: &str = "user2";
+    const SENDER: &str = "user1";
+    const CLAIMER: &str = "user2";
 
     fn init_contract(
         deps: DepsMut<DesmosQuery>,
@@ -558,7 +558,7 @@ mod tests {
     fn tip_with_empty_application_error() {
         let mut deps = mock_desmos_dependencies();
         let env = mock_env();
-        let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
+        let info = mock_info(SENDER, &[Coin::new(10_000, "udsm")]);
 
         init_contract(deps.as_mut(), 10, 10).unwrap();
 
@@ -581,7 +581,7 @@ mod tests {
     fn tip_with_empty_handle_error() {
         let mut deps = mock_desmos_dependencies();
         let env = mock_env();
-        let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
+        let info = mock_info(SENDER, &[Coin::new(10_000, "udsm")]);
 
         init_contract(deps.as_mut(), 10, 10).unwrap();
 
@@ -604,7 +604,7 @@ mod tests {
     fn tip_with_empty_funds_error() {
         let mut deps = mock_desmos_dependencies();
         let env = mock_env();
-        let info = mock_info(USER_1, &[]);
+        let info = mock_info(SENDER, &[]);
 
         init_contract(deps.as_mut(), 10, 10).unwrap();
 
@@ -638,7 +638,7 @@ mod tests {
                     }
                     let response = QueryApplicationLinkOwnersResponse {
                         owners: vec![ApplicationLinkOwnerDetails {
-                            user: Addr::unchecked(USER_2),
+                            user: Addr::unchecked(CLAIMER),
                             application: "mocked_app".to_string(),
                             username: "mocked_username".to_string(),
                         }],
@@ -652,7 +652,7 @@ mod tests {
 
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
         let env = mock_env();
-        let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
+        let info = mock_info(SENDER, &[Coin::new(10_000, "udsm")]);
 
         init_contract(deps.as_mut(), 10, 10).unwrap();
 
@@ -671,7 +671,7 @@ mod tests {
         assert_eq!(
             vec![SubMsg::new(BankMsg::Send {
                 amount: vec![Coin::new(10_000, "udsm")],
-                to_address: USER_2.to_string()
+                to_address: CLAIMER.to_string()
             })],
             response.messages
         );
@@ -682,7 +682,7 @@ mod tests {
         let querier = querier_with_no_app_links();
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
         let env = mock_env();
-        let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
+        let info = mock_info(SENDER, &[Coin::new(10_000, "udsm")]);
 
         init_contract(deps.as_mut(), 10, 10).unwrap();
 
@@ -702,7 +702,7 @@ mod tests {
 
         assert_eq!(
             vec![PendingTip {
-                sender: Addr::unchecked(USER_1),
+                sender: Addr::unchecked(SENDER),
                 amount: vec![Coin::new(10_000, "udsm")],
                 block_height: 12345
             }],
@@ -734,7 +734,7 @@ mod tests {
         let error = execute(
             deps.as_mut(),
             mock_env(),
-            mock_info(USER_1, &[Coin::new(10_000, "udsm")]),
+            mock_info(SENDER, &[Coin::new(10_000, "udsm")]),
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handle".to_string(),
@@ -763,7 +763,7 @@ mod tests {
             execute(
                 deps.as_mut(),
                 mock_env(),
-                mock_info(USER_1, &[Coin::new(10_000, "udsm")]),
+                mock_info(SENDER, &[Coin::new(10_000, "udsm")]),
                 ExecuteMsg::SendTip {
                     application: "application".to_string(),
                     handle: format!("handle{}", i),
@@ -776,7 +776,7 @@ mod tests {
         let error = execute(
             deps.as_mut(),
             mock_env(),
-            mock_info(USER_1, &[Coin::new(10_000, "udsm")]),
+            mock_info(SENDER, &[Coin::new(10_000, "udsm")]),
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handle3".to_string(),
@@ -799,7 +799,7 @@ mod tests {
         execute(
             deps.as_mut(),
             mock_env(),
-            mock_info(USER_1, &[Coin::new(10_000, "udsm")]),
+            mock_info(SENDER, &[Coin::new(10_000, "udsm")]),
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handle".to_string(),
@@ -811,7 +811,7 @@ mod tests {
         let response = execute(
             deps.as_mut(),
             mock_env(),
-            mock_info(USER_1, &[Coin::new(20_000, "udsm")]),
+            mock_info(SENDER, &[Coin::new(20_000, "udsm")]),
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handle".to_string(),
@@ -823,7 +823,7 @@ mod tests {
         assert_eq!(
             vec![SubMsg::new(BankMsg::Send {
                 amount: vec![Coin::new(10_000, "udsm")],
-                to_address: USER_1.to_string()
+                to_address: SENDER.to_string()
             })],
             response.messages
         );
@@ -831,7 +831,7 @@ mod tests {
         let pending_tips = get_pending_tips(deps.as_mut(), "application", "handle");
         assert_eq!(
             vec![PendingTip {
-                sender: Addr::unchecked(USER_1),
+                sender: Addr::unchecked(SENDER),
                 amount: vec![Coin::new(20_000, "udsm")],
                 block_height: 12345,
             }],
@@ -846,7 +846,7 @@ mod tests {
                 ProfilesQuery::ApplicationLinkOwners { .. } => {
                     let response = QueryApplicationLinkOwnersResponse {
                         owners: vec![ApplicationLinkOwnerDetails {
-                            user: Addr::unchecked(USER_2),
+                            user: Addr::unchecked(CLAIMER),
                             application: "application".to_string(),
                             username: "handle".to_string(),
                         }],
@@ -860,7 +860,7 @@ mod tests {
 
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
         let env = mock_env();
-        let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
+        let info = mock_info(SENDER, &[Coin::new(10_000, "udsm")]);
 
         init_contract(deps.as_mut(), 10, 10).unwrap();
 
@@ -878,7 +878,7 @@ mod tests {
 
         assert_eq!(
             &SubMsg::<DesmosMsg>::new(BankMsg::Send {
-                to_address: USER_2.to_string(),
+                to_address: CLAIMER.to_string(),
                 amount: vec![Coin::new(10_000, "udsm")],
             }),
             response.messages.first().unwrap()
@@ -889,7 +889,7 @@ mod tests {
     fn claim_no_pending_tips_error() {
         let mut deps = mock_desmos_dependencies();
         let env = mock_env();
-        let info = mock_info(USER_2, &[]);
+        let info = mock_info(CLAIMER, &[]);
 
         init_contract(deps.as_mut(), 10, 10).unwrap();
 
@@ -898,7 +898,7 @@ mod tests {
         assert_eq!(
             error,
             ContractError::NoTipsAvailable {
-                user: USER_2.to_string()
+                user: CLAIMER.to_string()
             }
         )
     }
@@ -908,7 +908,7 @@ mod tests {
         let querier = querier_with_no_app_links();
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
         let env = mock_env();
-        let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
+        let info = mock_info(SENDER, &[Coin::new(10_000, "udsm")]);
 
         init_contract(deps.as_mut(), 10, 10).unwrap();
 
@@ -931,7 +931,7 @@ mod tests {
                     ProfilesQuery::ApplicationLinks { .. } => {
                         let response = QueryApplicationLinksResponse {
                             links: vec![ApplicationLink {
-                                user: Addr::unchecked(USER_2),
+                                user: Addr::unchecked(CLAIMER),
                                 data: Data {
                                     username: "handler".to_string(),
                                     application: "application".to_string(),
@@ -958,12 +958,12 @@ mod tests {
                 }
             });
         let env = mock_env();
-        let info = mock_info(USER_2, &[Coin::new(10_000, "udsm")]);
+        let info = mock_info(CLAIMER, &[Coin::new(10_000, "udsm")]);
 
         let response = execute(deps.as_mut(), env, info, ExecuteMsg::ClaimTips {}).unwrap();
         assert_eq!(
             &SubMsg::<DesmosMsg>::new(BankMsg::Send {
-                to_address: USER_2.to_string(),
+                to_address: CLAIMER.to_string(),
                 amount: vec![Coin::new(10_000, "udsm")],
             }),
             response.messages.first().unwrap()
@@ -983,9 +983,9 @@ mod tests {
         let error = execute(
             deps.as_mut(),
             mock_env(),
-            mock_info(USER_1, &[]),
+            mock_info(SENDER, &[]),
             ExecuteMsg::UpdateAdmin {
-                new_admin: USER_1.to_string(),
+                new_admin: SENDER.to_string(),
             },
         )
         .unwrap_err();
@@ -1004,7 +1004,7 @@ mod tests {
             mock_env(),
             mock_info(ADMIN, &[]),
             ExecuteMsg::UpdateAdmin {
-                new_admin: USER_1.to_string(),
+                new_admin: SENDER.to_string(),
             },
         )
         .unwrap();
@@ -1019,7 +1019,7 @@ mod tests {
         let error = execute(
             deps.as_mut(),
             mock_env(),
-            mock_info(USER_1, &[]),
+            mock_info(SENDER, &[]),
             ExecuteMsg::UpdateMaxPendingTips { value: 2 },
         )
         .unwrap_err();
@@ -1097,7 +1097,7 @@ mod tests {
         let error = execute(
             deps.as_mut(),
             mock_env(),
-            mock_info(USER_1, &[]),
+            mock_info(SENDER, &[]),
             ExecuteMsg::UpdateMaxSentPendingTips { value: 2 },
         )
         .unwrap_err();
@@ -1173,7 +1173,7 @@ mod tests {
     fn remove_not_existing_pending_tip_error() {
         let mut deps = mock_desmos_dependencies();
         let env = mock_env();
-        let info = mock_info(USER_1, &[]);
+        let info = mock_info(SENDER, &[]);
 
         init_contract(deps.as_mut(), 10, 10).unwrap();
 
@@ -1207,7 +1207,7 @@ mod tests {
         execute(
             deps.as_mut(),
             mock_env(),
-            mock_info(USER_1, &[Coin::new(10_000, "udsm")]),
+            mock_info(SENDER, &[Coin::new(10_000, "udsm")]),
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handle".to_string(),
@@ -1219,7 +1219,7 @@ mod tests {
         let response = execute(
             deps.as_mut(),
             mock_env(),
-            mock_info(USER_1, &[]),
+            mock_info(SENDER, &[]),
             ExecuteMsg::RemovePendingTip {
                 application: "application".to_string(),
                 handle: "handle".to_string(),
@@ -1230,7 +1230,7 @@ mod tests {
         assert_eq!(
             vec![SubMsg::new(BankMsg::Send {
                 amount: vec![Coin::new(10_000, "udsm")],
-                to_address: USER_1.to_string()
+                to_address: SENDER.to_string()
             })],
             response.messages,
         );
@@ -1244,7 +1244,7 @@ mod tests {
         let querier = querier_with_no_app_links();
         let mut deps = mock_desmos_dependencies_with_custom_querier(querier);
         let env = mock_env();
-        let info = mock_info(USER_1, &[Coin::new(10_000, "udsm")]);
+        let info = mock_info(SENDER, &[Coin::new(10_000, "udsm")]);
 
         init_contract(deps.as_mut(), 10, 10).unwrap();
 
@@ -1267,7 +1267,7 @@ mod tests {
                     ProfilesQuery::ApplicationLinks { .. } => {
                         let response = QueryApplicationLinksResponse {
                             links: vec![ApplicationLink {
-                                user: Addr::unchecked(USER_2),
+                                user: Addr::unchecked(CLAIMER),
                                 data: Data {
                                     username: "handler".to_string(),
                                     application: "application".to_string(),
@@ -1298,7 +1298,7 @@ mod tests {
             deps.as_ref(),
             mock_env(),
             QueryMsg::UserPendingTips {
-                user: USER_2.to_string(),
+                user: CLAIMER.to_string(),
             },
         )
         .unwrap();
@@ -1307,7 +1307,7 @@ mod tests {
         assert_eq!(
             response.tips,
             vec![PendingTip {
-                sender: Addr::unchecked(USER_1),
+                sender: Addr::unchecked(SENDER),
                 amount: vec![Coin::new(10_000, "udsm")],
                 block_height: 12345
             }]
@@ -1324,7 +1324,7 @@ mod tests {
         execute(
             deps.as_mut(),
             mock_env(),
-            mock_info(USER_1, &[Coin::new(10_000, "udsm")]),
+            mock_info(SENDER, &[Coin::new(10_000, "udsm")]),
             ExecuteMsg::SendTip {
                 application: "application".to_string(),
                 handle: "handler".to_string(),
@@ -1337,7 +1337,7 @@ mod tests {
             deps.as_ref(),
             mock_env(),
             QueryMsg::UnclaimedSentTips {
-                user: USER_1.to_string(),
+                user: SENDER.to_string(),
             },
         )
         .unwrap();
@@ -1346,7 +1346,7 @@ mod tests {
         assert_eq!(
             response.tips,
             vec![PendingTip {
-                sender: Addr::unchecked(USER_1),
+                sender: Addr::unchecked(SENDER),
                 amount: vec![Coin::new(10_000, "udsm")],
                 block_height: 12345
             }]
