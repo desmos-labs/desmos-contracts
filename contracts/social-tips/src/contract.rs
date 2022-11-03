@@ -597,7 +597,7 @@ mod tests {
         )
         .unwrap_err();
 
-        assert_eq!(ContractError::InvalidUserHandler {}, error);
+        assert_eq!(ContractError::InvalidUserHandle {}, error);
     }
 
     #[test]

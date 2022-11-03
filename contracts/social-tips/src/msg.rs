@@ -93,15 +93,15 @@ impl ExecuteMsg {
         match self {
             ExecuteMsg::SendTip {
                 application,
-                handle: handler,
+                handle,
                 ..
             } => {
                 if application.is_empty() {
                     return Err(ContractError::InvalidApplication {});
                 }
 
-                if handler.is_empty() {
-                    return Err(ContractError::InvalidUserHandler {});
+                if handle.is_empty() {
+                    return Err(ContractError::InvalidUserHandle {});
                 }
 
                 Ok(())
@@ -130,14 +130,14 @@ impl ExecuteMsg {
             }
             ExecuteMsg::RemovePendingTip {
                 application,
-                handle: handler,
+                handle,
             } => {
                 if application.is_empty() {
                     return Err(ContractError::InvalidApplication {});
                 }
 
-                if handler.is_empty() {
-                    return Err(ContractError::InvalidUserHandler {});
+                if handle.is_empty() {
+                    return Err(ContractError::InvalidUserHandle {});
                 }
 
                 Ok(())
@@ -251,7 +251,7 @@ mod tests {
         .validate()
         .unwrap_err();
 
-        assert_eq!(ContractError::InvalidUserHandler {}, error);
+        assert_eq!(ContractError::InvalidUserHandle {}, error);
     }
 
     #[test]
@@ -339,6 +339,6 @@ mod tests {
         .validate()
         .unwrap_err();
 
-        assert_eq!(ContractError::InvalidUserHandler {}, error);
+        assert_eq!(ContractError::InvalidUserHandle {}, error);
     }
 }

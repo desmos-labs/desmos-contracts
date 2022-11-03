@@ -23,8 +23,8 @@ pub enum ContractError {
     #[error("Invalid application")]
     InvalidApplication {},
 
-    #[error("Invalid user handler")]
-    InvalidUserHandler {},
+    #[error("Invalid user handle")]
+    InvalidUserHandle {},
 
     #[error("No tips available for user with address: {user}")]
     NoTipsAvailable { user: String },
