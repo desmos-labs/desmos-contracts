@@ -1,77 +1,210 @@
-# CosmWasm Starter Pack
+# Social tips contract
 
-This is a template to build smart contracts in Rust to run inside a
-[Cosmos SDK](https://github.com/cosmos/cosmos-sdk) module on all chains that enable it.
-To understand the framework better, please read the overview in the
-[cosmwasm repo](https://github.com/CosmWasm/cosmwasm/blob/master/README.md),
-and dig into the [cosmwasm docs](https://www.cosmwasm.com).
-This assumes you understand the theory and just want to get coding.
+Contract that allows to send tokens to another user through their centralized application handle.  
+To easily interact with the contract you can use the `social-tips` script available [here](https://github.com/desmos-labs/contract-utils/tree/main/utils),
+otherwise you can take a look at the supported messages in the following sections.
 
-## Creating a new repo from template
+## Instantiate Message
 
-Assuming you have a recent version of rust and cargo (v1.58.1+) installed
-(via [rustup](https://rustup.rs/)),
-then the following should get you a new repo to start a contract:
+Allows to initialize the contract.  
+This message has the following parameters:
+* `admin`: Address of the user that controls the contract;
+* `max_pending_tips`: Maximum number of pending tips that a user can have associated to his centralized application;
+* `max_sent_pending_tips`: Maximum allowed number of tips that the contracts can collect from a single sender.
 
-Install [cargo-generate](https://github.com/ashleygwilliams/cargo-generate) and cargo-run-script.
-Unless you did that before, run this line now:
-
-```sh
-cargo install cargo-generate --features vendored-openssl
-cargo install cargo-run-script
+Here an example message to instantiate the contract:
+```json
+{   
+    "admin": "desmos1......",
+    "max_pending_tips": 10,
+    "max_sent_pending_tips": 5
+}
 ```
 
-Now, use it to create your new contract.
-Go to the folder in which you want to place it and run:
+## Execute Messages
 
-```sh
-cargo generate --git https://github.com/desmos-labs/cw-template.git --name PROJECT_NAME
-````
+### SendTip
 
-You will now have a new folder called `PROJECT_NAME` (I hope you changed that to something else)
-containing a simple working contract and build system that you can customize.
+Allows to send a tip to a user through their centralized application handle.  
+This message have the following parameters:
+* `application`: Centralized application name;
+* `handle`: User handle in the provided centralized application;
+* `owner_index`: Optional index of the address to which the tip will be sent in case the user have linked the centralized application
+to multiple addresses.
 
-## Create a Repo
+**NOTE**: The tip amount must be provided through the `funds` field of 
+[MsgExecuteContract](https://github.com/CosmWasm/wasmd/blob/6a471a4a16730e371863067b27858f60a3996c91/proto/cosmwasm/wasm/v1/tx.proto#L74).
 
-After generating, you have a initialized local git repo, but no commits, and no remote.
-Go to a server (eg. github) and create a new upstream repo (called `YOUR-GIT-URL` below).
-Then run the following:
-
-```sh
-# this is needed to create a valid Cargo.lock file (see below)
-cargo check
-git branch -M main
-git add .
-git commit -m 'Initial Commit'
-git remote add origin YOUR-GIT-URL
-git push -u origin main
+Here an example message to send a tip to a user:
+```json
+{
+  "application": "twitter",
+  "handle": "DesmosNetwork"
+}
 ```
 
-## CI Support
+Here an example message to send a tip to the second linked address of the provided centralized application handle:
+```json
+{
+  "send_tip": {
+    "application": "twitter",
+    "handle": "DesmosNetwork",
+    "owner_index": 1
+  }
+}
+```
 
-We have template configurations for both [GitHub Actions](.github/workflows/Basic.yml)
-and [Circle CI](.circleci/config.yml) in the generated project, so you can
-get up and running with CI right away.
+### ClaimTips
 
-One note is that the CI runs all `cargo` commands
-with `--locked` to ensure it uses the exact same versions as you have locally. This also means
-you must have an up-to-date `Cargo.lock` file, which is not auto-generated.
-The first time you set up the project (or after adding any dep), you should ensure the
-`Cargo.lock` file is updated, so the CI will test properly. This can be done simply by
-running `cargo check` or `cargo unit-test`.
+Allows a user to claim their pending tips in case someone have sent it before the user have linked their centralized
+application handle to the Desmos profile.  
 
-## Using your project
+Here an example message to claim the pending tips:
+```json
+{
+  "claim_tips": {}
+}
+```
 
-Once you have your custom repo, you should check out [Developing](./Developing.md) to explain
-more on how to run tests and develop code. Or go through the
-[online tutorial](https://docs.cosmwasm.com/) to get a better feel
-of how to develop.
+### UpdateAdmin
 
-[Publishing](./Publishing.md) contains useful information on how to publish your contract
-to the world, once you are ready to deploy it on a running blockchain. And
-[Importing](./Importing.md) contains information about pulling in other contracts or crates
-that have been published.
+Allows the contract admin to update the contract admin.   
+This message have the following parameter:
+* `new_admin`: Address of the new admin.
 
-Please replace this README file with information about your specific project. You can keep
-the `Developing.md` and `Publishing.md` files as useful referenced, but please set some
-proper description in the README.
+Here an example message to update the contract admin:
+```json
+{
+  "update_admin": {
+    "new_admin": "desmos1...."
+  }
+}
+```
+
+### UpdateMaxPendingTips
+
+Allows the contract admin to update the maximum number of pending tips that a user can have associated to his centralized application.  
+This message have the following parameter:
+* `value`: Maximum number of pending tips that a user can have associated to his centralized application.
+
+Here an example message to update the maximum number of pending tips that a user can have associated to his centralized application:
+```json
+{
+  "update_max_pending_tips": {
+    "value": 10
+  }
+}
+```
+
+### UpdateMaxSentPendingTips
+
+Allows the contract admin to update the maximum allowed number of tips that the contracts can collect from a single sender.  
+This message have the following parameter:
+* `value`: Maximum allowed number of tips that the contracts can collect from a single sender.
+
+Here an example message to update the maximum allowed number of tips that the contracts can collect from a single sender:
+```json
+{
+  "update_max_pending_tips": {
+    "value": 5
+  }
+}
+```
+
+### RemovePendingTip
+
+Allows a user to remove a tip that hasn't been collected from the receiver.  
+This message has the following parameters:
+* `application`: Name of the centralized application;
+* `handle`: User handle;
+
+Here an example message to remove an unclaimed tip sent to the **DesmosNetwork** twitter handle.
+```json
+{
+  "remove_pending_tip": {
+    "application": "twitter",
+    "handle": "DesmosNetwork"
+  }
+}
+```
+
+## Query Messages
+
+#### UserPendingTips
+
+Allows a user to query the tips that can be collected from a user.  
+This message have the following parameter:
+* `user`: Address of the user of interest.
+
+Here an example message to query the pending tips of a user:
+```json
+{
+  "user_pending_tips": {
+    "user": "desmos1..."
+  }
+}
+```
+
+Response:
+```json
+{
+  "tips": [
+    {
+      "sender": "desmos1...",
+      "amount": [{
+        "amount": "10000",
+        "denom": "udsm"
+      }]
+    }
+  ]
+}
+```
+
+#### UnclaimedSentTips
+
+Allows a user to query the tips that has sent that aren't be claimed.  
+This message have the following parameter:
+* `user`: Address of the user of interest.
+
+Here an example message to query the unclaimed tips sent from a user:
+```json
+{
+  "unclaimed_sent_tips": {
+    "user": "desmos1..."
+  }
+}
+```
+
+Response:
+```json
+{
+  "tips": [
+    {
+      "sender": "desmos1...",
+      "amount": [{
+        "amount": "10000",
+        "denom": "udsm"
+      }]
+    }
+  ]
+}
+```
+
+### Config
+
+Allows to query the current contract configurations.  
+Here the json message to query the configurations:
+```json
+{
+  "config": {}
+}
+```
+
+Response:
+```json
+{
+  "admin": "desmos1...",
+  "max_pending_tips": 10,
+  "max_sent_pending_tips": 5
+}
+```
