@@ -302,7 +302,7 @@ mod tests {
     }
 
     #[test]
-    fn update_max_sent_pending_tips_with_not_bigger_value_error() {
+    fn update_max_sent_pending_tips_bigger_than_max_value_error() {
         let error = ExecuteMsg::UpdateMaxSentPendingTips {
             value: MAX_CONFIGURABLE_SENT_PENDING_TIPS + 1,
         }

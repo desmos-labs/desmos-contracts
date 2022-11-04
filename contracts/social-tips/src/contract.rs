@@ -1170,7 +1170,7 @@ mod tests {
     }
 
     #[test]
-    fn remove_not_existing_pending_tip_error() {
+    fn remove_non_existing_pending_tip_error() {
         let mut deps = mock_desmos_dependencies();
         let env = mock_env();
         let info = mock_info(SENDER, &[]);
