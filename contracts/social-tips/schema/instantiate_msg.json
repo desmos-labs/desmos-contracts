@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InstantiateMsg",
+  "type": "object",
+  "required": [
+    "max_pending_tips",
+    "max_sent_pending_tips"
+  ],
+  "properties": {
+    "admin": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "max_pending_tips": {
+      "type": "integer",
+      "format": "uint16",
+      "minimum": 0.0
+    },
+    "max_sent_pending_tips": {
+      "type": "integer",
+      "format": "uint16",
+      "minimum": 0.0
+    }
+  },
+  "additionalProperties": false
+}
