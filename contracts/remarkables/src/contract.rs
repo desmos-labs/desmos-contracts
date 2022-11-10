@@ -13,12 +13,8 @@ use cw721_base::{
 use cw721_remarkables::Metadata;
 use cw_utils::parse_reply_instantiate_data;
 use desmos_bindings::{
-    msg::DesmosMsg,
-    posts::querier::PostsQuerier,
-    query::DesmosQuery,
-    reactions::querier::ReactionsQuerier,
-    subspaces::querier::SubspacesQuerier,
-    types::{PageRequest, PageResponse},
+    msg::DesmosMsg, posts::querier::PostsQuerier, query::DesmosQuery,
+    reactions::querier::ReactionsQuerier, subspaces::querier::SubspacesQuerier, types::PageRequest,
 };
 use std::ops::Deref;
 
@@ -161,7 +157,7 @@ fn execute_mint(
         .may_load(deps.storage, token_id.clone())?
         .is_some()
     {
-        return Err(ContractError::TokenHasBeenMinted { token_id: token_id });
+        return Err(ContractError::TokenHasBeenMinted { token_id });
     }
     MINTED_TOKEN.save(deps.storage, token_id.clone(), &true)?;
     // Create the cw721 message to send to mint the remarkables
@@ -171,7 +167,7 @@ fn execute_mint(
         token_uri: Some(remarkables_uri.clone()),
         extension: Metadata {
             rarity_level,
-            subspace_id: CONFIG.load(deps.storage)?.subspace_id.into(),
+            subspace_id: CONFIG.load(deps.storage)?.subspace_id,
             post_id,
         },
     });
@@ -180,7 +176,7 @@ fn execute_mint(
         .add_attribute(ATTRIBUTE_ACTION, ACTION_MINT)
         .add_attribute(ATTRIBUTE_SENDER, &info.sender)
         .add_attribute(ATTRIBUTE_RARITY_LEVEL, rarity_level.to_string())
-        .add_attribute(ATTRIBUTE_TOKEN_ID, token_id.to_string())
+        .add_attribute(ATTRIBUTE_TOKEN_ID, token_id)
         .add_attribute(ATTRIBUTE_RECIPIENT, &info.sender)
         .add_attribute(ATTRIBUTE_TOKEN_URI, remarkables_uri)
         .add_message(wasm_execute_mint_msg))
@@ -193,12 +189,12 @@ pub fn convert_post_id_to_token_id(post_id: u64, rarity_level: u32) -> String {
 
 /// Checks if the funds reach the required mint fees.
 fn is_enough_fees(funds: Vec<Coin>, requireds: &Vec<Coin>) -> bool {
-    if requireds.len() == 0 {
+    if requireds.is_empty() {
         return true;
     }
     // It takes O(n^2) time complexity but both list are extremely small
     for required in requireds.iter() {
-        if !has_coins(&funds, &required) {
+        if !has_coins(&funds, required) {
             return false;
         }
     }
@@ -206,9 +202,9 @@ fn is_enough_fees(funds: Vec<Coin>, requireds: &Vec<Coin>) -> bool {
 }
 
 /// Checks that the post reaches the engagement threshold.
-fn check_eligibility<'a>(
+fn check_eligibility(
     storage: &dyn Storage,
-    querier: &'a dyn Querier,
+    querier: &dyn Querier,
     sender: Addr,
     post_id: u64,
     engagement_threshold: u32,
@@ -240,9 +236,9 @@ fn check_eligibility<'a>(
             }),
         )?
         .pagination
-        .unwrap_or(PageResponse::default())
+        .unwrap_or_default()
         .total
-        .unwrap_or(0u64.into());
+        .unwrap_or(Uint64::zero());
     let self_reactions_count = ReactionsQuerier::new(querier)
         .query_reactions(
             subspace_id,
@@ -257,9 +253,9 @@ fn check_eligibility<'a>(
             }),
         )?
         .pagination
-        .unwrap_or(PageResponse::default())
+        .unwrap_or_default()
         .total
-        .unwrap_or(0u64.into());
+        .unwrap_or(Uint64::zero());
     if engagement_threshold as u64
         > (total_reactions_count.checked_sub(self_reactions_count)?).into()
     {
