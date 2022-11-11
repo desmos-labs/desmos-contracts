@@ -177,7 +177,7 @@ pub fn send_tip(
             });
         }
 
-        let key = (application.clone(), handle.clone(), sender.clone());
+        let key = (application, handle, sender.clone());
         let replaced = tips.may_load(deps.storage, key.clone())?;
 
         tips.replace(
@@ -323,7 +323,7 @@ fn remove_pending_tip(
     handle: String,
 ) -> Result<Response<DesmosMsg>, ContractError> {
     let pending_tips_map = pending_tips();
-    let key = (application.clone(), handle.clone(), info.sender.clone());
+    let key = (application.clone(), handle.clone(), info.sender);
     let pending_tip_option = pending_tips_map.may_load(deps.storage, key.clone())?;
 
     if let Some(to_remove_tip) = pending_tip_option {

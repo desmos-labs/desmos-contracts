@@ -1,12 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Empty;
-use cw2::set_contract_version;
 pub use cw721_base::{ContractError, InstantiateMsg, MintMsg, MinterResponse};
 use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
-
-// Version info for migration
-const CONTRACT_NAME: &str = "crates.io:cw721-remarkables";
-const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cw_serde]
 pub struct Metadata {
@@ -23,9 +18,13 @@ pub type QueryMsg = cw721_base::QueryMsg<Empty>;
 #[cfg(not(feature = "library"))]
 pub mod entry {
     use super::*;
-
     use cosmwasm_std::entry_point;
     use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+    use cw2::set_contract_version;
+
+    // Version info for migration
+    const CONTRACT_NAME: &str = "crates.io:cw721-remarkables";
+    const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
     // This makes a conscious choice on the various generics used by the contract
     #[entry_point]
