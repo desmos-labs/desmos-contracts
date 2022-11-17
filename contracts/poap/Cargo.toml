@@ -42,7 +42,7 @@ cw721-base = { git = "https://github.com/desmos-labs/cw-nfts", features = ["libr
 url = "2.3.1"
 cw721-poap = { path = "../cw721-poap", version = "0.1.0", features = ["library"]}
 cw721 = { git = "https://github.com/desmos-labs/cw-nfts", branch = "paul/update-custom-msg-query" }
-cosmwasm-schema = "1.1.5"
+cosmwasm-schema = "1.1.6"
 
 [dev-dependencies]
 cw-multi-test = "0.15.0"
