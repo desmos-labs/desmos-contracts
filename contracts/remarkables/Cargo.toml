@@ -2,7 +2,7 @@
 name = "remarkables"
 version = "0.1.0"
 authors = ["Paul <paul@forbole.com>"]
-edition = "2018"
+edition = "2021"
 
 exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
@@ -29,22 +29,22 @@ optimize = """docker run --rm -v "$(pwd)"/../..:/code \
 """
 
 [dependencies]
-cosmwasm-std = "1.1.8"
-cosmwasm-storage = "1.1.8"
-cw-storage-plus = { version = "0.16.0"}
-cw2 = "0.16.0"
-schemars = "0.8.8"
-serde = { version = "1.0.147", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0.31" }
-desmos-bindings = { version = "1.1.1", default-features = false, features = ["query", "msg", "reactions", "posts", "subspaces"] }
+cosmwasm-std.workspace = true
+cosmwasm-storage.workspace = true
+cw-storage-plus.workspace = true
+cw2.workspace = true
+schemars.workspace = true
+serde = { workspace = true, default-features = false, features = ["derive"] }
+thiserror.workspace = true
+desmos-bindings = { workspace = true, default-features = false, features = ["query", "msg", "reactions", "posts", "subspaces"] }
 cw721-base = { git = "https://github.com/desmos-labs/cw-nfts", features = ["library"], branch = "paul/update-custom-msg-query" }
-cw-utils = "0.16.0"
+cw-utils.workspace = true
 cw721 = { git = "https://github.com/desmos-labs/cw-nfts", branch = "paul/update-custom-msg-query" }
 url = "2.3.1"
 cw721-remarkables = { path = "../cw721-remarkables", version = "0.1.0", features = ["library"]}
-cosmwasm-schema = "1.1.5"
+cosmwasm-schema.workspace = true
 
 [dev-dependencies]
-cw-multi-test = "0.15.0"
-desmos-bindings = { version = "1.1.1", default-features = false, features = ["mocks"] }
+cw-multi-test.workspace = true
+desmos-bindings = { workspace = true, default-features = false, features = ["mocks"] }
 anyhow = "1.0.66"
