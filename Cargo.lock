@@ -261,13 +261,15 @@ dependencies = [
 
 [[package]]
 name = "cw-utils"
-version = "0.16.0"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6a84c6c1c0acc3616398eba50783934bd6c964bad6974241eaee3460c8f5b26"
+checksum = "b50d0cac456f98b4339b78e890fbe60e4dfe888c87abacc1129fc3fe34bbe20a"
 dependencies = [
+ "anyhow",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw2 0.16.0",
+ "k256",
  "schemars",
  "semver",
  "serde",
@@ -635,7 +637,7 @@ dependencies = [
  "cosmwasm-storage",
  "cw-multi-test",
  "cw-storage-plus 0.16.0",
- "cw-utils 0.16.0",
+ "cw-utils 1.0.0",
  "cw2 0.16.0",
  "cw721",
  "cw721-base",
@@ -656,7 +658,7 @@ dependencies = [
  "cosmwasm-storage",
  "cw-multi-test",
  "cw-storage-plus 0.16.0",
- "cw-utils 0.16.0",
+ "cw-utils 1.0.0",
  "cw2 0.16.0",
  "cw721",
  "cw721-base",
@@ -737,7 +739,7 @@ dependencies = [
  "cosmwasm-storage",
  "cw-multi-test",
  "cw-storage-plus 0.16.0",
- "cw-utils 0.16.0",
+ "cw-utils 1.0.0",
  "cw2 0.16.0",
  "cw721",
  "cw721-base",
@@ -988,7 +990,7 @@ dependencies = [
  "cosmwasm-storage",
  "cw-multi-test",
  "cw-storage-plus 0.16.0",
- "cw-utils 0.16.0",
+ "cw-utils 1.0.0",
  "cw2 0.16.0",
  "desmos-bindings",
  "schemars",

@@ -38,7 +38,7 @@ serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0.31" }
 desmos-bindings = { version = "1.1.1", default-features = false, features = ["query", "msg", "reactions", "posts", "subspaces"] }
 cw721-base = { git = "https://github.com/desmos-labs/cw-nfts", features = ["library"], branch = "paul/update-custom-msg-query" }
-cw-utils = "0.16.0"
+cw-utils = "1.0.0"
 cw721 = { git = "https://github.com/desmos-labs/cw-nfts", branch = "paul/update-custom-msg-query" }
 url = "2.3.1"
 cw721-remarkables = { path = "../cw721-remarkables", version = "0.1.0", features = ["library"]}
