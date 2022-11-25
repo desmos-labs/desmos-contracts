@@ -8,9 +8,9 @@ members = [
 cosmwasm-std = "1.1.8"
 cosmwasm-storage = "1.1.8"
 cosmwasm-schema = "1.1.5"
-cw-storage-plus = "1.0.0"
+cw-storage-plus = "0.16.0"
+cw-utils = "0.16.0"
 cw2 = "0.16.0"
-cw-utils = "1.0.0"
 cw-multi-test = "0.15.1"
 # Desmos dependencies
 desmos-bindings = "1.1.1"
