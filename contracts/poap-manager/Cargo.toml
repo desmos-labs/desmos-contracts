@@ -44,7 +44,7 @@ cw721-poap = { path = "../cw721-poap", version = "0.1.0", features = ["library"]
 cosmwasm-schema = "1.1.5"
 
 [dev-dependencies]
-cw-multi-test = "0.15.0"
+cw-multi-test = "0.16.1"
 cw721 = { git = "https://github.com/desmos-labs/cw-nfts", branch = "paul/update-custom-msg-query" }
 desmos-bindings = { version = "1.1.1", default-features = false, features = ["mocks"]}
 
