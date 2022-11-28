@@ -2,7 +2,7 @@
 name = "social-tips"
 version = "0.1.0"
 authors = ["Manuel Turetta <manuel@forbole.com>"]
-edition = "2018"
+edition = "2021"
 
 exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
@@ -29,17 +29,17 @@ optimize = """docker run --rm -v "$(pwd)"/../..:/code \
 """
 
 [dependencies]
-cosmwasm-std = "1.1.8"
-cosmwasm-storage = "1.1.8"
-cw-storage-plus = { version = "0.16.0", features = ["macro"] }
-cw2 = "0.16.0"
-schemars = "0.8.11"
-serde = { version = "1.0.145", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0.37" }
-desmos-bindings = { version = "1.1.1", default-features = false, features = ["query", "profiles", "iterators"]}
-cosmwasm-schema = "1.1.5"
+cosmwasm-std.workspace = true
+cosmwasm-storage.workspace = true
+cw-storage-plus = { workspace = true, features = ["macro"] }
+cw2.workspace = true
+schemars.workspace = true
+serde = { workspace = true, default-features = false, features = ["derive"] }
+thiserror.workspace = true
+desmos-bindings = { workspace = true, default-features = false, features = ["query", "profiles", "iterators"]}
+cosmwasm-schema.workspace = true
 
 [dev-dependencies]
-cosmwasm-schema = "1.1.5"
-cw-multi-test = "0.15.1"
-desmos-bindings = { version = "1.1.1", default-features = false, features = ["query", "profiles", "mocks"]}
+cosmwasm-schema.workspace = true
+cw-multi-test.workspace = true
+desmos-bindings = { workspace = true, default-features = false, features = ["query", "profiles", "mocks"]}

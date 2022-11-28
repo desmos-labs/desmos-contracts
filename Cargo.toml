@@ -3,6 +3,22 @@ members = [
     "contracts/*"
 ]
 
+[workspace.dependencies]
+# Cosmwasm related dependencies
+cosmwasm-std = "1.1.8"
+cosmwasm-storage = "1.1.8"
+cosmwasm-schema = "1.1.5"
+cw-storage-plus = "0.16.0"
+cw-utils = "0.16.0"
+cw2 = "0.16.0"
+cw-multi-test = "0.15.1"
+# Desmos dependencies
+desmos-bindings = "1.1.1"
+# Misc dependencies
+schemars = "0.8.11"
+serde = "1.0.147"
+thiserror = "1.0.37"
+
 [profile.release]
 opt-level = 3
 debug = false
