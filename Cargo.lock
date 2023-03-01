@@ -370,7 +370,6 @@ dependencies = [
  "cw721-base",
  "desmos-bindings",
  "schemars",
- "serde",
  "thiserror",
 ]
 
@@ -995,7 +994,6 @@ dependencies = [
  "cw721-remarkables",
  "desmos-bindings",
  "schemars",
- "serde",
  "thiserror",
  "url",
 ]
