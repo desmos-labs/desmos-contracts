@@ -1,7 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Empty;
 pub use cw721_base::{ContractError, InstantiateMsg, MintMsg, MinterResponse};
-use desmos_bindings::{msg::DesmosMsg, query::DesmosQuery};
 
 #[cw_serde]
 pub struct Metadata {
@@ -11,7 +10,7 @@ pub struct Metadata {
 }
 
 pub type Cw721MetadataContract<'a> =
-    cw721_base::Cw721Contract<'a, Metadata, Empty, Empty, DesmosMsg, DesmosQuery>;
+    cw721_base::Cw721Contract<'a, Metadata, Empty, Empty, Empty, Empty>;
 pub type ExecuteMsg = cw721_base::ExecuteMsg<Metadata, Empty>;
 pub type QueryMsg = cw721_base::QueryMsg<Empty>;
 
@@ -29,11 +28,11 @@ pub mod entry {
     // This makes a conscious choice on the various generics used by the contract
     #[entry_point]
     pub fn instantiate(
-        mut deps: DepsMut<DesmosQuery>,
+        mut deps: DepsMut,
         env: Env,
         info: MessageInfo,
         msg: InstantiateMsg,
-    ) -> Result<Response<DesmosMsg>, ContractError> {
+    ) -> Result<Response, ContractError> {
         let res = Cw721MetadataContract::default().instantiate(deps.branch(), env, info, msg)?;
         // Explicitly set contract name and version, otherwise set to cw721-base info
         set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)
@@ -43,16 +42,16 @@ pub mod entry {
 
     #[entry_point]
     pub fn execute(
-        deps: DepsMut<DesmosQuery>,
+        deps: DepsMut,
         env: Env,
         info: MessageInfo,
         msg: ExecuteMsg,
-    ) -> Result<Response<DesmosMsg>, ContractError> {
+    ) -> Result<Response, ContractError> {
         Cw721MetadataContract::default().execute(deps, env, info, msg)
     }
 
     #[entry_point]
-    pub fn query(deps: Deps<DesmosQuery>, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+    pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         Cw721MetadataContract::default().query(deps, env, msg)
     }
 }

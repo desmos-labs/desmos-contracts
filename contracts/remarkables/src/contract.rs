@@ -2,7 +2,8 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     has_coins, to_binary, wasm_execute, wasm_instantiate, Addr, BankMsg, Binary, Coin, Deps,
-    DepsMut, Empty, Env, MessageInfo, Querier, Reply, Response, StdResult, Storage, SubMsg, Uint64,
+    DepsMut, Empty, Env, MessageInfo, QuerierWrapper, Reply, Response, StdResult, Storage,
+    SubMsg,
 };
 use cw2::set_contract_version;
 use cw721::{AllNftInfoResponse, TokensResponse};
@@ -13,10 +14,9 @@ use cw721_base::{
 use cw721_remarkables::Metadata;
 use cw_utils::parse_reply_instantiate_data;
 use desmos_bindings::{
-    msg::DesmosMsg, posts::querier::PostsQuerier, query::DesmosQuery,
-    reactions::querier::ReactionsQuerier, subspaces::querier::SubspacesQuerier, types::PageRequest,
+    posts::querier::PostsQuerier, reactions::querier::ReactionsQuerier,
+    subspaces::querier::SubspacesQuerier, types::PageRequest,
 };
-use std::ops::Deref;
 
 use crate::error::ContractError;
 use crate::msg::{
@@ -51,11 +51,11 @@ const ATTRIBUTE_RECEIVER: &str = "receiver";
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    deps: DepsMut<DesmosQuery>,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
-) -> Result<Response<DesmosMsg>, ContractError> {
+) -> Result<Response, ContractError> {
     msg.validate()?;
     // Save the config
     let admin_addr = deps.api.addr_validate(&msg.admin)?;
@@ -71,10 +71,11 @@ pub fn instantiate(
     RARITIES.save(deps.storage, &msg.rarities)?;
     let subspace_id = msg.subspace_id.u64();
     // Check subspace exists and it is owned by the sender.
-    let subspace = SubspacesQuerier::new(deps.querier.deref())
+    let subspace = SubspacesQuerier::new(&deps.querier)
         .query_subspace(subspace_id)
         .map_err(|_| ContractError::SubspaceNotFound { id: subspace_id })?
-        .subspace;
+        .subspace
+        .unwrap();
     if info.sender != subspace.owner {
         return Err(ContractError::NotSubspaceOwner {
             caller: info.sender,
@@ -105,11 +106,11 @@ pub fn instantiate(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
-    deps: DepsMut<DesmosQuery>,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
-) -> Result<Response<DesmosMsg>, ContractError> {
+) -> Result<Response, ContractError> {
     msg.validate()?;
     match msg {
         ExecuteMsg::Mint {
@@ -127,12 +128,12 @@ pub fn execute(
 }
 
 fn execute_mint(
-    deps: DepsMut<DesmosQuery>,
+    deps: DepsMut,
     info: MessageInfo,
     rarity_level: u32,
     post_id: u64,
     remarkables_uri: String,
-) -> Result<Response<DesmosMsg>, ContractError> {
+) -> Result<Response, ContractError> {
     let rarities = RARITIES.load(deps.storage)?;
     let rarity = rarities
         .get(rarity_level as usize)
@@ -146,7 +147,7 @@ fn execute_mint(
     // Check if post reaches the eligible threshold
     check_eligibility(
         deps.storage,
-        deps.querier.deref(),
+        &deps.querier,
         info.sender.clone(),
         post_id,
         rarity.engagement_threshold,
@@ -204,7 +205,7 @@ fn is_enough_fees(funds: Vec<Coin>, requireds: &Vec<Coin>) -> bool {
 /// Checks that the post reaches the engagement threshold.
 fn check_eligibility(
     storage: &dyn Storage,
-    querier: &dyn Querier,
+    querier: &QuerierWrapper,
     sender: Addr,
     post_id: u64,
     engagement_threshold: u32,
@@ -214,7 +215,8 @@ fn check_eligibility(
     let post = PostsQuerier::new(querier)
         .query_post(subspace_id, post_id)
         .map_err(|_| ContractError::PostNotFound { id: post_id })?
-        .post;
+        .post
+        .unwrap();
     if post.author != sender {
         return Err(ContractError::MinterNotPostAuthor {
             minter: sender.into(),
@@ -228,36 +230,37 @@ fn check_eligibility(
             post_id,
             None,
             Some(PageRequest {
-                key: None,
-                offset: None,
-                limit: Uint64::new(1),
+                key: vec![],
+                offset: 0,
+                limit: 1,
                 count_total: true,
                 reverse: false,
             }),
         )?
         .pagination
         .unwrap_or_default()
-        .total
-        .unwrap_or(Uint64::zero());
+        .total;
     let self_reactions_count = ReactionsQuerier::new(querier)
         .query_reactions(
             subspace_id,
             post_id,
             Some(sender),
             Some(PageRequest {
-                key: None,
-                offset: None,
-                limit: Uint64::new(1),
+                key: vec![],
+                offset: 0,
+                limit: 1,
                 count_total: true,
                 reverse: false,
             }),
         )?
         .pagination
         .unwrap_or_default()
-        .total
-        .unwrap_or(Uint64::zero());
+        .total;
     if engagement_threshold as u64
-        > (total_reactions_count.checked_sub(self_reactions_count)?).into()
+        > (total_reactions_count
+            .checked_sub(self_reactions_count)
+            .unwrap())
+        .into()
     {
         return Err(ContractError::NoEligibilityError {});
     }
@@ -265,10 +268,10 @@ fn check_eligibility(
 }
 
 fn execute_update_admin(
-    deps: DepsMut<DesmosQuery>,
+    deps: DepsMut,
     info: MessageInfo,
     new_admin: String,
-) -> Result<Response<DesmosMsg>, ContractError> {
+) -> Result<Response, ContractError> {
     check_admin(deps.storage, &info)?;
     let new_admin_addr = deps.api.addr_validate(&new_admin)?;
     CONFIG.update(deps.storage, |mut config| -> Result<_, ContractError> {
@@ -283,11 +286,11 @@ fn execute_update_admin(
 }
 
 fn execute_update_rarity_mint_fees(
-    deps: DepsMut<DesmosQuery>,
+    deps: DepsMut,
     info: MessageInfo,
     level: u32,
     new_fees: Vec<Coin>,
-) -> Result<Response<DesmosMsg>, ContractError> {
+) -> Result<Response, ContractError> {
     check_admin(deps.storage, &info)?;
     RARITIES.update(deps.storage, |rarities| -> Result<_, ContractError> {
         let mut new_rarities = rarities;
@@ -307,11 +310,11 @@ fn execute_update_rarity_mint_fees(
 }
 
 fn execute_claim_fees(
-    deps: DepsMut<DesmosQuery>,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
     receiver: String,
-) -> Result<Response<DesmosMsg>, ContractError> {
+) -> Result<Response, ContractError> {
     check_admin(deps.storage, &info)?;
     let receiver = deps.api.addr_validate(&receiver)?;
     let contract_balance = deps
@@ -339,7 +342,7 @@ fn check_admin(storage: &dyn Storage, info: &MessageInfo) -> Result<(), Contract
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps<DesmosQuery>, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::Rarities {} => to_binary(&query_rarities(deps)?),
@@ -355,7 +358,7 @@ pub fn query(deps: Deps<DesmosQuery>, _env: Env, msg: QueryMsg) -> StdResult<Bin
     }
 }
 
-fn query_config(deps: Deps<DesmosQuery>) -> StdResult<QueryConfigResponse> {
+fn query_config(deps: Deps) -> StdResult<QueryConfigResponse> {
     let config = CONFIG.load(deps.storage)?;
     let cw721_address = CW721_ADDRESS.load(deps.storage)?;
     Ok(QueryConfigResponse {
@@ -366,13 +369,13 @@ fn query_config(deps: Deps<DesmosQuery>) -> StdResult<QueryConfigResponse> {
     })
 }
 
-fn query_rarities(deps: Deps<DesmosQuery>) -> StdResult<QueryRaritiesResponse> {
+fn query_rarities(deps: Deps) -> StdResult<QueryRaritiesResponse> {
     let rarities = RARITIES.load(deps.storage)?;
     Ok(QueryRaritiesResponse { rarities })
 }
 
 fn query_all_nft_info(
-    deps: Deps<DesmosQuery>,
+    deps: Deps,
     token_id: String,
     include_expired: Option<bool>,
 ) -> StdResult<AllNftInfoResponse<Metadata>> {
@@ -387,7 +390,7 @@ fn query_all_nft_info(
 }
 
 fn query_tokens(
-    deps: Deps<DesmosQuery>,
+    deps: Deps,
     owner: String,
     start_after: Option<String>,
     limit: Option<u32>,
@@ -405,11 +408,7 @@ fn query_tokens(
 
 // Reply callback triggered from cw721 contract instantiation
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(
-    deps: DepsMut<DesmosQuery>,
-    _env: Env,
-    msg: Reply,
-) -> Result<Response<DesmosMsg>, ContractError> {
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     if msg.id != INSTANTIATE_CW721_REPLY_ID {
         return Err(ContractError::InvalidReplyID {});
     }
@@ -480,7 +479,7 @@ mod tests {
             rarities: get_instantiate_rarities(),
         }
     }
-    fn do_instantiate(deps: DepsMut<DesmosQuery>) {
+    fn do_instantiate(deps: DepsMut) {
         let env = mock_env();
         let info = mock_info(ADMIN, &vec![]);
         let valid_msg = get_valid_instantiate_msg();
@@ -504,18 +503,20 @@ mod tests {
         }
         #[test]
         fn instatiate_with_non_existing_subspace_error() {
-            let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
-                .with_custom_handler(|query| match query {
-                    DesmosQuery::Subspaces(query) => match query {
-                        SubspacesQuery::Subspace { .. } => {
-                            SystemResult::Err(SystemError::InvalidRequest {
-                                error: "subspace not found".to_string(),
-                                request: Default::default(),
-                            })
-                        }
+            let querier =
+                MockQuerier::new(&[(MOCK_CONTRACT_ADDR, &[])]).with_custom_handler(|query| {
+                    match query {
+                        DesmosQuery::Subspaces(query) => match query {
+                            SubspacesQuery::Subspace { .. } => {
+                                SystemResult::Err(SystemError::InvalidRequest {
+                                    error: "subspace not found".to_string(),
+                                    request: Default::default(),
+                                })
+                            }
+                            _ => SystemResult::Err(SystemError::Unknown {}),
+                        },
                         _ => SystemResult::Err(SystemError::Unknown {}),
-                    },
-                    _ => SystemResult::Err(SystemError::Unknown {}),
+                    }
                 });
             let mut deps = OwnedDeps {
                 storage: MockStorage::default(),
@@ -670,19 +671,23 @@ mod tests {
         }
         #[test]
         fn mint_with_non_existing_post_error() {
-            let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
-                .with_custom_handler(|query| match query {
-                    DesmosQuery::Posts(query) => match query {
-                        PostsQuery::Post { .. } => SystemResult::Err(SystemError::InvalidRequest {
-                            error: "post not found".to_string(),
-                            request: Default::default(),
-                        }),
+            let querier =
+                MockQuerier::new(&[(MOCK_CONTRACT_ADDR, &[])]).with_custom_handler(|query| {
+                    match query {
+                        DesmosQuery::Posts(query) => match query {
+                            PostsQuery::Post { .. } => {
+                                SystemResult::Err(SystemError::InvalidRequest {
+                                    error: "post not found".to_string(),
+                                    request: Default::default(),
+                                })
+                            }
+                            _ => SystemResult::Err(SystemError::Unknown {}),
+                        },
+                        DesmosQuery::Subspaces(query) => {
+                            SystemResult::Ok(mock_subspaces_query_response(query))
+                        }
                         _ => SystemResult::Err(SystemError::Unknown {}),
-                    },
-                    DesmosQuery::Subspaces(query) => {
-                        SystemResult::Ok(mock_subspaces_query_response(query))
                     }
-                    _ => SystemResult::Err(SystemError::Unknown {}),
                 });
             let mut deps = OwnedDeps {
                 storage: MockStorage::default(),
@@ -724,17 +729,21 @@ mod tests {
         }
         #[test]
         fn mint_without_eligible_amount_reactions_error() {
-            let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
-                .with_custom_handler(|query| match query {
-                    DesmosQuery::Posts(query) => SystemResult::Ok(mock_posts_query_response(query)),
-                    DesmosQuery::Subspaces(query) => {
-                        SystemResult::Ok(mock_subspaces_query_response(query))
+            let querier =
+                MockQuerier::new(&[(MOCK_CONTRACT_ADDR, &[])]).with_custom_handler(|query| {
+                    match query {
+                        DesmosQuery::Posts(query) => {
+                            SystemResult::Ok(mock_posts_query_response(query))
+                        }
+                        DesmosQuery::Subspaces(query) => {
+                            SystemResult::Ok(mock_subspaces_query_response(query))
+                        }
+                        DesmosQuery::Reactions(query) => {
+                            SystemResult::Ok(mock_reactions_query_response(query))
+                        }
+                        #[allow(unreachable_patterns)]
+                        _ => SystemResult::Err(SystemError::Unknown {}),
                     }
-                    DesmosQuery::Reactions(query) => {
-                        SystemResult::Ok(mock_reactions_query_response(query))
-                    }
-                    #[allow(unreachable_patterns)]
-                    _ => SystemResult::Err(SystemError::Unknown {}),
                 });
             let mut deps = OwnedDeps {
                 storage: MockStorage::default(),
@@ -776,20 +785,24 @@ mod tests {
         }
         #[test]
         fn mint_without_eligible_amount_reactions_after_sub_self_reactions_error() {
-            let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
-                .with_custom_handler(|query| match query {
-                    DesmosQuery::Posts(query) => SystemResult::Ok(mock_posts_query_response(query)),
-                    DesmosQuery::Subspaces(query) => {
-                        SystemResult::Ok(mock_subspaces_query_response(query))
-                    }
-                    DesmosQuery::Reactions(query) => match query {
-                        ReactionsQuery::Reactions { user, .. } => SystemResult::Ok(
-                            ContractResult::Ok(to_binary(&get_reactions(user, false)).unwrap()),
-                        ),
+            let querier =
+                MockQuerier::new(&[(MOCK_CONTRACT_ADDR, &[])]).with_custom_handler(|query| {
+                    match query {
+                        DesmosQuery::Posts(query) => {
+                            SystemResult::Ok(mock_posts_query_response(query))
+                        }
+                        DesmosQuery::Subspaces(query) => {
+                            SystemResult::Ok(mock_subspaces_query_response(query))
+                        }
+                        DesmosQuery::Reactions(query) => match query {
+                            ReactionsQuery::Reactions { user, .. } => SystemResult::Ok(
+                                ContractResult::Ok(to_binary(&get_reactions(user, false)).unwrap()),
+                            ),
+                            _ => SystemResult::Err(SystemError::Unknown {}),
+                        },
+                        #[allow(unreachable_patterns)]
                         _ => SystemResult::Err(SystemError::Unknown {}),
-                    },
-                    #[allow(unreachable_patterns)]
-                    _ => SystemResult::Err(SystemError::Unknown {}),
+                    }
                 });
             let mut deps = OwnedDeps {
                 storage: MockStorage::default(),
@@ -815,20 +828,24 @@ mod tests {
         }
         #[test]
         fn mint_existing_token_error() {
-            let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
-                .with_custom_handler(|query| match query {
-                    DesmosQuery::Posts(query) => SystemResult::Ok(mock_posts_query_response(query)),
-                    DesmosQuery::Subspaces(query) => {
-                        SystemResult::Ok(mock_subspaces_query_response(query))
-                    }
-                    DesmosQuery::Reactions(query) => match query {
-                        ReactionsQuery::Reactions { user, .. } => SystemResult::Ok(
-                            ContractResult::Ok(to_binary(&get_reactions(user, true)).unwrap()),
-                        ),
+            let querier =
+                MockQuerier::new(&[(MOCK_CONTRACT_ADDR, &[])]).with_custom_handler(|query| {
+                    match query {
+                        DesmosQuery::Posts(query) => {
+                            SystemResult::Ok(mock_posts_query_response(query))
+                        }
+                        DesmosQuery::Subspaces(query) => {
+                            SystemResult::Ok(mock_subspaces_query_response(query))
+                        }
+                        DesmosQuery::Reactions(query) => match query {
+                            ReactionsQuery::Reactions { user, .. } => SystemResult::Ok(
+                                ContractResult::Ok(to_binary(&get_reactions(user, true)).unwrap()),
+                            ),
+                            _ => SystemResult::Err(SystemError::Unknown {}),
+                        },
+                        #[allow(unreachable_patterns)]
                         _ => SystemResult::Err(SystemError::Unknown {}),
-                    },
-                    #[allow(unreachable_patterns)]
-                    _ => SystemResult::Err(SystemError::Unknown {}),
+                    }
                 });
             let mut deps = OwnedDeps {
                 storage: MockStorage::default(),
@@ -863,20 +880,24 @@ mod tests {
         }
         #[test]
         fn mint_properly() {
-            let querier = MockQuerier::<DesmosQuery>::new(&[(MOCK_CONTRACT_ADDR, &[])])
-                .with_custom_handler(|query| match query {
-                    DesmosQuery::Posts(query) => SystemResult::Ok(mock_posts_query_response(query)),
-                    DesmosQuery::Subspaces(query) => {
-                        SystemResult::Ok(mock_subspaces_query_response(query))
-                    }
-                    DesmosQuery::Reactions(query) => match query {
-                        ReactionsQuery::Reactions { user, .. } => SystemResult::Ok(
-                            ContractResult::Ok(to_binary(&get_reactions(user, true)).unwrap()),
-                        ),
+            let querier =
+                MockQuerier::new(&[(MOCK_CONTRACT_ADDR, &[])]).with_custom_handler(|query| {
+                    match query {
+                        DesmosQuery::Posts(query) => {
+                            SystemResult::Ok(mock_posts_query_response(query))
+                        }
+                        DesmosQuery::Subspaces(query) => {
+                            SystemResult::Ok(mock_subspaces_query_response(query))
+                        }
+                        DesmosQuery::Reactions(query) => match query {
+                            ReactionsQuery::Reactions { user, .. } => SystemResult::Ok(
+                                ContractResult::Ok(to_binary(&get_reactions(user, true)).unwrap()),
+                            ),
+                            _ => SystemResult::Err(SystemError::Unknown {}),
+                        },
+                        #[allow(unreachable_patterns)]
                         _ => SystemResult::Err(SystemError::Unknown {}),
-                    },
-                    #[allow(unreachable_patterns)]
-                    _ => SystemResult::Err(SystemError::Unknown {}),
+                    }
                 });
             let mut deps = OwnedDeps {
                 storage: MockStorage::default(),
