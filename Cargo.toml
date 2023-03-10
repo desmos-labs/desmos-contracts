@@ -17,7 +17,7 @@ desmos-bindings = "1.1.1"
 # Misc dependencies
 schemars = "0.8.12"
 serde = "1.0.152"
-thiserror = "1.0.38"
+thiserror = "1.0.39"
 
 [profile.release]
 opt-level = 3
