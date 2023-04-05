@@ -7,7 +7,7 @@ members = [
 # Cosmwasm related dependencies
 cosmwasm-std = "1.1.9"
 cosmwasm-storage = "1.1.9"
-cosmwasm-schema = "1.2.2"
+cosmwasm-schema = "1.2.3"
 cw-storage-plus = "0.16.0"
 cw-utils = "0.16.0"
 cw2 = "0.16.0"
