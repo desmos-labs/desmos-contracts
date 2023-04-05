@@ -13,7 +13,7 @@ cw-utils = "0.16.0"
 cw2 = "0.16.0"
 cw-multi-test = "0.15.1"
 # Desmos dependencies
-desmos-bindings = "1.1.1"
+desmos-bindings = "1.2.0"
 # Misc dependencies
 schemars = "0.8.12"
 serde = "1.0.159"
