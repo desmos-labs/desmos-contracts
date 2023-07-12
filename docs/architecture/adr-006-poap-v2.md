@@ -30,10 +30,10 @@ To instantiate this smart contract, the user needs to provide:
 * `poap_name`: Identifies the name of the minted NFTs.
 * `poap_symbol`: Identifies the symbol of the minted NFTs.
 * `poap_metadata_uri`: Identifies the URI where users can view the associated metadata for the POAPs, ideally following the ERC-721 metadata scheme in a JSON file.
-* `poap_mint_enabled`: Indicates whether users can mint the POAPs.
 * `poap_is_transferable`: Specifies whether each POAP can be transferred from one user to another.
-* `event_start_date`: Identifies the start date of the event associated with the POAP.
-* `event_end_date`: Identifies the end date of the event associated with the POAP.
+* `poap_mint_enabled`: Indicates whether users can mint the POAPs.
+* `poap_mint_start_time`: Identifies the timestamp at which the minting of the POAP will be enabled.
+* `poap_mint_end_time`: Identifies the timestamp at which the minting of the POAP will be disabled.
 
 #### Execute
 The `MsgExecute` should allow the following operations:
