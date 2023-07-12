@@ -49,7 +49,8 @@ Operations allowed for any user:
 The admin of the contract should be allowed to perform the following:
 
 1. Update the POAP-related limitations (transferability, mintability).
-2. Mint POAPs for other users.
+2. Mint POAPs for a single user (`mintToSingleUser`).
+3. Mint POAPs for multiple users (`mintToManyUsers`).
 
 ## Consequences
 
