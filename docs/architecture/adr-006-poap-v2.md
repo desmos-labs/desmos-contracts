@@ -64,6 +64,8 @@ The admin of the contract should be allowed to perform the following:
 (None known)
 
 ## References
+* [Cw721 Standard](https://github.com/CosmWasm/cw-nfts/blob/main/packages/cw721)
+* [Cw721 Base Contract](https://github.com/CosmWasm/cw-nfts/tree/main/contracts/cw721-base)
 * [Issue #182](https://github.com/desmos-labs/desmos-contracts/issues/182)
 * [Issue #183](https://github.com/desmos-labs/desmos-contracts/issues/183)
 * [Issue #184](https://github.com/desmos-labs/desmos-contracts/issues/184)
