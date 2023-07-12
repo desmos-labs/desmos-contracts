@@ -82,7 +82,7 @@ If set, the `minter` associated with the contract should be allowed to perform t
 2. Mint POAPs for multiple users (`mintToManyUsers`).
 
 > **Note**  
-> The `minter` is not subject to the POAP minting conditions. This means that they act like and admin and can mint
+> The `minter` is not subject to the POAP minting conditions. This means that they act like an admin and can mint
 > tokens for other users even if the minting of the POAP is currently disabled.
 
 ##### Admin operations
