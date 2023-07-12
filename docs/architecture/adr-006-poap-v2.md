@@ -19,7 +19,7 @@ Currently, we have implemented the ability to create and manage POAPs with three
 The decision is to merge all POAP-related operations into a single smart contract called `poap`, replacing all existing POAP-related smart contracts.
 
 ## Specifications
-Below are the specifications for the various messages that the `poap` contract should support.
+To ensure compatibility with the [`cw721`](https://github.com/CosmWasm/cw-nfts/blob/main/packages/cw721) standard, we will create a smart contract that extends the [`cw721-base`](https://github.com/CosmWasm/cw-nfts/tree/main/contracts/cw721-base) contract and implements the necessary interfaces. By doing this, we can enable the transfer of POAPs in the future, if desired by the administrators, and ensure proper display in end clients. The following specifications outline the custom messages that the `poap` contract should support.
 
 ### Messages
 
@@ -49,7 +49,7 @@ Operations allowed for any user:
 The admin of the contract should be allowed to perform the following:
 
 1. Update the POAP-related limitations (transferability, mintability).
-2. Update the associated event data.
+2. Mint POAPs for other users.
 
 ## Consequences
 
