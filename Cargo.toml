@@ -5,19 +5,19 @@ members = [
 
 [workspace.dependencies]
 # Cosmwasm related dependencies
-cosmwasm-std = "1.1.9"
-cosmwasm-storage = "1.1.9"
+cosmwasm-std = "1.2.7"
+cosmwasm-storage = "1.2.7"
 cosmwasm-schema = "1.2.7"
-cw-storage-plus = "0.16.0"
-cw-utils = "0.16.0"
-cw2 = "0.16.0"
-cw-multi-test = "0.15.1"
+cw-storage-plus = "1.1.0"
+cw-utils = "1.0.1"
+cw2 = "1.1.0"
+cw-multi-test = "0.16.5"
 # Desmos dependencies
 desmos-bindings = "1.1.1"
 # Misc dependencies
 schemars = "0.8.12"
-serde = "1.0.160"
-thiserror = "1.0.43"
+serde = "1.0.166"
+thiserror = "1.0.41"
 
 [profile.release]
 opt-level = 3

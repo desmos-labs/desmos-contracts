@@ -1,0 +1,48 @@
+[package]
+name = "poap-v2"
+version = "0.1.0"
+authors = ["Manuel <manuel@forbole.com>"]
+edition = "2021"
+
+exclude = [
+  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+  "contract.wasm",
+  "hash.txt",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+library = []
+
+[package.metadata.scripts]
+optimize = """docker run --rm -v "$(pwd)"/../..:/code \
+  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+  --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+  cosmwasm/workspace-optimizer:0.12.6 ./contracts/poap
+"""
+
+[dependencies]
+cosmwasm-std.workspace = true
+cosmwasm-storage.workspace = true
+cw-storage-plus.workspace = true
+cw2.workspace = true
+cw-utils.workspace = true
+schemars.workspace = true
+serde = { workspace = true, default-features = false, features = ["derive"] }
+thiserror.workspace = true
+desmos-bindings = { workspace = true, default-features = false, features = ["query", "msg"]}
+cw721 = { version = "0.18.0" }
+cw721-base = { version = "0.18.0" }
+cw-ownable = { version = "0.5.1" }
+cosmwasm-schema.workspace = true
+
+[dev-dependencies]
+cw-multi-test.workspace = true
+desmos-bindings = { workspace = true, default-features = false, features = ["mocks"]}
+
