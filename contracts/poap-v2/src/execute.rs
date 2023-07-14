@@ -2,8 +2,7 @@ use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 use crate::state::PoapContract;
 use cosmwasm_std::{
-    Addr, Binary, CustomMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Storage,
-    Timestamp,
+    Addr, Binary, CustomMsg, DepsMut, Env, MessageInfo, Response, StdResult, Storage, Timestamp,
 };
 use cw721::Cw721Execute;
 pub use cw721_base::{
@@ -224,7 +223,7 @@ where
         info: MessageInfo,
         extension: T,
     ) -> Result<Response<C>, ContractError> {
-        self.assert_user_can_mint(deps.as_ref(), &env, &info)?;
+        self.assert_user_can_mint(deps.storage, &info.sender, &env)?;
         let token_id = self.mint_to_user(deps.storage, &info.sender, extension)?;
 
         Ok(Response::new()
@@ -319,17 +318,23 @@ where
     /// Checks if an user can mint a POAP.
     pub fn assert_user_can_mint(
         &self,
-        deps: Deps,
+        storage: &dyn Storage,
+        user: &Addr,
         env: &Env,
-        _info: &MessageInfo,
     ) -> Result<(), ContractError> {
+        // Check if the user is the minter.
+        if self.minter.load(storage)?.eq(user) {
+            // The minter can always perform the mint operation.
+            return Ok(());
+        }
+
         // Check if mint is enabled
-        if !self.is_mintable.load(deps.storage)? {
+        if !self.is_mintable.load(storage)? {
             return Err(ContractError::MintDisabled {});
         }
 
         // Check if we have a mint start time
-        if let Some(start_time) = self.mint_start_time.load(deps.storage)? {
+        if let Some(start_time) = self.mint_start_time.load(storage)? {
             // Check if the event has started.
             if start_time.ge(&env.block.time) {
                 return Err(ContractError::EventNotStarted {});
@@ -337,7 +342,7 @@ where
         }
 
         // Check if we have a mint end time
-        if let Some(end_time) = self.mint_end_time.load(deps.storage)? {
+        if let Some(end_time) = self.mint_end_time.load(storage)? {
             // Check if the event is still in progress.
             if env.block.time.ge(&end_time) {
                 return Err(ContractError::EventTerminated {});
