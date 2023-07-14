@@ -23,6 +23,9 @@ pub enum ContractError {
     #[error("Approval not found for: {spender}")]
     ApprovalNotFound { spender: String },
 
+    #[error("Transfer is not allowed")]
+    TransferDisabled {},
+
     #[error("Mint is not allowed")]
     MintDisabled {},
 
@@ -34,6 +37,9 @@ pub enum ContractError {
 
     #[error("Can't mint, event terminated")]
     EventTerminated {},
+
+    #[error("The start time time must be lower then the end time")]
+    InvalidTimestampValues {},
 }
 
 impl From<Cw721BaseContractError> for ContractError {

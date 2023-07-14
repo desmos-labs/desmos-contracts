@@ -71,6 +71,25 @@ pub enum ExecuteMsg<T, E> {
     MintTo { users: Vec<String>, extension: T },
     /// Burn an NFT the sender has access to.
     Burn { token_id: String },
+    /// Allow to update the user with the mint permissions,
+    /// can only be called from the contract admin.
+    UpdateMinter { minter: String },
+    /// Sets if the users can mint their POAP,
+    /// can only be called from the contract admin.
+    SetMintable { mintable: bool },
+    /// Sets if the users can transfer their POAP,
+    /// can only be called from the contract admin.
+    SetTransferable { transferable: bool },
+    /// Sets the time period of when the POAP can be minted from
+    /// the users, can only be called from the contract admin.
+    SetMintStartEndTime {
+        /// Identifies the timestamp at which the minting of the POAP will be enabled.
+        /// If None, the minting is always enabled.
+        start_time: Option<Timestamp>,
+        /// Identifies the timestamp at which the minting of the POAP will be disabled.
+        /// If None, the minting will never end.
+        end_time: Option<Timestamp>,
+    },
     /// Extension msg
     Extension { msg: E },
 }

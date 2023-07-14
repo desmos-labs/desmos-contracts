@@ -1,7 +1,10 @@
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 use crate::state::PoapContract;
-use cosmwasm_std::{CustomMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{
+    Addr, CustomMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Storage, Timestamp,
+};
+use cw721::Cw721Execute;
 pub use cw721_base::{
     entry::{execute as _execute, query as _query},
     Cw721Contract, Extension, InstantiateMsg as Cw721BaseInstantiateMsg, MinterResponse,
@@ -59,6 +62,19 @@ where
         msg: ExecuteMsg<T, E>,
     ) -> Result<Response<C>, ContractError> {
         match msg {
+            ExecuteMsg::TransferNft {
+                recipient,
+                token_id,
+            } => self.transfer_poap(deps, env, info, recipient, token_id),
+            ExecuteMsg::UpdateMinter { minter } => self.update_minter(deps, env, info, minter),
+            ExecuteMsg::SetMintable { mintable } => self.set_mintable(deps, env, info, mintable),
+            ExecuteMsg::SetTransferable { transferable } => {
+                self.set_transferable(deps, env, info, transferable)
+            }
+            ExecuteMsg::SetMintStartEndTime {
+                start_time,
+                end_time,
+            } => self.set_mint_start_end_time(deps, env, info, start_time, end_time),
             ExecuteMsg::Mint { extension } => self.mint(deps, env, info, extension),
             ExecuteMsg::MintTo { extension, users } => {
                 self.mint_to(deps, env, info, users, extension)
@@ -78,15 +94,117 @@ where
     E: CustomMsg,
     Q: CustomMsg,
 {
+    pub fn transfer_poap(
+        &self,
+        deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
+        recipient: String,
+        token_id: String,
+    ) -> Result<Response<C>, ContractError> {
+        // Check if the transfer is allowed.
+        let is_transferable = self.is_transferable.load(deps.storage)?;
+        if !is_transferable {
+            return Err(ContractError::TransferDisabled {});
+        }
+
+        return self
+            .cw721_base
+            .transfer_nft(deps, env, info, recipient, token_id)
+            .map_err(|e| e.into());
+    }
+
+    pub fn update_minter(
+        &self,
+        deps: DepsMut,
+        _env: Env,
+        info: MessageInfo,
+        minter: String,
+    ) -> Result<Response<C>, ContractError> {
+        self.assert_is_admin(deps.storage, &info.sender)?;
+        let minter_addr = deps.api.addr_validate(&minter)?;
+        self.minter.save(deps.storage, &minter_addr)?;
+
+        Ok(Response::new()
+            .add_attribute("action", "update_minter")
+            .add_attribute("sender", info.sender)
+            .add_attribute("new_minter", minter_addr))
+    }
+
+    pub fn set_mintable(
+        &self,
+        deps: DepsMut,
+        _env: Env,
+        info: MessageInfo,
+        mintable: bool,
+    ) -> Result<Response<C>, ContractError> {
+        self.assert_is_admin(deps.storage, &info.sender)?;
+        self.is_mintable.save(deps.storage, &mintable)?;
+
+        Ok(Response::new()
+            .add_attribute("action", "set_mintable")
+            .add_attribute("sender", info.sender)
+            .add_attribute("mintable", mintable.to_string()))
+    }
+
+    pub fn set_transferable(
+        &self,
+        deps: DepsMut,
+        _env: Env,
+        info: MessageInfo,
+        transferable: bool,
+    ) -> Result<Response<C>, ContractError> {
+        self.assert_is_admin(deps.storage, &info.sender)?;
+        self.is_transferable.save(deps.storage, &transferable)?;
+
+        Ok(Response::new()
+            .add_attribute("action", "set_transferable")
+            .add_attribute("sender", info.sender)
+            .add_attribute("transferable", transferable.to_string()))
+    }
+
+    pub fn set_mint_start_end_time(
+        &self,
+        deps: DepsMut,
+        _env: Env,
+        info: MessageInfo,
+        start_time: Option<Timestamp>,
+        end_time: Option<Timestamp>,
+    ) -> Result<Response<C>, ContractError> {
+        self.assert_is_admin(deps.storage, &info.sender)?;
+
+        // Ensure that if we have both start time and end time the start time is lower then
+        // the end time.
+        if start_time.is_some() && end_time.is_some() && start_time.unwrap() >= end_time.unwrap() {
+            return Err(ContractError::InvalidTimestampValues {});
+        }
+
+        // Update the start and end time
+        self.mint_start_time.save(deps.storage, &start_time)?;
+        self.mint_end_time.save(deps.storage, &end_time)?;
+
+        Ok(Response::new()
+            .add_attribute("action", "set_mint_start_end_time")
+            .add_attribute("sender", info.sender)
+            .add_attribute(
+                "start_time",
+                start_time.map_or_else(|| "None".to_string(), |t| t.to_string()),
+            )
+            .add_attribute(
+                "end_time",
+                end_time.map_or_else(|| "None".to_string(), |t| t.to_string()),
+            ))
+    }
+
     pub fn mint(
         &self,
-        mut deps: DepsMut,
+        deps: DepsMut,
         env: Env,
         info: MessageInfo,
         extension: T,
     ) -> Result<Response<C>, ContractError> {
-        self.check_user_can_mint(deps.as_ref(), &env, &info)?;
-        let token_id = self.mint_to_user(deps.branch(), info.sender.to_string(), extension)?;
+        self.assert_user_can_mint(deps.as_ref(), &env, &info)?;
+        let token_id = self.mint_to_user(deps.storage, &info.sender, extension)?;
 
         Ok(Response::new()
             .add_attribute("action", "mint")
@@ -96,17 +214,18 @@ where
 
     pub fn mint_to(
         &self,
-        mut deps: DepsMut,
-        env: Env,
+        deps: DepsMut,
+        _env: Env,
         info: MessageInfo,
         users: Vec<String>,
         extension: T,
     ) -> Result<Response<C>, ContractError> {
-        self.check_is_minter(deps.as_ref(), &env, &info)?;
+        self.assert_is_minter(deps.storage, &info.sender)?;
 
         let mut minted_tokens = Vec::<String>::with_capacity(users.len());
         for user in users {
-            minted_tokens.push(self.mint_to_user(deps.branch(), user, extension.clone())?);
+            let user_addr = deps.api.addr_validate(&user)?;
+            minted_tokens.push(self.mint_to_user(deps.storage, &user_addr, extension.clone())?);
         }
 
         Ok(Response::new()
@@ -124,8 +243,60 @@ where
     E: CustomMsg,
     Q: CustomMsg,
 {
+    /// Mint a POAP to an user.
+    pub fn mint_to_user(
+        &self,
+        storage: &mut dyn Storage,
+        owner: &Addr,
+        extension: T,
+    ) -> Result<String, ContractError> {
+        // Create the token
+        let token = cw721_base::state::TokenInfo {
+            owner: owner.clone(),
+            approvals: vec![],
+            token_uri: Some(self.metadata_uri.load(storage)?),
+            extension,
+        };
+
+        // Generate the token id
+        let token_id = format!("{}", self.cw721_base.token_count(storage)?);
+
+        self.cw721_base
+            .tokens
+            .update(storage, &token_id, |old| match old {
+                Some(_) => Err(ContractError::Claimed {}),
+                None => Ok(token),
+            })?;
+
+        self.cw721_base.increment_tokens(storage)?;
+
+        Ok(token_id)
+    }
+
+    pub fn assert_is_admin(
+        &self,
+        storage: &dyn Storage,
+        sender: &Addr,
+    ) -> Result<(), ContractError> {
+        cw_ownable::assert_owner(storage, sender).map_err(|e| ContractError::Ownership(e))
+    }
+
+    /// Checks if who has sent the message is the minter.
+    pub fn assert_is_minter(
+        &self,
+        storage: &dyn Storage,
+        sender: &Addr,
+    ) -> Result<(), ContractError> {
+        let minter = self.minter.load(storage)?;
+        if !sender.eq(&minter) {
+            return Err(ContractError::MintUnauthorized {});
+        }
+
+        Ok(())
+    }
+
     /// Checks if an user can mint a POAP.
-    pub fn check_user_can_mint(
+    pub fn assert_user_can_mint(
         &self,
         deps: Deps,
         env: &Env,
@@ -150,51 +321,6 @@ where
             if env.block.time.ge(&end_time) {
                 return Err(ContractError::EventTerminated {});
             }
-        }
-
-        Ok(())
-    }
-
-    /// Mint a POAP to an user.
-    pub fn mint_to_user(
-        &self,
-        deps: DepsMut,
-        owner: String,
-        extension: T,
-    ) -> Result<String, ContractError> {
-        // Create the token
-        let token = cw721_base::state::TokenInfo {
-            owner: deps.api.addr_validate(&owner)?,
-            approvals: vec![],
-            token_uri: Some(self.metadata_uri.load(deps.storage)?),
-            extension,
-        };
-
-        // Generate the token id
-        let token_id = format!("{}", self.cw721_base.token_count(deps.storage)?);
-
-        self.cw721_base
-            .tokens
-            .update(deps.storage, &token_id, |old| match old {
-                Some(_) => Err(ContractError::Claimed {}),
-                None => Ok(token),
-            })?;
-
-        self.cw721_base.increment_tokens(deps.storage)?;
-
-        Ok(token_id)
-    }
-
-    /// Checks if who has sent the message is the minter.
-    pub fn check_is_minter(
-        &self,
-        deps: Deps,
-        _env: &Env,
-        info: &MessageInfo,
-    ) -> Result<(), ContractError> {
-        let minter = self.minter.load(deps.storage)?;
-        if !info.sender.eq(&minter) {
-            return Err(ContractError::MintUnauthorized {});
         }
 
         Ok(())
