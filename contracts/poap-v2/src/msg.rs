@@ -12,13 +12,14 @@ pub struct InstantiateMsg {
     pub name: String,
     /// Symbol of the POAP contract
     pub symbol: String,
-    /// Who controls the contract.
-    /// If None will be used the address of who is instantiating the contract.
-    pub admin: Option<String>,
     /// The URI where users can view the associated metadata for the POAPs,
     /// ideally following the ERC-721 metadata scheme in a JSON file.
     pub metadata_uri: String,
+    /// Who controls the contract.
+    /// If None will be used the address of who is instantiating the contract.
+    pub admin: Option<String>,
     /// Additional address that is allowed to mint tokens on behalf of other users.
+    /// If None will be used the address of who is instantiating the contract.
     pub minter: Option<String>,
     /// Specifies whether each POAP can be transferred from one user to another.
     pub is_transferable: bool,
