@@ -348,7 +348,7 @@ where
     }
 
     pub fn assert_is_transferable(&self, storage: &dyn Storage) -> Result<(), ContractError> {
-        let is_transferable = self.is_transferable.load(deps.storage)?;
+        let is_transferable = self.is_transferable.load(storage)?;
         if !is_transferable {
             return Err(ContractError::TransferDisabled {});
         }
