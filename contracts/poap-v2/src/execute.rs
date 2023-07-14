@@ -37,7 +37,10 @@ where
         self.cw721_base
             .instantiate(deps.branch(), env, info.clone(), cw721_instantiate_msg)?;
 
+        // Save the poap metadata uri
         self.metadata_uri.save(deps.storage, &msg.metadata_uri)?;
+
+        // Get the minter address or fallback to the sender address.
         let minter = msg
             .minter
             .map(|minter| deps.api.addr_validate(&minter))
@@ -99,6 +102,9 @@ where
     E: CustomMsg,
     Q: CustomMsg,
 {
+    /// Transfer a POAP to another user.
+    /// * `recipient` - Address of the user that will receive the POAP.
+    /// * `token_id` - Id of the POAP to transfer.
     pub fn transfer_poap(
         &self,
         deps: DepsMut,
@@ -116,6 +122,10 @@ where
             .map_err(|e| e.into());
     }
 
+    /// Send a POAP to a contract and trigger an action on the contract.
+    /// * `contract` - Address of the contract that will receive the POAP.
+    /// * `token_id` - Id of the POAP to transfer.
+    /// * `msg` - Message that the recipient contract will execute.
     pub fn send_poap(
         &self,
         deps: DepsMut,
@@ -134,6 +144,9 @@ where
             .map_err(|e| e.into());
     }
 
+    /// Updates who have the minting permissions, this action can be executed only from
+    /// the contract admin.
+    /// * `minter` - The new minter address.
     pub fn update_minter(
         &self,
         deps: DepsMut,
@@ -151,6 +164,9 @@ where
             .add_attribute("new_minter", minter_addr))
     }
 
+    /// Updates the POAP mintability, this action can be executed only from
+    /// the contract admin.
+    /// * `mintable` - true if the POAP can be minted from the users, false otherwise.
     pub fn set_mintable(
         &self,
         deps: DepsMut,
@@ -167,6 +183,9 @@ where
             .add_attribute("mintable", mintable.to_string()))
     }
 
+    /// Sets if the users are allowed to transfer their POAP, this action can be executed only from
+    /// the contract admin.
+    /// * `transferable` - true if the POAP can be transferred, false otherwise.
     pub fn set_transferable(
         &self,
         deps: DepsMut,
@@ -183,6 +202,12 @@ where
             .add_attribute("transferable", transferable.to_string()))
     }
 
+    /// Sets the time period on which the minting is allowed, this action can be executed only from
+    /// the contract admin.
+    /// * `start_time` - Timestamp at which the minting of the POAP will be enabled.
+    /// If None, the minting is always enabled.
+    /// * `end_time` - Timestamp at which the minting of the POAP will be disabled.    
+    /// If not set, the minting will never end.
     pub fn set_mint_start_end_time(
         &self,
         deps: DepsMut,
@@ -216,6 +241,7 @@ where
             ))
     }
 
+    /// Mint a POAP to the user that is calling this action.
     pub fn mint(
         &self,
         deps: DepsMut,
@@ -232,6 +258,8 @@ where
             .add_attribute("token_id", token_id))
     }
 
+    /// Mint a POAP to a list of user, this action can be executed only from the contract minter.
+    /// * `users` - List of users for whom the POAP will be minted.
     pub fn mint_to(
         &self,
         deps: DepsMut,
@@ -269,6 +297,7 @@ where
     }
 
     /// Mint a POAP to an user.
+    /// * `owner` - User for whom the POAP will be minted.
     pub fn mint_to_user(
         &self,
         storage: &mut dyn Storage,
@@ -297,6 +326,8 @@ where
         Ok(token_id)
     }
 
+    /// Asserts that the provided address is the contract admin.
+    /// * `sender` - Address that will be checked.
     pub fn assert_is_admin(
         &self,
         storage: &dyn Storage,
@@ -305,7 +336,8 @@ where
         cw_ownable::assert_owner(storage, sender).map_err(|e| ContractError::Ownership(e))
     }
 
-    /// Checks if who has sent the message is the minter.
+    /// Asserts that the provided address is the contract minter.
+    /// * `sender` - Address that will be checked.
     pub fn assert_is_minter(
         &self,
         storage: &dyn Storage,
@@ -319,7 +351,8 @@ where
         Ok(())
     }
 
-    /// Checks if an user can mint a POAP.
+    /// Asserts if an user can mint a POAP.
+    /// * `user` - Address that will be checked.
     pub fn assert_user_can_mint(
         &self,
         storage: &dyn Storage,
@@ -356,6 +389,7 @@ where
         Ok(())
     }
 
+    /// Asserts if the transfer is allowed.
     pub fn assert_is_transferable(&self, storage: &dyn Storage) -> Result<(), ContractError> {
         let is_transferable = self.is_transferable.load(storage)?;
         if !is_transferable {

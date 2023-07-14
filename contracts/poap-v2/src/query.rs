@@ -31,24 +31,28 @@ where
     E: CustomMsg,
     Q: CustomMsg,
 {
+    /// Gets the address of the contract minter.
     pub fn minter(&self, deps: Deps, _env: Env) -> StdResult<MinterResponse> {
         Ok(MinterResponse {
             minter: Some(self.minter.load(deps.storage)?.to_string()),
         })
     }
 
+    /// Gets if the POAP can be minted from the users.
     pub fn is_mintable(&self, deps: Deps, _env: Env) -> StdResult<IsMintableResponse> {
         Ok(IsMintableResponse {
             is_mintable: self.is_mintable.load(deps.storage)?,
         })
     }
 
+    /// Gets if the POAP can be transferred between users.
     pub fn is_transferable(&self, deps: Deps, _env: Env) -> StdResult<IsTransferableResponse> {
         Ok(IsTransferableResponse {
             is_transferable: self.is_transferable.load(deps.storage)?,
         })
     }
 
+    /// Gets the time period in which it is possible to mint the POAP.
     pub fn mint_start_end_time(
         &self,
         deps: Deps,
