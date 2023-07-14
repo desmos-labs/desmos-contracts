@@ -1,4 +1,6 @@
-mod error;
+#[cfg(test)]
+mod contract_tests;
+pub mod error;
 mod execute;
 pub mod msg;
 mod query;
