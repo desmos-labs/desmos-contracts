@@ -1,4 +1,8 @@
 use crate::msg::MintStartEndTimeResponse;
+use crate::ContractError::{
+    EventNotStarted, EventTerminated, InvalidTimestampValues, MintDisabled, MintUnauthorized,
+    Ownership, TransferDisabled,
+};
 use crate::ExecuteMsg::{
     Mint, MintTo, SendNft, SetMintStartEndTime, SetMintable, SetTransferable, TransferNft,
     UpdateMinter,
@@ -8,6 +12,7 @@ use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 use cosmwasm_std::{to_binary, Addr, CosmosMsg, Deps, DepsMut, Empty, Env, Timestamp, WasmMsg};
 use cw721::{Cw721Query, NftInfoResponse};
 use cw721_base::Cw721Contract;
+use cw_ownable::OwnershipError;
 
 const ADMIN: &str = "admin";
 const MINTER: &str = "minter";
@@ -179,7 +184,7 @@ fn user_cant_mint_if_not_mintable() {
 
     // Check that the user can't mint if the poap is not mintable
     let user_info = mock_info(USER, &[]);
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env(),
@@ -187,6 +192,7 @@ fn user_cant_mint_if_not_mintable() {
             Mint { extension: None },
         )
         .unwrap_err();
+    assert_eq!(MintDisabled {}, err);
 }
 
 #[test]
@@ -246,7 +252,7 @@ fn user_cant_mint_before_start_time() {
 
     // Check that an user can't mint before the mint start time.
     let user_info = mock_info(USER, &[]);
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             env_event_not_started,
@@ -254,6 +260,7 @@ fn user_cant_mint_before_start_time() {
             Mint { extension: None },
         )
         .unwrap_err();
+    assert_eq!(EventNotStarted {}, err);
 }
 
 #[test]
@@ -323,7 +330,7 @@ fn user_cant_mint_after_end_time() {
 
     // Check that an user can't mint before the mint start time.
     let user_info = mock_info(USER, &[]);
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             env_after_end_time,
@@ -331,6 +338,7 @@ fn user_cant_mint_after_end_time() {
             Mint { extension: None },
         )
         .unwrap_err();
+    assert_eq!(EventTerminated {}, err);
 }
 
 #[test]
@@ -399,7 +407,7 @@ fn user_cant_mint_outside_mint_time() {
 
     // Check that user can't mint before start time
     let user_info = mock_info(USER, &[]);
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env_with_time(Timestamp::from_seconds(99)),
@@ -407,10 +415,11 @@ fn user_cant_mint_outside_mint_time() {
             Mint { extension: None },
         )
         .unwrap_err();
+    assert_eq!(EventNotStarted {}, err);
 
     // Check that user can't mint after end time
     let user_info = mock_info(USER, &[]);
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env_with_time(Timestamp::from_seconds(200)),
@@ -418,6 +427,7 @@ fn user_cant_mint_outside_mint_time() {
             Mint { extension: None },
         )
         .unwrap_err();
+    assert_eq!(EventTerminated {}, err);
 }
 
 #[test]
@@ -463,7 +473,7 @@ fn user_cant_mint_for_other_users() {
     let mut deps = mock_dependencies();
     let contract = setup_contract(deps.as_mut(), true, true, None, None);
 
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env(),
@@ -474,6 +484,7 @@ fn user_cant_mint_for_other_users() {
             },
         )
         .unwrap_err();
+    assert_eq!(MintUnauthorized {}, err);
 }
 
 #[test]
@@ -540,7 +551,7 @@ fn cant_transfer_if_not_transferable() {
 
     // Transfer the poap to another user
     let info = mock_info(USER, &[]);
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env(),
@@ -551,6 +562,7 @@ fn cant_transfer_if_not_transferable() {
             },
         )
         .unwrap_err();
+    assert_eq!(TransferDisabled {}, err);
 }
 
 #[test]
@@ -615,7 +627,7 @@ fn cant_send_if_not_transferable() {
     };
     let msg: CosmosMsg = CosmosMsg::Wasm(inner_msg);
     let info = mock_info(USER, &[]);
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env(),
@@ -627,6 +639,7 @@ fn cant_send_if_not_transferable() {
             },
         )
         .unwrap_err();
+    assert_eq!(TransferDisabled {}, err);
 }
 
 #[test]
@@ -634,7 +647,7 @@ fn only_admin_can_update_the_minter() {
     let mut deps = mock_dependencies();
     let contract = setup_contract(deps.as_mut(), true, true, None, None);
 
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env(),
@@ -644,8 +657,9 @@ fn only_admin_can_update_the_minter() {
             },
         )
         .unwrap_err();
+    assert_eq!(Ownership(OwnershipError::NotOwner), err);
 
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env(),
@@ -655,6 +669,7 @@ fn only_admin_can_update_the_minter() {
             },
         )
         .unwrap_err();
+    assert_eq!(Ownership(OwnershipError::NotOwner), err);
 
     let _ = contract
         .execute(
@@ -676,7 +691,7 @@ fn only_admin_can_set_mintable() {
     let mut deps = mock_dependencies();
     let contract = setup_contract(deps.as_mut(), true, true, None, None);
 
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env(),
@@ -684,8 +699,9 @@ fn only_admin_can_set_mintable() {
             SetMintable { mintable: false },
         )
         .unwrap_err();
+    assert_eq!(Ownership(OwnershipError::NotOwner), err);
 
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env(),
@@ -693,6 +709,7 @@ fn only_admin_can_set_mintable() {
             SetMintable { mintable: false },
         )
         .unwrap_err();
+    assert_eq!(Ownership(OwnershipError::NotOwner), err);
 
     let _ = contract
         .execute(
@@ -712,7 +729,7 @@ fn only_admin_can_set_transferable() {
     let mut deps = mock_dependencies();
     let contract = setup_contract(deps.as_mut(), true, true, None, None);
 
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env(),
@@ -722,8 +739,9 @@ fn only_admin_can_set_transferable() {
             },
         )
         .unwrap_err();
+    assert_eq!(Ownership(OwnershipError::NotOwner), err);
 
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env(),
@@ -733,6 +751,7 @@ fn only_admin_can_set_transferable() {
             },
         )
         .unwrap_err();
+    assert_eq!(Ownership(OwnershipError::NotOwner), err);
 
     let _ = contract
         .execute(
@@ -754,7 +773,7 @@ fn only_admin_can_set_start_end_time() {
     let mut deps = mock_dependencies();
     let contract = setup_contract(deps.as_mut(), true, true, None, None);
 
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env(),
@@ -765,8 +784,9 @@ fn only_admin_can_set_start_end_time() {
             },
         )
         .unwrap_err();
+    assert_eq!(Ownership(OwnershipError::NotOwner), err);
 
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env(),
@@ -777,6 +797,7 @@ fn only_admin_can_set_start_end_time() {
             },
         )
         .unwrap_err();
+    assert_eq!(Ownership(OwnershipError::NotOwner), err);
 
     let _ = contract
         .execute(
@@ -807,7 +828,7 @@ fn start_time_cant_be_higher_equal_then_end_time() {
     let mut deps = mock_dependencies();
     let contract = setup_contract(deps.as_mut(), true, true, None, None);
 
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env(),
@@ -818,8 +839,9 @@ fn start_time_cant_be_higher_equal_then_end_time() {
             },
         )
         .unwrap_err();
+    assert_eq!(InvalidTimestampValues {}, err);
 
-    let _ = contract
+    let err = contract
         .execute(
             deps.as_mut(),
             mock_env(),
@@ -830,4 +852,5 @@ fn start_time_cant_be_higher_equal_then_end_time() {
             },
         )
         .unwrap_err();
+    assert_eq!(InvalidTimestampValues {}, err);
 }
