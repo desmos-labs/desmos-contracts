@@ -336,7 +336,7 @@ where
         // Check if we have a mint start time
         if let Some(start_time) = self.mint_start_time.load(storage)? {
             // Check if the event has started.
-            if start_time.ge(&env.block.time) {
+            if start_time.gt(&env.block.time) {
                 return Err(ContractError::EventNotStarted {});
             }
         }
