@@ -21,10 +21,10 @@ backtraces = ["cosmwasm-std/backtraces"]
 library = []
 
 [package.metadata.scripts]
-optimize = """docker run --rm -v "$(pwd)"/../..:/code \
-  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+optimize = """docker run --rm -v "$(pwd)/../..":/code \
+  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/contracts/poap-v2/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/workspace-optimizer:0.12.6 ./contracts/poap
+  cosmwasm/rust-optimizer:0.13.0 ./contracts/poap-v2
 """
 
 [dependencies]
@@ -36,13 +36,10 @@ cw-utils.workspace = true
 schemars.workspace = true
 serde = { workspace = true, default-features = false, features = ["derive"] }
 thiserror.workspace = true
-desmos-bindings = { workspace = true, default-features = false, features = ["query", "msg"]}
-cw721 = { version = "0.18.0" }
-cw721-base = { version = "0.18.0" }
-cw-ownable = { version = "0.5.1" }
 cosmwasm-schema.workspace = true
+cw721 = { version = "0.18.0" }
+cw721-base = { version = "0.18.0", features = ["library"] }
+cw-ownable = { version = "0.5.1" }
 
 [dev-dependencies]
 cw-multi-test.workspace = true
-desmos-bindings = { workspace = true, default-features = false, features = ["mocks"]}
-
