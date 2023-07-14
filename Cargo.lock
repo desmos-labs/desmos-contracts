@@ -766,8 +766,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "poap-v2"
-version = "0.1.0"
+name = "poap"
+version = "1.0.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",

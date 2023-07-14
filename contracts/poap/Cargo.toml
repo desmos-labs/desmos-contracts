@@ -1,6 +1,6 @@
 [package]
-name = "poap-v2"
-version = "0.1.0"
+name = "poap"
+version = "1.0.0"
 authors = ["Manuel <manuel@forbole.com>"]
 edition = "2021"
 
@@ -22,9 +22,9 @@ library = []
 
 [package.metadata.scripts]
 optimize = """docker run --rm -v "$(pwd)/../..":/code \
-  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/contracts/poap-v2/target \
+  --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/contracts/poap/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  cosmwasm/rust-optimizer:0.13.0 ./contracts/poap-v2
+  cosmwasm/rust-optimizer:0.13.0 ./contracts/poap
 """
 
 [dependencies]
