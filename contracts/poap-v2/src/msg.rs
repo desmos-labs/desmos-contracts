@@ -173,9 +173,34 @@ pub enum QueryMsg<Q: JsonSchema> {
     /// Return the minter
     #[returns(cw721_base::MinterResponse)]
     Minter {},
+    /// Returns if the POAP minting is enabled
+    #[returns(IsMintableResponse)]
+    IsMintable {},
+    /// Returns if the POAP is transferable
+    #[returns(IsTransferableResponse)]
+    IsTransferable {},
+    /// Return the mint start and end time.
+    #[returns(MintStartEndTimeResponse)]
+    MintStartEndTime {},
     /// Extension query
     #[returns(())]
     Extension { msg: Q },
+}
+
+#[cw_serde]
+pub struct IsMintableResponse {
+    pub is_mintable: bool,
+}
+
+#[cw_serde]
+pub struct IsTransferableResponse {
+    pub is_transferable: bool,
+}
+
+#[cw_serde]
+pub struct MintStartEndTimeResponse {
+    pub start_time: Option<Timestamp>,
+    pub end_time: Option<Timestamp>,
 }
 
 impl<T, E> From<ExecuteMsg<T, E>> for Cw721BaseExecuteMsg<T, E>
