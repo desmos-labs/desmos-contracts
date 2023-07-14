@@ -2,7 +2,8 @@ use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 use crate::state::PoapContract;
 use cosmwasm_std::{
-    Addr, CustomMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Storage, Timestamp,
+    Addr, Binary, CustomMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Storage,
+    Timestamp,
 };
 use cw721::Cw721Execute;
 pub use cw721_base::{
@@ -66,6 +67,11 @@ where
                 recipient,
                 token_id,
             } => self.transfer_poap(deps, env, info, recipient, token_id),
+            ExecuteMsg::SendNft {
+                contract,
+                msg,
+                token_id,
+            } => self.send_poap(deps, env, info, contract, token_id, msg),
             ExecuteMsg::UpdateMinter { minter } => self.update_minter(deps, env, info, minter),
             ExecuteMsg::SetMintable { mintable } => self.set_mintable(deps, env, info, mintable),
             ExecuteMsg::SetTransferable { transferable } => {
@@ -103,14 +109,29 @@ where
         token_id: String,
     ) -> Result<Response<C>, ContractError> {
         // Check if the transfer is allowed.
-        let is_transferable = self.is_transferable.load(deps.storage)?;
-        if !is_transferable {
-            return Err(ContractError::TransferDisabled {});
-        }
+        self.assert_is_transferable(deps.storage)?;
 
         return self
             .cw721_base
             .transfer_nft(deps, env, info, recipient, token_id)
+            .map_err(|e| e.into());
+    }
+
+    pub fn send_poap(
+        &self,
+        deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
+        contract: String,
+        token_id: String,
+        msg: Binary,
+    ) -> Result<Response<C>, ContractError> {
+        // Check if the transfer is allowed.
+        self.assert_is_transferable(deps.storage)?;
+
+        return self
+            .cw721_base
+            .send_nft(deps, env, info, contract, token_id, msg)
             .map_err(|e| e.into());
     }
 
@@ -321,6 +342,15 @@ where
             if env.block.time.ge(&end_time) {
                 return Err(ContractError::EventTerminated {});
             }
+        }
+
+        Ok(())
+    }
+
+    pub fn assert_is_transferable(&self, storage: &dyn Storage) -> Result<(), ContractError> {
+        let is_transferable = self.is_transferable.load(deps.storage)?;
+        if !is_transferable {
+            return Err(ContractError::TransferDisabled {});
         }
 
         Ok(())
