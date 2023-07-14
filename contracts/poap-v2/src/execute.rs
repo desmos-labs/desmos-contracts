@@ -208,11 +208,11 @@ where
             .add_attribute("sender", info.sender)
             .add_attribute(
                 "start_time",
-                start_time.map_or_else(|| "None".to_string(), |t| t.to_string()),
+                start_time.map_or_else(|| "none".to_string(), |t| t.to_string()),
             )
             .add_attribute(
                 "end_time",
-                end_time.map_or_else(|| "None".to_string(), |t| t.to_string()),
+                end_time.map_or_else(|| "none".to_string(), |t| t.to_string()),
             ))
     }
 
@@ -263,6 +263,11 @@ where
     E: CustomMsg,
     Q: CustomMsg,
 {
+    /// Computes the id of the next POAP to mint.
+    pub fn generate_poap_id(&self, storage: &dyn Storage) -> StdResult<String> {
+        Ok(format!("{}", 1 + self.cw721_base.token_count(storage)?))
+    }
+
     /// Mint a POAP to an user.
     pub fn mint_to_user(
         &self,
@@ -279,8 +284,7 @@ where
         };
 
         // Generate the token id
-        let token_id = format!("{}", self.cw721_base.token_count(storage)?);
-
+        let token_id = self.generate_poap_id(storage)?;
         self.cw721_base
             .tokens
             .update(storage, &token_id, |old| match old {
