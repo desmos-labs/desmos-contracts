@@ -303,7 +303,7 @@ dependencies = [
 [[package]]
 name = "cw721"
 version = "0.16.0"
-source = "git+https://github.com/desmos-labs/cw-nfts?branch=paul/update-custom-msg-query#062d3a763ec93e6e5a477fd12a61e5faf791823b"
+source = "git+https://github.com/desmos-labs/cw-nfts?branch=paul/update-custom-msg-query#91ac132256bdfe0414e275f093e87e5853625745"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -315,7 +315,7 @@ dependencies = [
 [[package]]
 name = "cw721-base"
 version = "0.16.0"
-source = "git+https://github.com/desmos-labs/cw-nfts?branch=paul/update-custom-msg-query#062d3a763ec93e6e5a477fd12a61e5faf791823b"
+source = "git+https://github.com/desmos-labs/cw-nfts?branch=paul/update-custom-msg-query#91ac132256bdfe0414e275f093e87e5853625745"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
