@@ -223,25 +223,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw-multi-test"
-version = "0.16.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "127c7bb95853b8e828bdab97065c81cb5ddc20f7339180b61b2300565aaa99d1"
-dependencies = [
- "anyhow",
- "cosmwasm-std",
- "cw-storage-plus 1.1.0",
- "cw-utils 1.0.1",
- "derivative",
- "itertools",
- "k256",
- "prost",
- "schemars",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "cw-ownable"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -492,7 +473,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-multi-test 0.16.5",
+ "cw-multi-test",
  "cw-storage-plus 1.1.0",
  "cw2 1.1.0",
  "cw721 0.16.0 (git+https://github.com/desmos-labs/cw-nfts?branch=paul/update-custom-msg-query)",
@@ -532,7 +513,7 @@ checksum = "6a1cbb24dd731c22d21b49690a6ab257e89435c124ea1d0f354295e21d3ffc49"
 dependencies = [
  "anyhow",
  "cosmwasm-std",
- "cw-multi-test 0.15.1",
+ "cw-multi-test",
  "schemars",
  "serde",
  "thiserror",
@@ -772,7 +753,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-multi-test 0.16.5",
+ "cw-multi-test",
  "cw-ownable",
  "cw-storage-plus 1.1.0",
  "cw-utils 1.0.1",
@@ -851,7 +832,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-multi-test 0.16.5",
+ "cw-multi-test",
  "cw-storage-plus 1.1.0",
  "cw-utils 1.0.1",
  "cw2 1.1.0",
@@ -1018,7 +999,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-multi-test 0.16.5",
+ "cw-multi-test",
  "cw-storage-plus 1.1.0",
  "cw2 1.1.0",
  "desmos-bindings",
@@ -1107,7 +1088,7 @@ dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "cosmwasm-storage",
- "cw-multi-test 0.16.5",
+ "cw-multi-test",
  "cw-storage-plus 1.1.0",
  "cw-utils 1.0.1",
  "cw2 1.1.0",
