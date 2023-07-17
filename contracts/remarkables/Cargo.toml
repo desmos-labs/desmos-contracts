@@ -40,11 +40,11 @@ desmos-bindings = { workspace = true, default-features = false, features = ["que
 cw721-base = { git = "https://github.com/desmos-labs/cw-nfts", features = ["library"], branch = "paul/update-custom-msg-query" }
 cw-utils.workspace = true
 cw721 = { git = "https://github.com/desmos-labs/cw-nfts", branch = "paul/update-custom-msg-query" }
-url = "2.3.1"
+url = "2.4.0"
 cw721-remarkables = { path = "../cw721-remarkables", version = "0.1.0", features = ["library"]}
 cosmwasm-schema.workspace = true
 
 [dev-dependencies]
 cw-multi-test.workspace = true
 desmos-bindings = { workspace = true, default-features = false, features = ["mocks"] }
-anyhow = "1.0.70"
+anyhow = "1.0.71"
