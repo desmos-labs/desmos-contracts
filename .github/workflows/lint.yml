@@ -46,6 +46,7 @@ jobs:
         if: env.GIT_DIFF
         uses: actions-rs/tarpaulin@v0.1.3
         with:
+          version: 0.22.0
           args: '--avoid-cfg-tarpaulin'
 
       - name: Upload coverage 📤
