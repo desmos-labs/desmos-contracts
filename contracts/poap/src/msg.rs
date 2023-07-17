@@ -70,7 +70,7 @@ pub enum ExecuteMsg<T, E> {
     /// Mint a new POAP for the provided users, can
     /// only be called from the contract minter.
     MintTo { users: Vec<String>, extension: T },
-    /// Burn an NFT the sender has access to.
+    /// Burn a POAP the sender has access to.
     Burn { token_id: String },
     /// Allow to update the user with the mint permissions,
     /// can only be called from the contract admin.
