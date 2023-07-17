@@ -26,7 +26,7 @@ where
         env: Env,
         info: MessageInfo,
         msg: InstantiateMsg,
-    ) -> StdResult<Response<C>> {
+    ) -> Result<Response<C>, ContractError> {
         // Instantiate the base cw721 that we are extending.
         let cw721_instantiate_msg = Cw721BaseInstantiateMsg {
             name: msg.name,
@@ -50,6 +50,14 @@ where
         self.is_transferable
             .save(deps.storage, &msg.is_transferable)?;
         self.is_mintable.save(deps.storage, &msg.is_mintable)?;
+
+        if msg.mint_start_time.is_some()
+            && msg.mint_end_time.is_some()
+            && msg.mint_start_time.unwrap() >= msg.mint_end_time.unwrap()
+        {
+            return Err(ContractError::InvalidTimestampValues {});
+        }
+
         self.mint_start_time
             .save(deps.storage, &msg.mint_start_time)?;
         self.mint_end_time.save(deps.storage, &msg.mint_end_time)?;
