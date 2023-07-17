@@ -750,7 +750,7 @@ mod tests {
 
         assert_eq!(
             ContractError::Std(StdError::generic_err(
-                "Invalid input: human address too short"
+                "Invalid input: human address too short for this mock implementation (must be >= 3)."
             )),
             tip_error
         );
@@ -1589,7 +1589,7 @@ mod tests {
 
         assert_eq!(
             ContractError::Std(StdError::generic_err(
-                "Invalid input: human address too short"
+                "Invalid input: human address too short for this mock implementation (must be >= 3)."
             )),
             error
         );

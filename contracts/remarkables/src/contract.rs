@@ -498,7 +498,7 @@ mod tests {
             assert_eq!(
                 instantiate(deps.as_mut(), env, info, invalid_msg).unwrap_err(),
                 ContractError::Std(StdError::generic_err(
-                    "Invalid input: human address too short"
+                    "Invalid input: human address too short for this mock implementation (must be >= 3)."
                 ))
             )
         }
@@ -928,7 +928,7 @@ mod tests {
             assert_eq!(
                 execute(deps.as_mut(), env, info, msg).unwrap_err(),
                 ContractError::Std(StdError::generic_err(
-                    "Invalid input: human address too short"
+                    "Invalid input: human address too short for this mock implementation (must be >= 3)."
                 ))
             )
         }
