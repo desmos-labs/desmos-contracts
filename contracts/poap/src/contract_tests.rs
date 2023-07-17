@@ -4,8 +4,8 @@ use crate::ContractError::{
     Ownership, TransferDisabled,
 };
 use crate::ExecuteMsg::{
-    Mint, MintTo, SendNft, SetMintStartEndTime, SetMintable, SetTransferable, TransferNft,
-    UpdateMinter,
+    Approve, ApproveAll, Burn, Mint, MintTo, Revoke, RevokeAll, SendNft, SetMintStartEndTime,
+    SetMintable, SetTransferable, TransferNft, UpdateMinter,
 };
 use crate::{ExecuteMsg, Extension, InstantiateMsg, PoapContract};
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
@@ -13,6 +13,7 @@ use cosmwasm_std::{to_binary, Addr, CosmosMsg, Deps, DepsMut, Empty, Env, Timest
 use cw721::{Cw721Query, NftInfoResponse};
 use cw721_base::Cw721Contract;
 use cw_ownable::OwnershipError;
+use cw_utils::Expiration;
 
 const ADMIN: &str = "admin";
 const MINTER: &str = "minter";
@@ -853,4 +854,126 @@ fn start_time_cant_be_higher_equal_then_end_time() {
         )
         .unwrap_err();
     assert_eq!(InvalidTimestampValues {}, err);
+}
+
+#[test]
+fn can_burn_their_poap() {
+    let mut deps = mock_dependencies();
+    let contract = setup_contract(deps.as_mut(), true, true, None, None);
+
+    // Compute the id of the poap that will be minted
+    let poap_id = contract.generate_poap_id(&deps.storage).unwrap();
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER, &[]),
+            Mint { extension: None },
+        )
+        .unwrap();
+    assert_poap_minted(&contract, deps.as_ref(), poap_id.clone(), USER.to_string());
+
+    // Try to burn the minted poap
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER, &[]),
+            Burn { token_id: poap_id },
+        )
+        .unwrap();
+
+    // Check that the poap has been burned
+    let token_count = contract.cw721_base.token_count(&deps.storage).unwrap();
+    assert_eq!(0, token_count);
+}
+
+#[test]
+fn can_approve_and_revoke() {
+    let mut deps = mock_dependencies();
+    let contract = setup_contract(deps.as_mut(), true, true, None, None);
+
+    // Compute the id of the poap that will be minted
+    let poap_id = contract.generate_poap_id(&deps.storage).unwrap();
+    // Mint a poap
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER, &[]),
+            Mint { extension: None },
+        )
+        .unwrap();
+    assert_poap_minted(&contract, deps.as_ref(), poap_id.clone(), USER.to_string());
+
+    // Test Approve message
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER, &[]),
+            Approve {
+                token_id: poap_id.clone(),
+                spender: MINTER.to_string(),
+                expires: Some(Expiration::Never {}),
+            },
+        )
+        .unwrap();
+
+    // Test Revoke message
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER, &[]),
+            Revoke {
+                token_id: poap_id,
+                spender: MINTER.to_string(),
+            },
+        )
+        .unwrap();
+}
+
+#[test]
+fn can_approve_all_and_revoke_all() {
+    let mut deps = mock_dependencies();
+    let contract = setup_contract(deps.as_mut(), true, true, None, None);
+
+    // Compute the id of the poap that will be minted
+    let poap_id = contract.generate_poap_id(&deps.storage).unwrap();
+    // Mint a poap
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER, &[]),
+            Mint { extension: None },
+        )
+        .unwrap();
+    assert_poap_minted(&contract, deps.as_ref(), poap_id.clone(), USER.to_string());
+
+    // Test ApproveAll message
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER, &[]),
+            ApproveAll {
+                operator: MINTER.to_string(),
+                expires: Some(Expiration::Never {}),
+            },
+        )
+        .unwrap();
+
+    // Test RevokeAll message
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER, &[]),
+            RevokeAll {
+                operator: MINTER.to_string(),
+            },
+        )
+        .unwrap();
 }
