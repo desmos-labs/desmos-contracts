@@ -24,7 +24,7 @@ Allows to initialize the contract. This message has the following parameters:
 * `symbol`: Symbol of the POAP contract;
 * `metadata_uri`: The URI where users can view the associated metadata for the POAPs, ideally following the ERC-721 metadata scheme in a JSON file;
 * `admin`: Who controls the contract. If not set will be used the address of who is instantiating the contract;
-* `minter`: Address that is allowed to mint tokens on behalf of other users. If not set will be used the address of who is instantiating the contract;
+* `minter`: Optional address that is allowed to mint tokens on behalf of other users;
 * `is_transferable`: Specifies whether each POAP can be transferred from one user to another;
 * `is_mintable`: Indicates whether users can mint the POAPs;
 * `mint_start_time`: Identifies the timestamp at which the minting of the POAP will be enabled. If not set, the minting is always enabled;
@@ -62,7 +62,7 @@ Here an example message to mint a POAP:
 
 ### MintTo
 
-Mint a new POAP for the provided users, can only be called from the contract minter.
+Mint a new POAP for the provided users, can only be called from the contract admin or minter.
 This message have the following parameters:
 * `users`: List of users for whom the POAP will be mined;
 * `extension`: The POAP extension.
