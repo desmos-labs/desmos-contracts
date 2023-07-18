@@ -29,19 +29,19 @@ pub enum ContractError {
     #[error("Mint is not allowed")]
     MintDisabled {},
 
-    #[error("{user} already own a POAP")]
+    #[error("{user} already owns a POAP")]
     PoapAlreadyMinted { user: String },
 
     #[error("You don't have the permission to mint")]
     MintUnauthorized {},
 
-    #[error("Can't mint, event not started")]
-    EventNotStarted {},
+    #[error("Can't mint: minting period not started yet")]
+    MintTimeNotStarted {},
 
-    #[error("Can't mint, event terminated")]
-    EventTerminated {},
+    #[error("Can't mint: minting period already ended")]
+    MintTimeAlreadyEnded {},
 
-    #[error("The start time time must be lower then the end time")]
+    #[error("Start time must be smaller than end time")]
     InvalidTimestampValues {},
 }
 

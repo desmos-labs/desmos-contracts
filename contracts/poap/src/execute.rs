@@ -424,7 +424,7 @@ where
         if let Some(start_time) = self.mint_start_time.load(storage)? {
             // Check if the event has started.
             if start_time.gt(&env.block.time) {
-                return Err(ContractError::EventNotStarted {});
+                return Err(ContractError::MintTimeNotStarted {});
             }
         }
 
@@ -432,7 +432,7 @@ where
         if let Some(end_time) = self.mint_end_time.load(storage)? {
             // Check if the event is still in progress.
             if env.block.time.ge(&end_time) {
-                return Err(ContractError::EventTerminated {});
+                return Err(ContractError::MintTimeAlreadyEnded {});
             }
         }
 
