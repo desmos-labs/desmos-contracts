@@ -289,6 +289,7 @@ where
         let mut minted_tokens = Vec::<String>::with_capacity(users.len());
         for user in users {
             let user_addr = deps.api.addr_validate(&user)?;
+            self.assert_user_dont_own_a_poap(deps.storage, &user_addr)?;
             minted_tokens.push(self.mint_to_user(deps.storage, &user_addr, extension.clone())?);
         }
 
@@ -367,6 +368,30 @@ where
         Ok(())
     }
 
+    /// Check whether a user owns a POAP.
+    /// * `user` - Address that will be checked.
+    pub fn assert_user_dont_own_a_poap(
+        &self,
+        storage: &dyn Storage,
+        user: &Addr,
+    ) -> Result<(), ContractError> {
+        // Check if this user have already minted a poap.
+        if !self
+            .cw721_base
+            .tokens
+            .idx
+            .owner
+            .prefix(user.clone())
+            .is_empty(storage)
+        {
+            return Err(ContractError::PoapAlreadyMinted {
+                user: user.to_string(),
+            });
+        }
+
+        return Ok(());
+    }
+
     /// Asserts if an user can mint a POAP.
     /// * `user` - Address that will be checked.
     pub fn assert_user_can_mint(
@@ -375,6 +400,9 @@ where
         user: &Addr,
         env: &Env,
     ) -> Result<(), ContractError> {
+        // Check if this user have already minted a poap.
+        self.assert_user_dont_own_a_poap(storage, user)?;
+
         // Check if the user is the minter.
         if self.assert_is_minter(storage, user).is_ok() {
             // The minter can always perform the mint operation.
@@ -390,18 +418,6 @@ where
         // Check if mint is enabled
         if !self.is_mintable.load(storage)? {
             return Err(ContractError::MintDisabled {});
-        }
-
-        // Check if this user have already minted a poap.
-        if !self
-            .cw721_base
-            .tokens
-            .idx
-            .owner
-            .prefix(user.clone())
-            .is_empty(storage)
-        {
-            return Err(ContractError::PoapAlreadyMinted {});
         }
 
         // Check if we have a mint start time
