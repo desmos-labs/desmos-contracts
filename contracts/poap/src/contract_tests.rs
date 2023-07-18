@@ -165,6 +165,28 @@ fn proper_instantiation() {
 }
 
 #[test]
+fn instantiate_with_invalid_times_fails() {
+    let mut deps = mock_dependencies();
+    let contract = PoapContract::<Extension, Empty, Empty, Empty>::default();
+    let msg = InstantiateMsg {
+        name: CONTRACT_NAME.to_string(),
+        symbol: SYMBOL.to_string(),
+        metadata_uri: METADATA_URI.to_string(),
+        admin: Some(ADMIN.to_string()),
+        minter: Some(MINTER.to_string()),
+        is_transferable: false,
+        is_mintable: true,
+        mint_start_time: Some(Timestamp::from_seconds(10)),
+        mint_end_time: Some(Timestamp::from_seconds(1)),
+    };
+
+    let err = contract
+        .instantiate(deps.as_mut(), mock_env(), mock_info(ADMIN, &[]), msg)
+        .unwrap_err();
+    assert_eq!(InvalidTimestampValues {}, err);
+}
+
+#[test]
 fn user_can_mint_if_mintable() {
     let mut deps = mock_dependencies();
     let contract = setup_contract(deps.as_mut(), true, true, None, None);
