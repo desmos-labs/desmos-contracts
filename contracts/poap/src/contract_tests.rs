@@ -217,6 +217,26 @@ fn minter_can_mint_if_not_mintable() {
 }
 
 #[test]
+fn admin_can_mint_if_not_mintable() {
+    let mut deps = mock_dependencies();
+    let contract = setup_contract(deps.as_mut(), true, false, None, None);
+    let poap_id = contract.generate_poap_id(&deps.storage).unwrap();
+
+    // Check that the user can't mint if the poap is not mintable
+    let user_info = mock_info(ADMIN, &[]);
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            mock_env(),
+            user_info,
+            Mint { extension: None },
+        )
+        .unwrap();
+
+    assert_poap_minted(&contract, deps.as_ref(), poap_id, ADMIN.to_string());
+}
+
+#[test]
 fn user_can_mint_after_start_time() {
     let mut deps = mock_dependencies();
     let start_time = Timestamp::from_seconds(200);
@@ -289,6 +309,33 @@ fn minter_can_mint_before_start_time() {
         .unwrap();
 
     assert_poap_minted(&contract, deps.as_ref(), poap_id, MINTER.to_string())
+}
+
+#[test]
+fn admin_can_mint_before_start_time() {
+    let mut deps = mock_dependencies();
+    let contract = setup_contract(
+        deps.as_mut(),
+        true,
+        true,
+        Some(Timestamp::from_seconds(200)),
+        None,
+    );
+    let env_event_not_started = mock_env_with_time(Timestamp::from_seconds(199));
+    let poap_id = contract.generate_poap_id(&deps.storage).unwrap();
+
+    // Check that an user can't mint before the mint start time.
+    let user_info = mock_info(ADMIN, &[]);
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            env_event_not_started,
+            user_info,
+            Mint { extension: None },
+        )
+        .unwrap();
+
+    assert_poap_minted(&contract, deps.as_ref(), poap_id, ADMIN.to_string())
 }
 
 #[test]
@@ -366,6 +413,32 @@ fn minter_can_mint_after_end_time() {
         )
         .unwrap();
     assert_poap_minted(&contract, deps.as_ref(), poap_id, MINTER.to_string());
+}
+
+#[test]
+fn admin_can_mint_after_end_time() {
+    let mut deps = mock_dependencies();
+    let contract = setup_contract(
+        deps.as_mut(),
+        true,
+        true,
+        None,
+        Some(Timestamp::from_seconds(200)),
+    );
+    let poap_id = contract.generate_poap_id(&deps.storage).unwrap();
+    let env_after_end_time = mock_env_with_time(Timestamp::from_seconds(200));
+
+    // Check that an user can't mint before the mint start time.
+    let user_info = mock_info(ADMIN, &[]);
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            env_after_end_time,
+            user_info,
+            Mint { extension: None },
+        )
+        .unwrap();
+    assert_poap_minted(&contract, deps.as_ref(), poap_id, ADMIN.to_string());
 }
 
 #[test]
@@ -470,6 +543,44 @@ fn minter_can_mint_outside_mint_time() {
 }
 
 #[test]
+fn admin_can_mint_outside_mint_time() {
+    let mut deps = mock_dependencies();
+    let contract = setup_contract(
+        deps.as_mut(),
+        true,
+        true,
+        Some(Timestamp::from_seconds(100)),
+        Some(Timestamp::from_seconds(200)),
+    );
+
+    // Check that minter can mint before start time
+    let poap_id = contract.generate_poap_id(&deps.storage).unwrap();
+    let user_info = mock_info(ADMIN, &[]);
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            mock_env_with_time(Timestamp::from_seconds(99)),
+            user_info,
+            Mint { extension: None },
+        )
+        .unwrap();
+    assert_poap_minted(&contract, deps.as_ref(), poap_id, ADMIN.to_string());
+
+    // Check that minter can mint after end time
+    let user_info = mock_info(ADMIN, &[]);
+    let poap_id = contract.generate_poap_id(&deps.storage).unwrap();
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            mock_env_with_time(Timestamp::from_seconds(200)),
+            user_info,
+            Mint { extension: None },
+        )
+        .unwrap();
+    assert_poap_minted(&contract, deps.as_ref(), poap_id, ADMIN.to_string());
+}
+
+#[test]
 fn user_cant_mint_for_other_users() {
     let mut deps = mock_dependencies();
     let contract = setup_contract(deps.as_mut(), true, true, None, None);
@@ -499,6 +610,26 @@ fn minter_can_mint_for_other_users() {
             deps.as_mut(),
             mock_env(),
             mock_info(MINTER, &[]),
+            MintTo {
+                users: vec![USER.to_string()],
+                extension: None,
+            },
+        )
+        .unwrap();
+    assert_poap_minted(&contract, deps.as_ref(), poap_id, USER.to_string());
+}
+
+#[test]
+fn admin_can_mint_for_other_users() {
+    let mut deps = mock_dependencies();
+    let contract = setup_contract(deps.as_mut(), true, true, None, None);
+    let poap_id = contract.generate_poap_id(&deps.storage).unwrap();
+
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
             MintTo {
                 users: vec![USER.to_string()],
                 extension: None,

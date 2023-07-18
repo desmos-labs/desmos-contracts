@@ -276,7 +276,13 @@ where
         users: Vec<String>,
         extension: T,
     ) -> Result<Response<C>, ContractError> {
-        self.assert_is_minter(deps.storage, &info.sender)?;
+        // Check if the sender is the admin or the minter.
+        let can_mint = self.assert_is_minter(deps.storage, &info.sender).is_ok()
+            || self.assert_is_admin(deps.storage, &info.sender).is_ok();
+
+        if !can_mint {
+            return Err(ContractError::MintUnauthorized {});
+        }
 
         let mut minted_tokens = Vec::<String>::with_capacity(users.len());
         for user in users {
@@ -370,6 +376,12 @@ where
         // Check if the user is the minter.
         if self.minter.load(storage)?.eq(user) {
             // The minter can always perform the mint operation.
+            return Ok(());
+        }
+
+        // Check if the user is the admin.
+        if self.assert_is_admin(storage, user).is_ok() {
+            // The admin can always perform the mint operation.
             return Ok(());
         }
 
