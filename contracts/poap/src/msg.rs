@@ -19,7 +19,6 @@ pub struct InstantiateMsg {
     /// If None will be used the address of who is instantiating the contract.
     pub admin: Option<String>,
     /// Additional address that is allowed to mint tokens on behalf of other users.
-    /// If None will be used the address of who is instantiating the contract.
     pub minter: Option<String>,
     /// Specifies whether each POAP can be transferred from one user to another.
     pub is_transferable: bool,
@@ -74,7 +73,7 @@ pub enum ExecuteMsg<T, E> {
     Burn { token_id: String },
     /// Allow to update the user with the mint permissions,
     /// can only be called from the contract admin.
-    UpdateMinter { minter: String },
+    UpdateMinter { minter: Option<String> },
     /// Sets if the users can mint their POAP,
     /// can only be called from the contract admin.
     SetMintable { mintable: bool },

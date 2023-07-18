@@ -100,7 +100,7 @@ fn proper_instantiation_without_admin_and_minter() {
 
     // the instantiation worked, lets query ensure that the admin and minter are correct.
     let minter = contract.minter(deps.as_ref(), mock_env()).unwrap();
-    assert_eq!(Some(ADMIN.to_string()), minter.minter);
+    assert_eq!(None, minter.minter);
 
     let admin = Cw721Contract::<Extension, Empty, Empty, Empty>::ownership(deps.as_ref()).unwrap();
     assert_eq!(Some(Addr::unchecked(ADMIN)), admin.owner)
@@ -126,13 +126,13 @@ fn proper_instantiation_without_minter() {
         .instantiate(deps.as_mut(), mock_env(), info, msg)
         .unwrap();
 
-    // Ensure that the minter is who instantiate the contract.
-    let minter = contract.minter(deps.as_ref(), mock_env()).unwrap();
-    assert_eq!(Some(MINTER.to_string()), minter.minter);
-
     // Ensure that the admin is the value that has been passed in the InstantiateMsg message.
     let admin = Cw721Contract::<Extension, Empty, Empty, Empty>::ownership(deps.as_ref()).unwrap();
-    assert_eq!(Some(Addr::unchecked(ADMIN)), admin.owner)
+    assert_eq!(Some(Addr::unchecked(ADMIN)), admin.owner);
+
+    // Check that the minter is None and didn't default to who instantiate the contract.
+    let minter = contract.minter(deps.as_ref(), mock_env()).unwrap();
+    assert_eq!(None, minter.minter);
 }
 
 #[test]
@@ -640,6 +640,36 @@ fn admin_can_mint_for_other_users() {
 }
 
 #[test]
+fn admin_can_mint_for_other_users_if_minter_is_none() {
+    let mut deps = mock_dependencies();
+    let contract = setup_contract(deps.as_mut(), true, true, None, None);
+    let poap_id = contract.generate_poap_id(&deps.storage).unwrap();
+
+    // Remove the minter.
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            UpdateMinter { minter: None },
+        )
+        .unwrap();
+
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(ADMIN, &[]),
+            MintTo {
+                users: vec![USER.to_string()],
+                extension: None,
+            },
+        )
+        .unwrap();
+    assert_poap_minted(&contract, deps.as_ref(), poap_id, USER.to_string());
+}
+
+#[test]
 fn can_transfer_if_transferable() {
     let mut deps = mock_dependencies();
     let contract = setup_contract(deps.as_mut(), true, true, None, None);
@@ -785,7 +815,7 @@ fn only_admin_can_update_the_minter() {
             mock_env(),
             mock_info(USER, &[]),
             UpdateMinter {
-                minter: USER.to_string(),
+                minter: Some(USER.to_string()),
             },
         )
         .unwrap_err();
@@ -797,7 +827,7 @@ fn only_admin_can_update_the_minter() {
             mock_env(),
             mock_info(MINTER, &[]),
             UpdateMinter {
-                minter: USER.to_string(),
+                minter: Some(USER.to_string()),
             },
         )
         .unwrap_err();
@@ -809,7 +839,7 @@ fn only_admin_can_update_the_minter() {
             mock_env(),
             mock_info(ADMIN, &[]),
             UpdateMinter {
-                minter: USER.to_string(),
+                minter: Some(USER.to_string()),
             },
         )
         .unwrap();

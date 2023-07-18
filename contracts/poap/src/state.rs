@@ -15,7 +15,7 @@ where
     /// ideally following the ERC-721 metadata scheme in a JSON file.
     pub metadata_uri: Item<'a, String>,
     /// Additional address that is allowed to mint tokens on behalf of other users.
-    pub minter: Item<'a, Addr>,
+    pub minter: Item<'a, Option<Addr>>,
     /// Specifies whether each POAP can be transferred from one user to another.
     pub is_transferable: Item<'a, bool>,
     /// Indicates whether users can mint the POAPs.

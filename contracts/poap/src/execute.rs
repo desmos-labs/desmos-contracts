@@ -44,8 +44,7 @@ where
         let minter = msg
             .minter
             .map(|minter| deps.api.addr_validate(&minter))
-            .transpose()?
-            .unwrap_or(info.sender);
+            .transpose()?;
         self.minter.save(deps.storage, &minter)?;
         self.is_transferable
             .save(deps.storage, &msg.is_transferable)?;
@@ -160,16 +159,19 @@ where
         deps: DepsMut,
         _env: Env,
         info: MessageInfo,
-        minter: String,
+        minter: Option<String>,
     ) -> Result<Response<C>, ContractError> {
         self.assert_is_admin(deps.storage, &info.sender)?;
-        let minter_addr = deps.api.addr_validate(&minter)?;
-        self.minter.save(deps.storage, &minter_addr)?;
+        let new_minter = minter.map(|m| deps.api.addr_validate(&m)).transpose()?;
+        self.minter.save(deps.storage, &new_minter)?;
 
         Ok(Response::new()
             .add_attribute("action", "update_minter")
             .add_attribute("sender", info.sender)
-            .add_attribute("new_minter", minter_addr))
+            .add_attribute(
+                "new_minter",
+                new_minter.map_or_else(|| "none".to_string(), |minter| minter.to_string()),
+            ))
     }
 
     /// Updates the POAP mintability, this action can be executed only from
@@ -358,7 +360,7 @@ where
         sender: &Addr,
     ) -> Result<(), ContractError> {
         let minter = self.minter.load(storage)?;
-        if !sender.eq(&minter) {
+        if minter.is_none() || minter.unwrap().ne(sender) {
             return Err(ContractError::MintUnauthorized {});
         }
 
@@ -374,7 +376,7 @@ where
         env: &Env,
     ) -> Result<(), ContractError> {
         // Check if the user is the minter.
-        if self.minter.load(storage)?.eq(user) {
+        if self.assert_is_minter(storage, user).is_ok() {
             // The minter can always perform the mint operation.
             return Ok(());
         }

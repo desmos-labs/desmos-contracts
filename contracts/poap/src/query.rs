@@ -34,7 +34,10 @@ where
     /// Gets the address of the contract minter.
     pub fn minter(&self, deps: Deps, _env: Env) -> StdResult<MinterResponse> {
         Ok(MinterResponse {
-            minter: Some(self.minter.load(deps.storage)?.to_string()),
+            minter: self
+                .minter
+                .load(deps.storage)?
+                .map(|minter| minter.to_string()),
         })
     }
 
