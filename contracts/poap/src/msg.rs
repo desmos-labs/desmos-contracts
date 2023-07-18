@@ -211,6 +211,7 @@ where
     T: Debug,
     E: Debug,
 {
+    #[cfg(not(tarpaulin_include))]
     fn from(execute_msg: ExecuteMsg<T, E>) -> Self {
         match execute_msg {
             ExecuteMsg::TransferNft {
@@ -256,6 +257,7 @@ impl<Q> From<QueryMsg<Q>> for Cw721BaseQueryMsg<Q>
 where
     Q: JsonSchema + Debug,
 {
+    #[cfg(not(tarpaulin_include))]
     fn from(query_msg: QueryMsg<Q>) -> Self {
         match query_msg {
             QueryMsg::OwnerOf {

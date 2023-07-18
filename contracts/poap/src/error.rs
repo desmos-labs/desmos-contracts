@@ -46,6 +46,7 @@ pub enum ContractError {
 }
 
 impl From<Cw721BaseContractError> for ContractError {
+    #[cfg(not(tarpaulin_include))]
     fn from(error: Cw721BaseContractError) -> Self {
         match error {
             Cw721BaseContractError::Std(e) => ContractError::Std(e),
