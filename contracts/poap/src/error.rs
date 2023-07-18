@@ -29,6 +29,9 @@ pub enum ContractError {
     #[error("Mint is not allowed")]
     MintDisabled {},
 
+    #[error("POAP already minted")]
+    PoapAlreadyMinted {},
+
     #[error("You don't have the permission to mint")]
     MintUnauthorized {},
 

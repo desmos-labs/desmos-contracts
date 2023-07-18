@@ -392,6 +392,18 @@ where
             return Err(ContractError::MintDisabled {});
         }
 
+        // Check if this user have already minted a poap.
+        if !self
+            .cw721_base
+            .tokens
+            .idx
+            .owner
+            .prefix(user.clone())
+            .is_empty(storage)
+        {
+            return Err(ContractError::PoapAlreadyMinted {});
+        }
+
         // Check if we have a mint start time
         if let Some(start_time) = self.mint_start_time.load(storage)? {
             // Check if the event has started.

@@ -7,7 +7,7 @@ use crate::ExecuteMsg::{
     Approve, ApproveAll, Burn, Mint, MintTo, Revoke, RevokeAll, SendNft, SetMintStartEndTime,
     SetMintable, SetTransferable, TransferNft, UpdateMinter,
 };
-use crate::{ExecuteMsg, Extension, InstantiateMsg, PoapContract};
+use crate::{ContractError, ExecuteMsg, Extension, InstantiateMsg, PoapContract};
 use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
 use cosmwasm_std::{to_binary, Addr, CosmosMsg, Deps, DepsMut, Empty, Env, Timestamp, WasmMsg};
 use cw721::{Cw721Query, NftInfoResponse};
@@ -234,6 +234,33 @@ fn admin_can_mint_if_not_mintable() {
         .unwrap();
 
     assert_poap_minted(&contract, deps.as_ref(), poap_id, ADMIN.to_string());
+}
+
+#[test]
+fn user_cant_mint_more_then_1_poap() {
+    let mut deps = mock_dependencies();
+    let contract = setup_contract(deps.as_mut(), true, true, None, None);
+    let poap_id = contract.generate_poap_id(&deps.storage).unwrap();
+
+    let _ = contract
+        .execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER, &[]),
+            Mint { extension: None },
+        )
+        .unwrap();
+    assert_poap_minted(&contract, deps.as_ref(), poap_id, USER.to_string());
+
+    let err = contract
+        .execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(USER, &[]),
+            Mint { extension: None },
+        )
+        .unwrap_err();
+    assert_eq!(ContractError::PoapAlreadyMinted {}, err);
 }
 
 #[test]
