@@ -1,6 +1,6 @@
 [package]
 name = "poap"
-version = "1.0.0"
+version = "2.0.0"
 authors = ["Manuel <manuel@forbole.com>"]
 edition = "2021"
 
