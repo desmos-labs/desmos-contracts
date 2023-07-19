@@ -321,7 +321,7 @@ where
         extension: T,
     ) -> Result<String, ContractError> {
         // Check if this user have already minted a poap.
-        self.assert_user_dont_own_a_poap(deps.storage, &owner)?;
+        self.assert_user_dont_own_a_poap(storage, &owner)?;
 
         // Create the token
         let token = cw721_base::state::TokenInfo {
