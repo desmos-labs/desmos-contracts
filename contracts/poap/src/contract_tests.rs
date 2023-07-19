@@ -1,7 +1,7 @@
 use crate::msg::MintStartEndTimeResponse;
 use crate::ContractError::{
-    MintTimeNotStarted, MintTimeAlreadyEnded, InvalidTimestampValues, MintDisabled, MintUnauthorized,
-    Ownership, TransferDisabled,
+    InvalidTimestampValues, MintDisabled, MintTimeAlreadyEnded, MintTimeNotStarted,
+    MintUnauthorized, Ownership, TransferDisabled,
 };
 use crate::ExecuteMsg::{
     Approve, ApproveAll, Burn, Mint, MintTo, Revoke, RevokeAll, SendNft, SetMintStartEndTime,
