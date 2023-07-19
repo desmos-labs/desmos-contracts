@@ -289,7 +289,6 @@ where
         let mut minted_tokens = Vec::<String>::with_capacity(users.len());
         for user in users {
             let user_addr = deps.api.addr_validate(&user)?;
-            self.assert_user_dont_own_a_poap(deps.storage, &user_addr)?;
             minted_tokens.push(self.mint_to_user(deps.storage, &user_addr, extension.clone())?);
         }
 
@@ -321,6 +320,9 @@ where
         owner: &Addr,
         extension: T,
     ) -> Result<String, ContractError> {
+        // Check if this user have already minted a poap.
+        self.assert_user_dont_own_a_poap(deps.storage, &owner)?;
+
         // Create the token
         let token = cw721_base::state::TokenInfo {
             owner: owner.clone(),
@@ -400,9 +402,6 @@ where
         user: &Addr,
         env: &Env,
     ) -> Result<(), ContractError> {
-        // Check if this user have already minted a poap.
-        self.assert_user_dont_own_a_poap(storage, user)?;
-
         // Check if the user is the minter.
         if self.assert_is_minter(storage, user).is_ok() {
             // The minter can always perform the mint operation.
