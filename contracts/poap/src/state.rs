@@ -1,126 +1,73 @@
-use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{Addr, CustomMsg, Timestamp};
+use cw721_base::Cw721Contract;
+use cw_storage_plus::Item;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
-use cosmwasm_std::{Addr, Timestamp};
-use cw_storage_plus::{Item, Map};
-
-#[cw_serde]
-pub struct Config {
-    pub admin: Addr,
-    pub minter: Addr,
-    pub mint_enabled: bool,
-    pub per_address_limit: u32,
-    pub cw721_code_id: u64,
+pub struct PoapContract<'a, T, C, E, Q>
+where
+    T: Serialize + DeserializeOwned + Clone,
+    Q: CustomMsg,
+    E: CustomMsg,
+{
+    pub cw721_base: Cw721Contract<'a, T, C, E, Q>,
+    /// The URI where users can view the associated metadata for the POAPs,
+    /// ideally following the ERC-721 metadata scheme in a JSON file.
+    pub metadata_uri: Item<'a, String>,
+    /// Additional address that is allowed to mint tokens on behalf of other users.
+    pub minter: Item<'a, Option<Addr>>,
+    /// Specifies whether each POAP can be transferred from one user to another.
+    pub is_transferable: Item<'a, bool>,
+    /// Indicates whether users can mint the POAPs.
+    pub is_mintable: Item<'a, bool>,
+    /// Identifies the timestamp at which the minting of the POAP will be enabled.
+    /// If not set, the minting is always enabled.
+    pub mint_start_time: Item<'a, Option<Timestamp>>,
+    /// Identifies the timestamp at which the minting of the POAP will be disabled.
+    /// If not set, the minting will never end.
+    pub mint_end_time: Item<'a, Option<Timestamp>>,
 }
 
-#[cw_serde]
-#[schemars(rename = "StateEventInfo")]
-pub struct EventInfo {
-    pub creator: Addr,
-    pub start_time: Timestamp,
-    pub end_time: Timestamp,
-    pub poap_uri: String,
-}
-
-#[cw_serde]
-pub struct Metadata {
-    pub claimer: Addr,
-}
-
-pub const CONFIG: Item<Config> = Item::new("config");
-pub const EVENT_INFO: Item<EventInfo> = Item::new("event_info");
-pub const CW721_ADDRESS: Item<Addr> = Item::new("cw721_address");
-pub const NEXT_POAP_ID: Item<u64> = Item::new("nex_poap_id");
-pub const MINTER_ADDRESS: Map<Addr, u32> = Map::new("minter_address");
-
-impl EventInfo {
-    /// Checks if the event has already started.
-    /// * `timestamp` - Reference time used to check if the event has started.
-    pub fn is_started(&self, timestamp: &Timestamp) -> bool {
-        &self.start_time <= timestamp
-    }
-
-    /// Checks if the event is ended.
-    /// * `timestamp` - Reference time used to check if the event is ended.
-    pub fn is_ended(&self, timestamp: &Timestamp) -> bool {
-        timestamp >= &self.end_time
-    }
-
-    /// Checks if the event is in progress.
-    /// * `timestamp` - Reference time used to check if the event is in progress.
-    pub fn in_progress(&self, timestamp: &Timestamp) -> bool {
-        self.is_started(timestamp) && !self.is_ended(timestamp)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::state::EventInfo;
-    use cosmwasm_std::{Addr, Timestamp};
-
-    fn mock_event_info(start: u64, end: u64) -> EventInfo {
-        EventInfo {
-            creator: Addr::unchecked(""),
-            start_time: Timestamp::from_seconds(start),
-            end_time: Timestamp::from_seconds(end),
-            poap_uri: "".to_string(),
+impl<'a, T, C, E, Q> PoapContract<'a, T, C, E, Q>
+where
+    T: Serialize + DeserializeOwned + Clone,
+    E: CustomMsg,
+    Q: CustomMsg,
+{
+    fn new(
+        metadata_uri_key: &'a str,
+        minter_key: &'a str,
+        is_transferable_key: &'a str,
+        is_mintable_key: &'a str,
+        mint_start_time_key: &'a str,
+        mint_end_time_key: &'a str,
+    ) -> Self {
+        Self {
+            cw721_base: Cw721Contract::default(),
+            metadata_uri: Item::new(metadata_uri_key),
+            minter: Item::new(minter_key),
+            is_transferable: Item::new(is_transferable_key),
+            is_mintable: Item::new(is_mintable_key),
+            mint_start_time: Item::new(mint_start_time_key),
+            mint_end_time: Item::new(mint_end_time_key),
         }
     }
+}
 
-    #[test]
-    fn event_is_started() {
-        let current_time = Timestamp::from_seconds(300);
-        let event_info = mock_event_info(200, 400);
-
-        assert!(event_info.is_started(&current_time));
-
-        // Test edge case start time = current time
-        assert!(event_info.is_started(&event_info.start_time));
-    }
-
-    #[test]
-    fn event_not_started() {
-        let current_time = Timestamp::from_seconds(300);
-        let event_info = mock_event_info(350, 400);
-
-        assert!(!event_info.is_started(&current_time));
-    }
-
-    #[test]
-    fn event_is_ended() {
-        let current_time = Timestamp::from_seconds(300);
-        let event_info = mock_event_info(200, 250);
-
-        assert!(event_info.is_ended(&current_time));
-
-        // Test edge end time = current time
-        assert!(event_info.is_ended(&event_info.end_time));
-    }
-
-    #[test]
-    fn event_not_ended() {
-        let current_time = Timestamp::from_seconds(300);
-        let event_info = mock_event_info(200, 400);
-
-        assert!(!event_info.is_ended(&current_time));
-    }
-
-    #[test]
-    fn event_in_progress() {
-        let current_time = Timestamp::from_seconds(150);
-        let event_info = mock_event_info(100, 200);
-
-        assert!(event_info.in_progress(&current_time));
-        // Test edge case current time = start time
-        assert!(event_info.in_progress(&event_info.start_time));
-    }
-
-    #[test]
-    fn event_not_in_progress() {
-        let current_time = Timestamp::from_seconds(500);
-        let event_info = mock_event_info(100, 200);
-
-        assert!(!event_info.in_progress(&current_time));
-        // Test edge case current time = end time
-        assert!(!event_info.in_progress(&event_info.end_time));
+impl<T, C, E, Q> Default for PoapContract<'static, T, C, E, Q>
+where
+    T: Serialize + DeserializeOwned + Clone,
+    E: CustomMsg,
+    Q: CustomMsg,
+{
+    fn default() -> Self {
+        Self::new(
+            "poap_metadata_uri",
+            "minter",
+            "is_transferable",
+            "is_mintable",
+            "mint_start_time",
+            "mint_end_time",
+        )
     }
 }

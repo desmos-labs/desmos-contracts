@@ -1,267 +1,235 @@
-# POAP contract
+# POAP Contract
 
-Contract that allows users who has a Desmos profile to mint POAP nft via cw721-poap contract.
-To easily interact with the contract you can use the `poap` script available [here](https://github.com/desmos-labs/contract-utils/tree/main/utils), 
-otherwise you can take a look at the supported messages in the following sections.
+Contract that allows users to mint POAP nft.
+
+## How to build
+
+Before build the contract make sure you have:
+1. Docker installed on your system;
+2. The cargo `cargo-run-script` binary. 
+This binary can be installed with the `cargo install cargo-run-script` command.
+
+To build the contract from withing the contract directory run:
+```shell
+cargo optimize
+```
+
+This will build the contract and store the compiled wasm code in the `artifacts` directory 
+located in the workspace root.
 
 ## Instantiate Message
+
 Allows to initialize the contract. This message has the following parameters:
-* `admin`: Address of who will have the right to administer the contract;
-* `minter`: Address of who can mint tokens to other users;
-* `cw721_code_id`: Id of the CW721 contract to initialize together with this contract;
-* `cw721_instantiate_msg`: Initialization [message](../cw721-poap/README.md#instantiate_message) that will be sent to the CW721 contract;
-* `event_info`: Information about the event which is defined [here](#EventInfo).
+* `name`: Name of the POAP contract;
+* `symbol`: Symbol of the POAP contract;
+* `metadata_uri`: The URI where users can view the associated metadata for the POAPs, ideally following the ERC-721 metadata scheme in a JSON file;
+* `admin`: Who controls the contract. If not set will be used the address of who is instantiating the contract;
+* `minter`: Optional address that is allowed to mint tokens on behalf of other users;
+* `is_transferable`: Specifies whether each POAP can be transferred from one user to another;
+* `is_mintable`: Indicates whether users can mint the POAPs;
+* `mint_start_time`: Identifies the timestamp at which the minting of the POAP will be enabled. If not set, the minting is always enabled;
+* `mint_end_time`: Identifies the timestamp at which the minting of the POAP will be disabled. If not set, the minting will never end.
 
 Here an example message to instantiate the contract:
 ```json
 {
+    "name": "poap-nft",
+    "symbol": "poap",
+    "metadata_uri": "ipfs://poap_metadata",
     "admin": "desmos1......",
     "minter": "desmos1......",
-    "cw721_code_id": "1",
-    "cw721_instantiate_msg": {
-        "name": "poap_nft",
-        "symbol": "poap",
-        "minter": "contract_address"
-    },
-    "event_info": {
-        "creator": "desmos1......",
-        "start_time": "2022-12-31T10:00:00Z",
-        "end_time": "2022-12-31T19:00:00Z",
-        "per_address_limit": 1,
-        "poap_uri": "ipfs://poap.info"
-    }
+    "is_transferable": true,
+    "is_mintable": true
 }
 ```
 
-### EventInfo
-Represents the information of the event. This structure has the following parameters:
-* `creator`: User that created the event;
-* `start_time`: Time at which the event begins in RFC3339 format (2022-12-31T10:00:00Z);
-* `end_time`: Time at which the event ends in RFC3339 format (2022-12-31T10:00:00Z);
-* `per_address_limit`: Max amount of poap that a single user can mint;
-* `poap_uri`: Identifies a valid IPFS URI corresponding to where the assets and metadata of the POAPs are stored.
+## Execute messages
 
-## Execute Messages
-
-### EnableMint
-Allows the contract's admin to enable the [Mint](#Mint).
-
-Here an example message to enable mint:
-```json
-{
-    "enable_mint": {}
-}
-```
-
-### DisableMint
-Allows the contract's admin to disable the [Mint](#Mint).
-
-Here an example message to disable mint:
-```json
-{
-    "disable_mint": {}
-}
-```
+This contract extends the `cw721-base` contract and so inherit all the `cw721`.
+You can take a look [here](https://github.com/CosmWasm/cw-nfts/blob/main/packages/cw721/README.md#messages) to see the `cw721` messages.
 
 ### Mint
-Allows users to mint a POAP token in the event period if the contract enables mint.
+
+Mint a new POAP for the caller. This message has the following parameters:
+* `extension`: The POAP extension.
 
 Here an example message to mint a POAP:
 ```json
 {
-    "mint": {}
+  "mint": {}
 }
 ```
 
 ### MintTo
-Allows the minter to mint a POAP token to a recipient in the event period if the contract enables mint. This message has the following parameter:
-* `recipient`: Address who will receive the minted token.
 
-Here an example message to mint a POAP to a user:
+Mint a new POAP for the provided users, can only be called from the contract admin or minter.
+This message have the following parameters:
+* `users`: List of users for whom the POAP will be mined;
+* `extension`: The POAP extension.
+
+Here an example message to mint a POAP to two users:
 ```json
 {
-    "mint_to": {
-        "recipient": "desmos1......"
-    }
+  "mint_to": {
+    "users": [
+      "desmos1....",
+      "desmos1..."
+    ]
+  }
 }
 ```
 
-### UpdateEventInfo
-Allows the contract admin to update the event info. This message has the following parameters:
-* `start_time`: New start time which will be updated;
-* `end_time`: New end time which will be updated.
+### Burn
 
-Here an example message to update the event information:
+Burn a POAP the sender has access to.
+This message have the following parameters:
+* `token_id`: Id of the POAP that will be burned.
+
+Here an example message to burn a POAP:
 ```json
 {
-    "update_event_info": {
-        "start_time": "2022-12-31T10:00:00Z",
-        "end_time": "2022-12-31T19:00:00Z"
-    }
-}
-```
-
-### UpdateAdmin
-Allows the contract admin to update the contract admin. This message has the following parameter:
-* `new_admin`: Address to be the new admin that controls this contract.
-
-Here an example message to update the contract admin:
-```json
-{
-    "update_admin": {
-        "new_admin": "desmos1......"
-    }
+  "burn": {
+    "token_id": "1"
+  }
 }
 ```
 
 ### UpdateMinter
-Allows the contract admin to update the contract minter. This message has the following parameter:
-* `new_minter`: Address to be the new minter that has permission to mint tokens to other users.
+
+Allow to update the user with the mint permissions, can only be called from the contract admin.
+This message have the following parameters:
+* `minter`: Address of the new minter.
 
 Here an example message to update the contract minter:
 ```json
 {
-    "update_minter": {
-        "new_minter": "desmos1......"
-    }
+  "update_minter": {
+    "minter": "desmos1..."
+  }
 }
 ```
 
-## Query Messages
+### SetMintable
 
-### Config
-Allows to query the config of the contract.
+Sets if the users can mint their POAP, can only be called from the contract admin.
+This message have the following parameters:
+* `mintable`: Boolean value that determines whether users can mint a POAP.
 
-Here an example message to query the config:
+Here an example message to update the POAP mintability:
 ```json
 {
-    "config": {}
+  "set_mintable": {
+    "mintable": false
+  }
 }
 ```
 
-Response:
+### SetTransferable
+
+Sets if the users can transfer their POAP, can only be called from the contract admin.
+This message have the following parameters:
+* `transferable`: Boolean value that determines whether users transfer their POAP.
+
+Here an example message to update the POAP transferability:
 ```json
 {
-    "admin": "desmos1......",
-    "minter": "desmos1......",
-    "mint_enabled": true,
-    "per_address_limit": 1,
-    "cw721_code_id": "1",
-    "cw721_address": "desmos1......"
+  "set_transferable": {
+    "transferable": false
+  }
 }
 ```
 
-### EventInfo
-Allows to query the information of the event.
+### SetMintStartEndTime
 
-Here an example message to query the event info:
+Sets the time period of when the POAP can be minted from the users, can only be called from the contract admin.
+This message have the following parameters:
+* `start_time`: Identifies the timestamp at which the minting of the POAP will be enabled in nanoseconds since 1970-01-01T00:00:00Z. If not set, the minting is always enabled;
+* `end_time`: Identifies the timestamp at which the minting of the POAP will be disabled in nanoseconds since 1970-01-01T00:00:00Z. If not set, the minting will never end.
+
+Here an example message that allow the POAP to be minted from the 2023-08-01T00:00:00Z to 2023-08-07T00:00:00Z:
 ```json
 {
-    "event_info": {}
+  "set_transferable": {
+    "start_time": "1690848000000000000",
+    "end_time": "1691366400000000000"
+  }
 }
 ```
 
-Response:
+## Query messages
+
+This contract extends the `cw721-base` contract and so inherit all the `cw721`.
+You can take a look [here](https://github.com/CosmWasm/cw-nfts/blob/main/packages/cw721/README.md#queries) to see the `cw721` messages.
+
+### Minter
+
+Allows to query the contract minter.
+
+Here an example message to query the contract minter:
 ```json
 {
-    "creator": "desmos1......",
-    "start_time": "2022-12-31T10:00:00Z",
-    "end_time": "2022-12-31T19:00:00Z",
-    "poap_uri": "ipfs://poap.info"
-}
-```
-
-### MintedAmount
-Allows to query the POAP minted amount from a user. This message has the following parameter:
-* `user`: Address of the target user.
-
-Here an example message to query the event info:
-```json
-{
-    "minted_amount": {
-        "user": "desmos1......"
-    }
-}
-```
-
-Response:
-```json
-{
-    "user": "desmos1......",
-    "amount": 1,
-}
-```
-
-### AllNftInfo
-Returns the all the information of the token. This message has the following parameters:
-* `token_id`: Id of the target token;
-* `include_expired`: Trigger to filter out expired approvals, unset or false will exclude expired approvals.
-
-Here an example meesage to query all the info of the given token:
-```json
-{
-    "all_nft_info": {
-        "token_id": "1",
-        "include_expired": true
-    }
+    "minter": {}
 }
 ```
 
 Response:
 ```json
 {
-    "access": {
-        "owner": "desmos1......",
-        "approvals": [
-            {
-                "spender": "desmos1......",
-                "expiration": {
-                    "at_height": 1000
-                }
-            }, 
-            {
-                "spender": "desmos1......",
-                "expiration": {
-                    "at_time": "2022-01-01T00:00:00Z"
-                }
-            },
-            {
-                "spender": "desmos1......",
-                "expiration": {
-                    "never": {}
-                }
-            },
-        ],
-    },
-    "info": {
-        "token_uri": "ipfs://token.erc721.metadata",
-        "extension": {
-            "claimer": "desmos1......"
-        }
-    }
+  "minter": "desmos1..."
 }
 ```
 
-### Tokens
-Returns all tokens owned by the given address. This message has the following parameters:
-* `owner`: Target address owned tokens to be queried;
-* `start_after`: Position in token id where tokens start after;
-* `limit`: Limitation to list the number of tokens, if unset would be 10 and the maximum is 100.
+### IsMintable
 
-Here an example meesage to query all the tokens owned by the given address:
+Allows to query if the POAP can be minted.
+
+Here an example message to query the POAP mintability:
 ```json
 {
-    "tokens": {
-        "owner": "desmos1......",
-        "start_after": "1",
-        "limit": 3
-    }
+    "is_mintable": {}
 }
 ```
 
 Response:
 ```json
 {
-    "tokens": ["2", "3", "4"]
+  "mintable": true
+}
+```
+
+### IsTransferable
+
+Allows to query if the POAP can be transferred.
+
+Here an example message to query the POAP mintability:
+```json
+{
+    "is_transferable": {}
+}
+```
+
+Response:
+```json
+{
+  "transferable": true
+}
+```
+
+### MintStartEndTime
+
+Allows to query the POAP mint period.
+
+Here an example message to query the POAP mint period:
+```json
+{
+    "mint_start_end_time": {}
+}
+```
+
+Response:
+```json
+{
+  "start_time": "1690848000000000000",
+  "end_time": "1691366400000000000"
 }
 ```

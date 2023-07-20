@@ -1,62 +1,62 @@
-use cosmwasm_std::{StdError, Timestamp};
+use cosmwasm_std::StdError;
+use cw721_base::ContractError as Cw721BaseContractError;
+use cw_ownable::OwnershipError;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
-    #[error("{0}")]
+    #[error(transparent)]
     Std(#[from] StdError),
 
-    #[error("Unauthorized")]
-    Unauthorized {},
+    #[error(transparent)]
+    Ownership(#[from] OwnershipError),
 
-    #[error("Invalid reply ID")]
-    InvalidReplyID {},
+    #[error(transparent)]
+    Version(#[from] cw2::VersionError),
 
-    #[error("Instantiate cw721 error")]
-    InstantiateCw721Error {},
+    #[error("token_id already claimed")]
+    Claimed {},
 
-    #[error("The start time ({start}) is after the end time ({end})")]
-    StartTimeAfterEndTime { start: Timestamp, end: Timestamp },
+    #[error("Cannot set approval that is already expired")]
+    Expired {},
 
-    #[error("Event start time is before current time: {current_time} start: {start_time}")]
-    StartTimeBeforeCurrentTime {
-        current_time: Timestamp,
-        start_time: Timestamp,
-    },
+    #[error("Approval not found for: {spender}")]
+    ApprovalNotFound { spender: String },
 
-    #[error("Event end time is before current time: {current_time} end: {end_time}")]
-    EndTimeBeforeCurrentTime {
-        current_time: Timestamp,
-        end_time: Timestamp,
-    },
+    #[error("Transfer is not allowed")]
+    TransferDisabled {},
 
-    #[error("Invalid poap URI (must be an IPFS URI)")]
-    InvalidPoapUri {},
-
-    #[error("Invalid per address limit value")]
-    InvalidPerAddressLimit {},
-
-    #[error("Mint operation is disabled")]
+    #[error("Mint is not allowed")]
     MintDisabled {},
 
-    #[error("Minting limit reached for {recipient_addr}")]
-    MaxPerAddressLimitExceeded { recipient_addr: String },
+    #[error("{user} already owns a POAP")]
+    PoapAlreadyMinted { user: String },
 
-    #[error("Event started, current time: {current_time}, start: {start_time}")]
-    EventStarted {
-        current_time: Timestamp,
-        start_time: Timestamp,
-    },
+    #[error("You don't have the permission to mint")]
+    MintUnauthorized {},
 
-    #[error("Event not started, current time: {current_time}, start time: {start_time}")]
-    EventNotStarted {
-        current_time: Timestamp,
-        start_time: Timestamp,
-    },
+    #[error("Can't mint: minting period not started yet")]
+    MintTimeNotStarted {},
 
-    #[error("Event terminated, current time: {current_time} end time: {end_time}")]
-    EventTerminated {
-        current_time: Timestamp,
-        end_time: Timestamp,
-    },
+    #[error("Can't mint: minting period already ended")]
+    MintTimeAlreadyEnded {},
+
+    #[error("Start time must be smaller than end time")]
+    InvalidTimestampValues {},
+}
+
+impl From<Cw721BaseContractError> for ContractError {
+    #[cfg(not(tarpaulin_include))]
+    fn from(error: Cw721BaseContractError) -> Self {
+        match error {
+            Cw721BaseContractError::Std(e) => ContractError::Std(e),
+            Cw721BaseContractError::Ownership(e) => ContractError::Ownership(e),
+            Cw721BaseContractError::Version(e) => ContractError::Version(e),
+            Cw721BaseContractError::Claimed {} => ContractError::Claimed {},
+            Cw721BaseContractError::Expired {} => ContractError::Expired {},
+            Cw721BaseContractError::ApprovalNotFound { spender } => {
+                ContractError::ApprovalNotFound { spender }
+            }
+        }
+    }
 }
