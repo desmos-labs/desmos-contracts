@@ -47,4 +47,4 @@ cosmwasm-schema.workspace = true
 [dev-dependencies]
 cw-multi-test.workspace = true
 desmos-bindings = { workspace = true, default-features = false, features = ["mocks"] }
-anyhow = "1.0.71"
+anyhow = "1.0.72"
