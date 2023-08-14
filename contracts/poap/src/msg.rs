@@ -248,6 +248,7 @@ where
             ExecuteMsg::RevokeAll { operator } => Cw721BaseExecuteMsg::RevokeAll { operator },
             ExecuteMsg::Burn { token_id } => Cw721BaseExecuteMsg::Burn { token_id },
             ExecuteMsg::Extension { msg } => Cw721BaseExecuteMsg::Extension { msg },
+            ExecuteMsg::UpdateOwnership(action) => Cw721BaseExecuteMsg::UpdateOwnership(action),
             _ => unreachable!("cannot convert {:?} to Cw721BaseExecuteMsg", execute_msg),
         }
     }
@@ -326,6 +327,7 @@ where
                 Cw721BaseQueryMsg::AllTokens { start_after, limit }
             }
             QueryMsg::Extension { msg } => Cw721BaseQueryMsg::Extension { msg },
+            QueryMsg::Ownership {} => Cw721BaseQueryMsg::Ownership {},
             _ => unreachable!("cannot convert {:?} to Cw721BaseQueryMsg", query_msg),
         }
     }

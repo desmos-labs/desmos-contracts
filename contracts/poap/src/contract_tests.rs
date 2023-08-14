@@ -1356,3 +1356,24 @@ fn can_approve_all_and_revoke_all() {
         )
         .unwrap();
 }
+
+#[test]
+fn only_admin_can_initiate_the_ownership_transfer() {
+    let mut deps = mock_dependencies();
+    let contract = setup_contract(deps.as_mut(), true, true, None, None);
+    let msg = ExecuteMsg::UpdateOwnership(cw_ownable::Action::TransferOwnership {
+        new_owner: USER.to_string(),
+        expiry: None,
+    });
+
+    // Check that a random user can't initiate the ownership transfer.
+    let err = contract
+        .execute(deps.as_mut(), mock_env(), mock_info(USER, &[]), msg.clone())
+        .unwrap_err();
+    assert_eq!(Ownership(OwnershipError::NotOwner), err);
+
+    // Check that the admin can initiate the ownership transfer.
+    contract
+        .execute(deps.as_mut(), mock_env(), mock_info(ADMIN, &[]), msg)
+        .unwrap();
+}
