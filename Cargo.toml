@@ -16,7 +16,7 @@ cw-multi-test = "0.15.1"
 desmos-bindings = { version = "1.1.1", default-features = false }
 # Misc dependencies
 schemars = "0.8.12"
-serde = { version = "1.0.183", default-features = false }
+serde = { version = "1.0.185", default-features = false }
 thiserror = "1.0.44"
 
 [profile.release]
